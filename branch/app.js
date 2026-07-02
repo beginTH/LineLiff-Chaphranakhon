@@ -15,7 +15,7 @@
 // ⚙️ CONFIGURATION
 // =====================================================
 const CONFIG = {
-    LIFF_ID:      'YOUR_LIFF_ID_HERE',           // TODO: ใส่ LINE LIFF ID จริง
+    LIFF_ID:      '2010570929-oEalS3oQ',          // ✅ LIFF ID: สั่งซื้อวัตถุดิบ (สาขา)
     N8N_BASE_URL: 'https://YOUR_N8N_DOMAIN.com', // TODO: ใส่ URL n8n จริง (ไม่ต้องมี / ท้าย)
     WEBHOOK: {
         GET_PROFILE:  '/webhook/get-user-profile',

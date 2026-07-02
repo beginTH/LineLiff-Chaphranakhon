@@ -21,7 +21,7 @@
 // ⚙️ CONFIGURATION
 // =====================================================
 const CONFIG = {
-    LIFF_ID:      'YOUR_ADMIN_LIFF_ID_HERE',        // TODO: ใส่ LINE LIFF ID สำหรับ Admin
+    LIFF_ID:      '2010570929-BJxo68XQ',         // ✅ LIFF ID: จัดการออเดอร์ (Admin)
     N8N_BASE_URL: 'https://YOUR_N8N_DOMAIN.com',    // TODO: ใส่ URL n8n จริง
     WEBHOOK: {
         GET_ORDER:     '/webhook/get-order',          // GET  ?orderId=xxx
