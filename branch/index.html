@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ชาพระนคร — สั่งซื้อวัตถุดิบ</title>
+    <meta name="description" content="ระบบสั่งซื้อวัตถุดิบสำหรับสาขา ชาพระนคร">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <!-- ===== SCREEN 0: LOADING ===== -->
+    <div id="screen-loading" class="screen">
+        <div class="loading-content">
+            <div class="logo-wrapper">
+                <div class="logo-icon">🍵</div>
+                <h1 class="logo-title">ชาพระนคร</h1>
+                <p class="logo-subtitle">ระบบสั่งซื้อวัตถุดิบ</p>
+            </div>
+            <div class="spinner-wrapper">
+                <div class="spinner"></div>
+                <p class="loading-text" id="loading-text">กำลังเชื่อมต่อ LINE...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== SCREEN 1: ADDRESS ===== -->
+    <div id="screen-address" class="screen">
+        <div class="app-header">
+            <div class="header-brand">
+                <span class="header-icon">🍵</span>
+                <span class="header-title">ชาพระนคร</span>
+            </div>
+            <div class="step-indicator">
+                <div class="step active" id="step1-addr"><span>1</span></div>
+                <div class="step-line" id="line-1-2"></div>
+                <div class="step" id="step2-addr"><span>2</span></div>
+                <div class="step-line" id="line-2-3"></div>
+                <div class="step" id="step3-addr"><span>3</span></div>
+            </div>
+            <div style="width:60px;"></div>
+        </div>
+
+        <div class="screen-content">
+            <div class="section-header">
+                <h2 class="section-title">เลือกที่อยู่จัดส่ง</h2>
+                <p class="section-subtitle" id="user-greeting">สวัสดีครับ!</p>
+            </div>
+
+            <div id="address-list" class="address-list"></div>
+
+            <button class="btn-outline" id="btn-add-address">
+                <span class="btn-icon-text">+</span> เพิ่มที่อยู่ใหม่
+            </button>
+
+            <div id="new-address-form" class="form-card hidden">
+                <h3 class="form-title">ที่อยู่จัดส่งใหม่</h3>
+                <div class="form-group">
+                    <label class="form-label" for="input-branch-name">ชื่อสาขา / จุดจัดส่ง</label>
+                    <input type="text" id="input-branch-name" class="form-input" placeholder="เช่น สาขาสีลม">
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="input-address">ที่อยู่จัดส่งเต็ม</label>
+                    <textarea id="input-address" class="form-textarea" rows="3"
+                        placeholder="เลขที่ ถนน แขวง/ตำบล เขต/อำเภอ จังหวัด รหัสไปรษณีย์"></textarea>
+                </div>
+                <button class="btn-primary btn-sm" id="btn-confirm-new-address">✓ บันทึกที่อยู่นี้</button>
+            </div>
+
+            <div class="bottom-action">
+                <button class="btn-primary btn-full" id="btn-next-to-products" disabled>
+                    ถัดไป — เลือกสินค้า <span class="btn-arrow">→</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== SCREEN 2: PRODUCTS ===== -->
+    <div id="screen-products" class="screen">
+        <div class="app-header">
+            <button class="btn-back" id="btn-back-to-address">← ย้อนกลับ</button>
+            <div class="step-indicator">
+                <div class="step done" id="step1-prod"><span>✓</span></div>
+                <div class="step-line done" id="line-1-2-prod"></div>
+                <div class="step active" id="step2-prod"><span>2</span></div>
+                <div class="step-line" id="line-2-3-prod"></div>
+                <div class="step" id="step3-prod"><span>3</span></div>
+            </div>
+            <button class="btn-cart" id="btn-view-cart">
+                <span class="cart-icon">🛒</span>
+                <span class="cart-count" id="cart-count">0</span>
+            </button>
+        </div>
+
+        <div class="screen-content">
+            <div class="section-header">
+                <h2 class="section-title">เลือกวัตถุดิบ</h2>
+                <p class="section-subtitle">กดเพิ่ม / ลดจำนวนที่ต้องการ</p>
+            </div>
+
+            <div id="product-grid" class="product-grid"></div>
+
+            <div class="bottom-action" id="cart-action-bar" style="display:none;">
+                <div class="cart-summary-bar">
+                    <div class="cart-summary-info">
+                        <span id="cart-items-count">0 รายการ</span>
+                        <span class="cart-divider">|</span>
+                        <span id="cart-total-price" class="cart-total">฿0.00</span>
+                    </div>
+                    <button class="btn-primary" id="btn-next-to-summary">ดูสรุป →</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== SCREEN 3: SUMMARY ===== -->
+    <div id="screen-summary" class="screen">
+        <div class="app-header">
+            <button class="btn-back" id="btn-back-to-products">← ย้อนกลับ</button>
+            <div class="step-indicator">
+                <div class="step done" id="step1-sum"><span>✓</span></div>
+                <div class="step-line done" id="line-1-2-sum"></div>
+                <div class="step done" id="step2-sum"><span>✓</span></div>
+                <div class="step-line done" id="line-2-3-sum"></div>
+                <div class="step active" id="step3-sum"><span>3</span></div>
+            </div>
+            <div style="width:60px;"></div>
+        </div>
+
+        <div class="screen-content">
+            <div class="section-header">
+                <h2 class="section-title">ยืนยันคำสั่งซื้อ</h2>
+                <p class="section-subtitle">ตรวจสอบรายละเอียดก่อนยืนยัน</p>
+            </div>
+
+            <div class="summary-card">
+                <div class="summary-card-header">
+                    <span class="summary-card-icon">📍</span>
+                    <h3 class="summary-card-title">ที่อยู่จัดส่ง</h3>
+                    <button class="btn-text" id="btn-edit-address">แก้ไข</button>
+                </div>
+                <p id="summary-address-text" class="summary-address-text">—</p>
+            </div>
+
+            <div class="summary-card">
+                <div class="summary-card-header">
+                    <span class="summary-card-icon">📦</span>
+                    <h3 class="summary-card-title">รายการสั่งซื้อ</h3>
+                    <button class="btn-text" id="btn-edit-products">แก้ไข</button>
+                </div>
+                <div id="summary-items-list" class="summary-items-list"></div>
+            </div>
+
+            <div class="price-breakdown-card">
+                <div class="price-row">
+                    <span class="price-label">ค่าวัตถุดิบ</span>
+                    <span class="price-value" id="summary-subtotal">฿0.00</span>
+                </div>
+                <div class="price-row">
+                    <span class="price-label">ค่าขนส่ง</span>
+                    <span class="price-pending">รอแอดมินแจ้ง</span>
+                </div>
+                <div class="price-divider"></div>
+                <div class="price-row price-total-row">
+                    <span class="price-label-total">ยอดวัตถุดิบรวม</span>
+                    <span class="price-total" id="summary-total">฿0.00</span>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="input-note">หมายเหตุถึงทีมงาน (ถ้ามี)</label>
+                <textarea id="input-note" class="form-textarea" rows="2"
+                    placeholder="เช่น ต้องการรับก่อนเที่ยง, แจ้งก่อนส่ง..."></textarea>
+            </div>
+
+            <div class="bottom-action">
+                <button class="btn-primary btn-full btn-submit" id="btn-submit-order">
+                    <span id="submit-btn-text">✓ ยืนยันคำสั่งซื้อ</span>
+                    <div class="submit-spinner hidden" id="submit-spinner"></div>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== SCREEN 4: SUCCESS ===== -->
+    <div id="screen-success" class="screen screen-success-bg">
+        <div class="success-content">
+            <div class="success-anim-wrapper">
+                <div class="success-circle">
+                    <svg class="checkmark" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 52 52">
+                        <path class="checkmark-check" fill="none" d="M14.1 27.2l7.1 7.2 16.7-16.8"/>
+                    </svg>
+                </div>
+                <div class="success-ring success-ring-1"></div>
+                <div class="success-ring success-ring-2"></div>
+            </div>
+            <h2 class="success-title">ส่งคำสั่งซื้อสำเร็จ!</h2>
+            <p class="success-subtitle">ทีมงานได้รับข้อมูลแล้ว<br>แอดมินจะแจ้งค่าขนส่งและยืนยันออเดอร์เร็วๆ นี้</p>
+            <div class="order-id-card">
+                <p class="order-id-label">รหัสคำสั่งซื้อของคุณ</p>
+                <p class="order-id-value" id="success-order-id">PO-xxxxxxxx</p>
+            </div>
+            <button class="btn-primary btn-full" id="btn-close-liff">ปิดหน้าต่าง</button>
+        </div>
+    </div>
+
+    <!-- LINE LIFF SDK -->
+    <script charset="utf-8" src="https://static.line-sapp.com/liff/edge/2/sdk.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>

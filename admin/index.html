@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ชาพระนคร — แอดมิน อนุมัติออเดอร์</title>
+    <meta name="description" content="ระบบอนุมัติคำสั่งซื้อวัตถุดิบ — แอดมิน ชาพระนคร">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <!-- ===== SCREEN 0: LOADING ===== -->
+    <div id="screen-loading" class="screen">
+        <div class="loading-content">
+            <div class="logo-wrapper">
+                <div class="logo-icon">🍵</div>
+                <h1 class="logo-title">ชาพระนคร</h1>
+                <div class="admin-badge">ADMIN</div>
+            </div>
+            <div class="spinner-wrapper">
+                <div class="spinner"></div>
+                <p class="loading-text" id="loading-text">กำลังโหลดข้อมูลออเดอร์...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== SCREEN 1: ORDER NOT FOUND ===== -->
+    <div id="screen-not-found" class="screen screen-center">
+        <div class="center-content">
+            <div class="icon-xl">🔍</div>
+            <h2 class="center-title">ไม่พบออเดอร์</h2>
+            <p class="center-subtitle" id="not-found-msg">ไม่พบข้อมูลคำสั่งซื้อ<br>กรุณาตรวจสอบลิงก์อีกครั้ง</p>
+        </div>
+    </div>
+
+    <!-- ===== SCREEN 2: ORDER DETAIL ===== -->
+    <div id="screen-order" class="screen">
+
+        <!-- Header -->
+        <div class="app-header">
+            <div class="header-brand">
+                <span class="header-icon">🍵</span>
+                <span class="header-title">ชาพระนคร</span>
+            </div>
+            <div class="admin-tag">ADMIN</div>
+        </div>
+
+        <div class="screen-content">
+
+            <!-- Order ID + Status -->
+            <div class="order-hero">
+                <div class="order-hero-row">
+                    <div>
+                        <p class="order-label">รหัสคำสั่งซื้อ</p>
+                        <p class="order-id-text" id="display-order-id">PO-xxxxxxxx</p>
+                    </div>
+                    <span class="status-badge status-pending" id="order-status-badge">รอยืนยัน</span>
+                </div>
+                <p class="order-timestamp" id="display-timestamp">—</p>
+            </div>
+
+            <!-- Branch Info -->
+            <div class="info-card">
+                <div class="info-card-header">
+                    <span class="info-icon">🏪</span>
+                    <h3 class="info-title">ข้อมูลสาขา</h3>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">ชื่อสาขา</span>
+                    <span class="info-value" id="branch-name">—</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">LINE UID</span>
+                    <span class="info-value info-uid" id="branch-uid">—</span>
+                </div>
+            </div>
+
+            <!-- Delivery Address -->
+            <div class="info-card">
+                <div class="info-card-header">
+                    <span class="info-icon">📍</span>
+                    <h3 class="info-title">ที่อยู่จัดส่ง</h3>
+                </div>
+                <p class="address-label-text" id="delivery-label">—</p>
+                <p class="address-full-text" id="delivery-address">—</p>
+            </div>
+
+            <!-- Order Items -->
+            <div class="info-card">
+                <div class="info-card-header">
+                    <span class="info-icon">📦</span>
+                    <h3 class="info-title">รายการสั่งซื้อ</h3>
+                    <span class="item-count-badge" id="item-count-badge">0 รายการ</span>
+                </div>
+                <div id="order-items-list" class="order-items-list"></div>
+            </div>
+
+            <!-- Note (ถ้ามี) -->
+            <div class="info-card" id="note-card" style="display:none;">
+                <div class="info-card-header">
+                    <span class="info-icon">📝</span>
+                    <h3 class="info-title">หมายเหตุจากสาขา</h3>
+                </div>
+                <p class="note-text" id="order-note">—</p>
+            </div>
+
+            <!-- Price Breakdown -->
+            <div class="price-card">
+                <div class="price-row">
+                    <span class="price-label">ค่าวัตถุดิบรวม</span>
+                    <span class="price-value" id="price-subtotal">฿0.00</span>
+                </div>
+                <div class="price-row">
+                    <span class="price-label shipping-label">ค่าขนส่ง <span class="required-star">*</span></span>
+                    <span class="price-value price-shipping" id="price-shipping">฿0.00</span>
+                </div>
+                <div class="price-divider"></div>
+                <div class="price-row price-total-row">
+                    <span class="price-label-total">ยอดรวมทั้งสิ้น</span>
+                    <span class="price-grand-total" id="price-grand-total">฿0.00</span>
+                </div>
+            </div>
+
+            <!-- Shipping Cost Input -->
+            <div class="shipping-input-section">
+                <label class="shipping-input-label" for="input-shipping">
+                    ระบุค่าขนส่ง
+                    <span class="shipping-input-hint">(กรอกตัวเลข เช่น 150)</span>
+                </label>
+                <div class="shipping-input-wrapper">
+                    <span class="currency-prefix">฿</span>
+                    <input
+                        type="number"
+                        id="input-shipping"
+                        class="shipping-input"
+                        placeholder="0"
+                        min="0"
+                        step="1"
+                        inputmode="numeric"
+                    >
+                </div>
+            </div>
+
+            <!-- Approve Button -->
+            <div class="bottom-action">
+                <button class="btn-approve btn-full" id="btn-approve-order">
+                    <span id="approve-btn-text">✓ อนุมัติคำสั่งซื้อ</span>
+                    <div class="submit-spinner hidden" id="approve-spinner"></div>
+                </button>
+                <p class="approve-note">เมื่ออนุมัติแล้ว ระบบจะส่งแจ้งเตือนไปยังสาขาอัตโนมัติ</p>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- ===== SCREEN 3: ALREADY APPROVED ===== -->
+    <div id="screen-approved" class="screen screen-center">
+        <div class="center-content">
+            <div class="already-icon">✅</div>
+            <h2 class="center-title">อนุมัติแล้ว</h2>
+            <p class="center-subtitle">ออเดอร์นี้ได้รับการอนุมัติไปแล้ว</p>
+            <div class="approved-summary-card">
+                <div class="approved-row">
+                    <span class="approved-label">รหัสออเดอร์</span>
+                    <span class="approved-value" id="approved-order-id">—</span>
+                </div>
+                <div class="approved-row">
+                    <span class="approved-label">ค่าขนส่ง</span>
+                    <span class="approved-value" id="approved-shipping">—</span>
+                </div>
+                <div class="approved-row approved-total-row">
+                    <span class="approved-label">ยอดรวม</span>
+                    <span class="approved-value approved-total" id="approved-total">—</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== SCREEN 4: SUCCESS ===== -->
+    <div id="screen-success" class="screen screen-center">
+        <div class="center-content">
+            <div class="success-anim-wrapper">
+                <div class="success-circle">
+                    <svg class="checkmark" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 52 52">
+                        <path class="checkmark-check" fill="none" d="M14.1 27.2l7.1 7.2 16.7-16.8"/>
+                    </svg>
+                </div>
+                <div class="success-ring success-ring-1"></div>
+                <div class="success-ring success-ring-2"></div>
+            </div>
+            <h2 class="success-title">อนุมัติสำเร็จ!</h2>
+            <p class="success-subtitle">ระบบกำลังออกเอกสารและแจ้งเตือนสาขาอัตโนมัติ</p>
+
+            <div class="success-summary-card">
+                <div class="success-summary-row">
+                    <span class="ss-label">รหัสออเดอร์</span>
+                    <span class="ss-value" id="success-order-id">—</span>
+                </div>
+                <div class="success-summary-row">
+                    <span class="ss-label">สาขา</span>
+                    <span class="ss-value" id="success-branch">—</span>
+                </div>
+                <div class="success-summary-divider"></div>
+                <div class="success-summary-row">
+                    <span class="ss-label">ค่าวัตถุดิบ</span>
+                    <span class="ss-value" id="success-subtotal">—</span>
+                </div>
+                <div class="success-summary-row">
+                    <span class="ss-label">ค่าขนส่ง</span>
+                    <span class="ss-value" id="success-shipping">—</span>
+                </div>
+                <div class="success-summary-row success-total-row">
+                    <span class="ss-label ss-label-total">ยอดรวมทั้งสิ้น</span>
+                    <span class="ss-value ss-total" id="success-grand-total">—</span>
+                </div>
+            </div>
+
+            <div class="auto-tasks">
+                <p class="auto-tasks-title">📬 ระบบดำเนินการอัตโนมัติ</p>
+                <div class="auto-task-item">
+                    <span class="auto-task-icon">📄</span>
+                    <span>ออกเอกสาร PDF ใบ PO</span>
+                </div>
+                <div class="auto-task-item">
+                    <span class="auto-task-icon">📊</span>
+                    <span>สร้างไฟล์ CSV สำหรับบัญชี</span>
+                </div>
+                <div class="auto-task-item">
+                    <span class="auto-task-icon">📧</span>
+                    <span>ส่ง Email ฝ่ายบัญชีพร้อมเอกสาร</span>
+                </div>
+                <div class="auto-task-item">
+                    <span class="auto-task-icon">💬</span>
+                    <span>แจ้งสาขาผ่าน LINE</span>
+                </div>
+            </div>
+
+            <button class="btn-approve btn-full btn-close" id="btn-close-liff">ปิดหน้าต่าง</button>
+        </div>
+    </div>
+
+    <!-- LINE LIFF SDK -->
+    <script charset="utf-8" src="https://static.line-sapp.com/liff/edge/2/sdk.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>

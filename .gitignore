@@ -1,0 +1,32 @@
+# ===========================
+# ชาพระนคร LIFF — .gitignore
+# ===========================
+
+# Node / npm
+node_modules/
+npm-debug.log*
+package-lock.json
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editor
+.vscode/
+.idea/
+*.suo
+*.user
+
+# Logs
+*.log
+logs/
+
+# Environment / Secrets
+.env
+.env.local
+.env.*.local
+
+# Build output
+dist/
+build/
