@@ -21,13 +21,13 @@
 // ⚙️ CONFIGURATION
 // =====================================================
 const CONFIG = {
-    LIFF_ID:      '2010570929-BJxo68XQ',         // ✅ LIFF ID: จัดการออเดอร์ (Admin)
-    N8N_BASE_URL: 'https://YOUR_N8N_DOMAIN.com',    // TODO: ใส่ URL n8n จริง
+    LIFF_ID:      '2010570929-BJxo68XQ',                    // ✅ LIFF ID: จัดการออเดอร์ (Admin)
+    N8N_BASE_URL: 'https://n8n.n8n-kokujapan.org',          // ✅ n8n instance URL
     WEBHOOK: {
-        GET_ORDER:     '/webhook/get-order',          // GET  ?orderId=xxx
-        ADMIN_APPROVE: '/webhook/admin-approve',      // POST
+        GET_ORDER:     '/webhook-test/get-user-profile',     // GET  ?orderId=xxx  (ดึงออเดอร์จาก sheet)
+        ADMIN_APPROVE: '/webhook-test/admin-approve',        // POST → Update Shipping & Status
     },
-    IS_DEV_MODE: true, // ⚠️ เปลี่ยนเป็น false ก่อน Deploy จริง
+    IS_DEV_MODE: false, // ✅ Production mode
 };
 
 // =====================================================

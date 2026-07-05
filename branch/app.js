@@ -15,13 +15,13 @@
 // ⚙️ CONFIGURATION
 // =====================================================
 const CONFIG = {
-    LIFF_ID:      '2010570929-oEalS3oQ',          // ✅ LIFF ID: สั่งซื้อวัตถุดิบ (สาขา)
-    N8N_BASE_URL: 'https://YOUR_N8N_DOMAIN.com', // TODO: ใส่ URL n8n จริง (ไม่ต้องมี / ท้าย)
+    LIFF_ID:      '2010570929-oEalS3oQ',                    // ✅ LIFF ID: สั่งซื้อวัตถุดิบ (สาขา)
+    N8N_BASE_URL: 'https://n8n.n8n-kokujapan.org',          // ✅ n8n instance URL
     WEBHOOK: {
-        GET_PROFILE:  '/webhook/get-user-profile',
-        SUBMIT_ORDER: '/webhook/submit-order',
+        GET_PROFILE:  '/webhook-test/get-user-profile',     // GET  ?uid=xxx  → Lookup Address sheet
+        SUBMIT_ORDER: '/webhook-test/submit-order',         // POST           → Save New Order sheet
     },
-    IS_DEV_MODE: true, // ⚠️ เปลี่ยนเป็น false ก่อน Deploy จริง
+    IS_DEV_MODE: false, // ✅ Production mode
 };
 
 // =====================================================
