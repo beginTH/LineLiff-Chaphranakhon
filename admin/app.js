@@ -28,7 +28,11 @@ const CONFIG = {
         ADMIN_APPROVE: '/webhook-test/admin-approve',        // POST → Update Shipping & Status
     },
     IS_DEV_MODE: false, // ✅ Production mode
+    TEST_ORDER_ID: 'PO-20260705-001',                        // Order ID สำหรับทดสอบจาก browser
 };
+
+/** ตรวจสอบว่า LIFF SDK โหลดแล้วหรือไม่ */
+const isLiffAvailable = () => typeof liff !== 'undefined';
 
 // =====================================================
 // 🗄️ MOCK ORDER DATA (ใช้ขณะ Dev — ลบออกเมื่อ API พร้อม)
@@ -254,13 +258,21 @@ async function initApp() {
         state.orderId = getQueryParam('orderId');
 
         if (CONFIG.IS_DEV_MODE) {
-            // DEV MODE: ใช้ orderId จาก URL หรือ Mock
+            // 🧪 Dev mode
             if (!state.orderId) state.orderId = MOCK_ORDER.orderId;
             console.log('[DEV] orderId:', state.orderId);
             await delay(400);
             state.admin = { uid: 'admin-uid-dev', displayName: 'แอดมิน (Dev)' };
+
+        } else if (!isLiffAvailable()) {
+            // 🌐 Browser mode: ข้าม LIFF auth, ใช้ mock admin + orderId จาก URL
+            console.warn('[BROWSER] LIFF SDK not available. Using browser test mode.');
+            if (!state.orderId) state.orderId = CONFIG.TEST_ORDER_ID;
+            state.admin = { uid: 'admin-browser-test', displayName: 'Admin (Browser Test)' };
+            showBrowserTestBanner(state.orderId);
+
         } else {
-            // PRODUCTION
+            // 📱 LINE mode: LIFF จริง
             if (!state.orderId) throw new Error('ไม่พบรหัสออเดอร์ใน URL กรุณาเปิดผ่านลิงก์ที่ได้รับ');
 
             await liff.init({ liffId: CONFIG.LIFF_ID });
@@ -277,7 +289,6 @@ async function initApp() {
 
         // 3️⃣ เช็คว่าออเดอร์นี้อนุมัติแล้วหรือยัง
         if (order.status === 'Approved' || order.status === 'Completed') {
-            // ออเดอร์อนุมัติแล้ว — แสดงหน้า already approved
             setText('approved-order-id', order.orderId);
             setText('approved-shipping',  fmt(order.shippingCost || 0));
             setText('approved-total',     fmt(order.totalAmount  || order.subtotal));
@@ -294,6 +305,19 @@ async function initApp() {
         setText('not-found-msg', err.message || 'เกิดข้อผิดพลาดในการโหลดข้อมูล');
         goTo('screen-not-found');
     }
+}
+
+/** แสดง banner แจ้งว่ากำลังทดสอบจาก browser */
+function showBrowserTestBanner(orderId) {
+    const banner = document.createElement('div');
+    banner.style.cssText = [
+        'position:fixed', 'top:0', 'left:0', 'right:0', 'z-index:9999',
+        'background:#f59e0b', 'color:#1a1a1a', 'font-size:11px',
+        'font-weight:600', 'text-align:center', 'padding:4px 8px',
+        'letter-spacing:0.5px',
+    ].join(';');
+    banner.textContent = `🌐 BROWSER TEST MODE — Order: ${orderId} — Webhook จริงถูกเรียกอยู่`;
+    document.body.prepend(banner);
 }
 
 // =====================================================

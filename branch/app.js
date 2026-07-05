@@ -22,7 +22,11 @@ const CONFIG = {
         SUBMIT_ORDER: '/webhook-test/submit-order',         // POST           → Save New Order sheet
     },
     IS_DEV_MODE: false, // ✅ Production mode
+    TEST_UID: 'browser-test-uid-001',                       // UID สำหรับทดสอบจาก browser (ไม่ใช่ LINE)
 };
+
+/** ตรวจสอบว่าอยู่ใน LINE environment หรือเปล่า */
+const isLiffAvailable = () => typeof liff !== 'undefined';
 
 // =====================================================
 // 🗄️ MOCK DATA (ใช้ขณะ Dev — ลบออกเมื่อ API พร้อม)
@@ -345,14 +349,24 @@ async function initApp() {
     requestAnimationFrame(() => requestAnimationFrame(() => loadingScreen.classList.add('is-active')));
 
     try {
-        // 1️⃣ Init LIFF
+        // 1️⃣ Init LIFF (หรือ fallback เมื่อเปิดจาก browser)
         loadingText.textContent = 'กำลังเชื่อมต่อ LINE...';
 
         if (CONFIG.IS_DEV_MODE) {
+            // 🧪 Dev mode: Mock user, Mock data
             console.log('[DEV] Skipping LIFF.init()');
             await delay(500);
             state.user = { uid: MOCK_USER.uid, displayName: MOCK_USER.displayName };
+
+        } else if (!isLiffAvailable()) {
+            // 🌐 Browser mode: LIFF SDK ไม่ available — ใช้ test UID เพื่อทดสอบ webhook จริง
+            console.warn('[BROWSER] LIFF SDK not available. Using browser test mode.');
+            const testUid = new URLSearchParams(window.location.search).get('uid') || CONFIG.TEST_UID;
+            state.user = { uid: testUid, displayName: `Browser Test (${testUid.slice(-6)})` };
+            showBrowserTestBanner(testUid);
+
         } else {
+            // 📱 LINE mode: LIFF จริง
             await liff.init({ liffId: CONFIG.LIFF_ID });
             if (!liff.isLoggedIn()) {
                 liff.login();
@@ -362,17 +376,14 @@ async function initApp() {
             state.user = { uid: profile.userId, displayName: profile.displayName };
         }
 
-        // 2️⃣ ดึงข้อมูลสาขา
+        // 2️⃣ ดึงข้อมูลสาขา (เรียก webhook จริงเสมอ ยกเว้น Dev mode)
         loadingText.textContent = 'กำลังดึงข้อมูลสาขา...';
         const userData = await apiGetProfile(state.user.uid);
 
         // 3️⃣ Set state
         state.addresses = userData.addresses || [];
 
-        // TODO: เพิ่ม API call ดึง Products จาก n8n ตรงนี้
-        // const productsData = await apiFetchProducts();
-        // state.products = productsData;
-        state.products = MOCK_PRODUCTS; // Dev: ใช้ Mock
+        state.products = MOCK_PRODUCTS;
 
         // 4️⃣ อัปเดต greeting
         document.getElementById('user-greeting').textContent =
@@ -387,6 +398,19 @@ async function initApp() {
         loadingText.textContent = `เกิดข้อผิดพลาด: ${err.message}`;
         loadingText.style.color = 'var(--red)';
     }
+}
+
+/** แสดง banner แจ้งว่ากำลังทดสอบจาก browser (ไม่ใช่ LINE) */
+function showBrowserTestBanner(uid) {
+    const banner = document.createElement('div');
+    banner.style.cssText = [
+        'position:fixed', 'top:0', 'left:0', 'right:0', 'z-index:9999',
+        'background:#f59e0b', 'color:#1a1a1a', 'font-size:11px',
+        'font-weight:600', 'text-align:center', 'padding:4px 8px',
+        'letter-spacing:0.5px',
+    ].join(';');
+    banner.textContent = `🌐 BROWSER TEST MODE — UID: ${uid} — Webhook จริงถูกเรียกอยู่`;
+    document.body.prepend(banner);
 }
 
 // =====================================================
