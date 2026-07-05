@@ -18,8 +18,8 @@ const CONFIG = {
     LIFF_ID:      '2010570929-oEalS3oQ',                    // ✅ LIFF ID: สั่งซื้อวัตถุดิบ (สาขา)
     N8N_BASE_URL: 'https://n8n.n8n-kokujapan.org',          // ✅ n8n instance URL
     WEBHOOK: {
-        GET_PROFILE:  '/webhook-test/get-user-profile',     // GET  ?uid=xxx  → Lookup Address sheet
-        SUBMIT_ORDER: '/webhook-test/submit-order',         // POST           → Save New Order sheet
+        GET_PROFILE:  '/webhook/get-user-profile',     // GET  ?uid=xxx  → Lookup Address sheet
+        SUBMIT_ORDER: '/webhook/submit-order',         // POST           → Save New Order sheet
     },
     IS_DEV_MODE: false, // ✅ Production mode
     TEST_UID: 'browser-test-uid-001',                       // UID สำหรับทดสอบจาก browser (ไม่ใช่ LINE)
