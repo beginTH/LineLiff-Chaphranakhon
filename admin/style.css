@@ -10,31 +10,31 @@
 
 :root {
     /* === Brand === */
-    --bg-primary:      #0D0804;
-    --bg-secondary:    #1A1008;
-    --bg-card:         #1E1209;
-    --bg-card-alt:     #261509;
-    --bg-input:        #140C04;
+    --bg-primary:      #FBF8F5;
+    --bg-secondary:    #FFFFFF;
+    --bg-card:         #FFFFFF;
+    --bg-card-alt:     #F9F5F0;
+    --bg-input:        #FFFFFF;
 
-    --gold:            #D4A017;
-    --gold-light:      #F0C040;
-    --amber:           #E07818;
+    --gold:            #C8102E; /* Primary Red */
+    --gold-light:      #FF4757;
+    --amber:           #980000;
 
     /* Admin accent */
     --admin:           #7C5CBF;
     --admin-light:     #9B7DE0;
     --admin-bg:        rgba(124,92,191,0.12);
 
-    --text-primary:    #FFF5E6;
-    --text-secondary:  #C0A080;
-    --text-muted:      #7A6050;
+    --text-primary:    #1F1F1F;
+    --text-secondary:  #6B7280;
+    --text-muted:      #9CA3AF;
 
-    --border:          #32200A;
-    --border-light:    #3A2A12;
+    --border:          #E5E7EB;
+    --border-light:    #F3F4F6;
 
-    --green:           #4DB872;
-    --green-bg:        rgba(77,184,114,0.1);
-    --red:             #E05555;
+    --green:           #009C51;
+    --green-bg:        rgba(0,156,81,0.1);
+    --red:             #C8102E;
 
     /* === Spacing === */
     --sp-xs:  4px;  --sp-sm:  8px;
@@ -101,7 +101,7 @@ body {
 #screen-loading {
     justify-content: center;
     align-items: center;
-    background: radial-gradient(ellipse at 50% 40%, #221040 0%, var(--bg-primary) 65%);
+    background: radial-gradient(ellipse at 50% 40%, #F3E8FF 0%, var(--bg-primary) 65%);
 }
 
 .loading-content {
@@ -174,7 +174,7 @@ body {
     align-items: center;
     justify-content: space-between;
     padding: 12px var(--sp-md);
-    background: rgba(13,8,4,0.92);
+    background: rgba(255, 255, 255, 0.92);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
     border-bottom: 1px solid var(--border);
@@ -227,10 +227,11 @@ body {
    ORDER HERO
 =================================================== */
 .order-hero {
-    background: linear-gradient(135deg, rgba(42,20,8,0.9), rgba(26,10,4,0.9));
-    border: 1px solid rgba(212,160,23,0.2);
+    background: var(--bg-card);
+    border: 1px solid var(--border);
     border-radius: var(--r-lg);
     padding: var(--sp-md) var(--sp-lg);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.05);
 }
 
 .order-hero-row {
@@ -428,10 +429,11 @@ body {
    PRICE CARD
 =================================================== */
 .price-card {
-    background: linear-gradient(135deg, rgba(34,18,4,0.9), rgba(20,10,2,0.9));
-    border: 1px solid rgba(212,160,23,0.15);
+    background: var(--bg-card);
+    border: 1px solid var(--border);
     border-radius: var(--r-lg);
     padding: var(--sp-md);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.05);
 }
 
 .price-row {
