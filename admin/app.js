@@ -24,7 +24,7 @@ const CONFIG = {
     LIFF_ID:      '2010570929-BJxo68XQ',                    // ✅ LIFF ID: จัดการออเดอร์ (Admin)
     N8N_BASE_URL: 'https://n8n.n8n-kokujapan.org',          // ✅ n8n instance URL
     WEBHOOK: {
-        GET_ORDER:     '/webhook/get-user-profile',     // GET  ?orderId=xxx  (ดึงออเดอร์จาก sheet)
+        GET_ORDER:     '/webhook/get-order',            // GET  ?orderId=xxx  (ดึงออเดอร์จาก sheet)
         ADMIN_APPROVE: '/webhook/admin-approve',        // POST → Update Shipping & Status
     },
     IS_DEV_MODE: false, // ✅ Production mode

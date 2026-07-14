@@ -1,0 +1,888 @@
+{
+  "name": "ระบบสั่งซื้อวัตถุดิบ (ชาพระนคร) - Fixed Webhooks",
+  "nodes": [
+    {
+      "parameters": {
+        "path": "get-user-profile",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "id": "webhook-get-user-profile",
+      "name": "GET /get-user-profile",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "webhookId": "2cc68d37-dad0-4dcd-93f7-b9fc2c29c3de",
+      "notesInFlow": true,
+      "notes": "GET ?uid=LINE_UID แล้วคืนข้อมูลสาขาและ addresses ให้ LIFF"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1aKwY4KOo8uGCRrHASD539Habt5Obam8meacRO-ir0Ks",
+          "mode": "list",
+          "cachedResultName": "Chaphranakhon_DB",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1aKwY4KOo8uGCRrHASD539Habt5Obam8meacRO-ir0Ks/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1341263323,
+          "mode": "list",
+          "cachedResultName": "Users_Addresses",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1aKwY4KOo8uGCRrHASD539Habt5Obam8meacRO-ir0Ks/edit#gid=1341263323"
+        },
+        "options": {}
+      },
+      "id": "sheet-read-users",
+      "name": "Read Users_Addresses",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        260,
+        0
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "ZPODlcDmX45WFVuM",
+          "name": "Google Sheets account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const uid = String($node['GET /get-user-profile'].json.query?.uid || '').trim();\nconst rows = $input.all().map(item => item.json);\nconst row = rows.find(r => String(r.LINE_UID || '').trim() === uid);\n\nif (!row) {\n  return [{ json: { uid, displayName: '', branchName: '', addresses: [] } }];\n}\n\nconst branchName = String(row.Branch_Name || '').trim();\nconst displayName = String(row.Display_Name || '').trim();\nconst addresses = [1, 2, 3, 4, 5]\n  .map(num => {\n    const text = String(row[`Address_${num}`] || '').trim();\n    if (!text) return null;\n    const savedLabel = String(row[`Address_Label_${num}`] || '').trim();\n    return {\n      id: `addr-${num}`,\n      label: savedLabel || (num === 1 ? (branchName || displayName || `ที่อยู่ ${num}`) : `${branchName || displayName || 'ที่อยู่'} (${num})`),\n      text,\n    };\n  })\n  .filter(Boolean);\n\nreturn [{\n  json: {\n    uid,\n    displayName,\n    branchName,\n    opening: row.Opening || '',\n    tel: row.Tel || '',\n    addresses,\n  },\n}];"
+      },
+      "id": "code-format-profile",
+      "name": "Format Profile Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        520,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "submit-order",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "id": "webhook-submit-order",
+      "name": "POST /submit-order",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        0,
+        260
+      ],
+      "webhookId": "ddebc1fe-7a15-413f-98ca-a5e1cac9a01b",
+      "notesInFlow": true,
+      "notes": "รับ payload จาก LIFF สาขา แล้วบันทึกลง Orders"
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $json.body || $json;\nconst now = new Date();\nconst yyyy = now.getFullYear();\nconst mm = String(now.getMonth() + 1).padStart(2, '0');\nconst dd = String(now.getDate()).padStart(2, '0');\nconst rand = String(Math.floor(Math.random() * 1000)).padStart(3, '0');\nconst orderId = body.orderId || `PO-${yyyy}${mm}${dd}-${rand}`;\nconst deliveryAddress = body.deliveryAddress || {};\nconst orderItems = Array.isArray(body.orderItems) ? body.orderItems : [];\nconst subtotal = Number(body.subtotal || 0);\n\nreturn [{\n  json: {\n    Order_ID: orderId,\n    Timestamp: body.timestamp || now.toISOString(),\n    LINE_UID: body.lineUid || body.uid || '',\n    Delivery_Address: JSON.stringify(deliveryAddress),\n    Order_Details: JSON.stringify({\n      displayName: body.displayName || '',\n      orderItems,\n      note: body.note || '',\n      isNewAddress: Boolean(body.isNewAddress),\n    }),\n    Subtotal: subtotal,\n    Shipping_Cost: 0,\n    Total_Amount: subtotal,\n    Status: 'Pending',\n    response: {\n      success: true,\n      orderId,\n      status: 'Pending',\n    },\n  },\n}];"
+      },
+      "id": "code-build-order-row",
+      "name": "Build Order Row",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        260,
+        260
+      ]
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1aKwY4KOo8uGCRrHASD539Habt5Obam8meacRO-ir0Ks",
+          "mode": "list",
+          "cachedResultName": "Chaphranakhon_DB",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1aKwY4KOo8uGCRrHASD539Habt5Obam8meacRO-ir0Ks/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1341263323,
+          "mode": "list",
+          "cachedResultName": "Users_Addresses",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1aKwY4KOo8uGCRrHASD539Habt5Obam8meacRO-ir0Ks/edit#gid=1341263323"
+        },
+        "options": {}
+      },
+      "id": "sheet-read-users-for-submit",
+      "name": "Read Users For Submit",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        520,
+        260
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "ZPODlcDmX45WFVuM",
+          "name": "Google Sheets account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "function parseJson(value, fallback) {\n  try { return value ? JSON.parse(value) : fallback; } catch { return fallback; }\n}\n\nconst order = $node['Build Order Row'].json;\nconst details = parseJson(order.Order_Details, {});\nconst deliveryAddress = parseJson(order.Delivery_Address, {});\nconst rows = $input.all().map(item => item.json);\nconst row = rows.find(r => String(r.LINE_UID || '').trim() === String(order.LINE_UID || '').trim()) || {};\n\nconst update = {\n  LINE_UID: order.LINE_UID,\n  Display_Name: row.Display_Name || details.displayName || '',\n  Branch_Name: row.Branch_Name || deliveryAddress.label || details.displayName || '',\n  Opening: row.Opening || '',\n  Tel: row.Tel || '',\n};\n\nfor (const num of [1, 2, 3, 4, 5]) {\n  update[`Address_${num}`] = row[`Address_${num}`] || '';\n  update[`Address_Label_${num}`] = row[`Address_Label_${num}`] || '';\n}\n\nconst newText = String(deliveryAddress.text || '').trim();\nconst newLabel = String(deliveryAddress.label || '').trim();\nconst existing = [1, 2, 3, 4, 5]\n  .map(num => String(update[`Address_${num}`] || '').trim())\n  .filter(Boolean);\n\nif (details.isNewAddress && newText && !existing.includes(newText)) {\n  const emptyNum = [1, 2, 3, 4, 5].find(num => !String(update[`Address_${num}`] || '').trim());\n  if (emptyNum) {\n    update[`Address_${emptyNum}`] = newText;\n    update[`Address_Label_${emptyNum}`] = newLabel || update.Branch_Name || `ที่อยู่ ${emptyNum}`;\n  }\n}\n\nreturn [{ json: update }];"
+      },
+      "id": "code-build-address-update-row",
+      "name": "Build Address Update Row",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        780,
+        260
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "1aKwY4KOo8uGCRrHASD539Habt5Obam8meacRO-ir0Ks",
+          "mode": "list",
+          "cachedResultName": "Chaphranakhon_DB",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1aKwY4KOo8uGCRrHASD539Habt5Obam8meacRO-ir0Ks/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1341263323,
+          "mode": "list",
+          "cachedResultName": "Users_Addresses",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1aKwY4KOo8uGCRrHASD539Habt5Obam8meacRO-ir0Ks/edit#gid=1341263323"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "LINE_UID": "={{ $json.LINE_UID }}",
+            "Display_Name": "={{ $json.Display_Name }}",
+            "Branch_Name": "={{ $json.Branch_Name }}",
+            "Opening": "={{ $json.Opening }}",
+            "Tel": "={{ $json.Tel }}",
+            "Address_1": "={{ $json.Address_1 }}",
+            "Address_2": "={{ $json.Address_2 }}",
+            "Address_3": "={{ $json.Address_3 }}",
+            "Address_4": "={{ $json.Address_4 }}",
+            "Address_5": "={{ $json.Address_5 }}",
+            "Address_Label_1": "={{ $json.Address_Label_1 }}",
+            "Address_Label_2": "={{ $json.Address_Label_2 }}",
+            "Address_Label_3": "={{ $json.Address_Label_3 }}",
+            "Address_Label_4": "={{ $json.Address_Label_4 }}",
+            "Address_Label_5": "={{ $json.Address_Label_5 }}"
+          },
+          "matchingColumns": [
+            "LINE_UID"
+          ],
+          "schema": [
+            {
+              "id": "LINE_UID",
+              "displayName": "LINE_UID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Display_Name",
+              "displayName": "Display_Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Branch_Name",
+              "displayName": "Branch_Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Opening",
+              "displayName": "Opening",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Tel",
+              "displayName": "Tel",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Address_1",
+              "displayName": "Address_1",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Address_2",
+              "displayName": "Address_2",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Address_3",
+              "displayName": "Address_3",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Address_4",
+              "displayName": "Address_4",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Address_5",
+              "displayName": "Address_5",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Address_Label_1",
+              "displayName": "Address_Label_1",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Address_Label_2",
+              "displayName": "Address_Label_2",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Address_Label_3",
+              "displayName": "Address_Label_3",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Address_Label_4",
+              "displayName": "Address_Label_4",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Address_Label_5",
+              "displayName": "Address_Label_5",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "id": "sheet-update-user-address",
+      "name": "Update User Address",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        1040,
+        260
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "ZPODlcDmX45WFVuM",
+          "name": "Google Sheets account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1aKwY4KOo8uGCRrHASD539Habt5Obam8meacRO-ir0Ks",
+          "mode": "list",
+          "cachedResultName": "Chaphranakhon_DB",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1aKwY4KOo8uGCRrHASD539Habt5Obam8meacRO-ir0Ks/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Orders",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1aKwY4KOo8uGCRrHASD539Habt5Obam8meacRO-ir0Ks/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Order_ID": "={{ $node['Build Order Row'].json.Order_ID }}",
+            "Timestamp": "={{ $node['Build Order Row'].json.Timestamp }}",
+            "LINE_UID": "={{ $node['Build Order Row'].json.LINE_UID }}",
+            "Delivery_Address": "={{ $node['Build Order Row'].json.Delivery_Address }}",
+            "Order_Details": "={{ $node['Build Order Row'].json.Order_Details }}",
+            "Subtotal": "={{ $node['Build Order Row'].json.Subtotal }}",
+            "Shipping_Cost": "={{ $node['Build Order Row'].json.Shipping_Cost }}",
+            "Total_Amount": "={{ $node['Build Order Row'].json.Total_Amount }}",
+            "Status": "={{ $node['Build Order Row'].json.Status }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Order_ID",
+              "displayName": "Order_ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Timestamp",
+              "displayName": "Timestamp",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "LINE_UID",
+              "displayName": "LINE_UID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Delivery_Address",
+              "displayName": "Delivery_Address",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Order_Details",
+              "displayName": "Order_Details",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Subtotal",
+              "displayName": "Subtotal",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Shipping_Cost",
+              "displayName": "Shipping_Cost",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Total_Amount",
+              "displayName": "Total_Amount",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Status",
+              "displayName": "Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "id": "sheet-save-order",
+      "name": "Save New Order",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        1300,
+        260
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "ZPODlcDmX45WFVuM",
+          "name": "Google Sheets account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const order = $node['Build Order Row'].json;\nreturn [{ json: order.response || { success: true, orderId: order.Order_ID } }];"
+      },
+      "id": "code-submit-response",
+      "name": "Submit Order Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1560,
+        260
+      ]
+    },
+    {
+      "parameters": {
+        "path": "get-order",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "id": "webhook-get-order",
+      "name": "GET /get-order",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        0,
+        520
+      ],
+      "webhookId": "get-order-chaphranakhon",
+      "notesInFlow": true,
+      "notes": "GET ?orderId=PO-... แล้วคืนข้อมูลสำหรับหน้า admin"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1aKwY4KOo8uGCRrHASD539Habt5Obam8meacRO-ir0Ks",
+          "mode": "list",
+          "cachedResultName": "Chaphranakhon_DB",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1aKwY4KOo8uGCRrHASD539Habt5Obam8meacRO-ir0Ks/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Orders",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1aKwY4KOo8uGCRrHASD539Habt5Obam8meacRO-ir0Ks/edit#gid=0"
+        },
+        "options": {}
+      },
+      "id": "sheet-read-orders-for-get",
+      "name": "Read Orders",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        260,
+        520
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "ZPODlcDmX45WFVuM",
+          "name": "Google Sheets account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "function parseJson(value, fallback) {\n  try { return value ? JSON.parse(value) : fallback; } catch { return fallback; }\n}\n\nconst orderId = String($node['GET /get-order'].json.query?.orderId || '').trim();\nconst rows = $input.all().map(item => item.json);\nconst row = rows.find(r => String(r.Order_ID || '').trim() === orderId);\n\nif (!row) {\n  return [{ json: { success: false, message: 'Order not found', orderId } }];\n}\n\nconst deliveryAddress = parseJson(row.Delivery_Address, { label: '', text: row.Delivery_Address || '' });\nconst details = parseJson(row.Order_Details, { displayName: '', orderItems: [], note: '' });\nconst subtotal = Number(row.Subtotal || 0);\nconst shippingCost = Number(row.Shipping_Cost || 0);\nconst totalAmount = Number(row.Total_Amount || subtotal + shippingCost);\n\nreturn [{\n  json: {\n    orderId: row.Order_ID,\n    timestamp: row.Timestamp,\n    status: row.Status || 'Pending',\n    branchInfo: {\n      uid: row.LINE_UID || '',\n      displayName: details.displayName || row.LINE_UID || '',\n    },\n    deliveryAddress,\n    orderItems: details.orderItems || [],\n    subtotal,\n    shippingCost,\n    totalAmount,\n    note: details.note || '',\n  },\n}];"
+      },
+      "id": "code-format-order-response",
+      "name": "Format Order Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        520,
+        520
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "admin-approve",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "id": "webhook-admin-approve",
+      "name": "POST /admin-approve",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        0,
+        780
+      ],
+      "webhookId": "e259ba51-f5e9-47ac-8ebf-590f4086d827",
+      "notesInFlow": true,
+      "notes": "รับค่าขนส่งจาก admin แล้ว update Orders"
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $json.body || $json;\nconst shippingCost = Number(body.shippingCost || 0);\nconst subtotal = Number(body.subtotal || 0);\nconst totalAmount = Number(body.totalAmount || subtotal + shippingCost);\n\nreturn [{\n  json: {\n    Order_ID: body.orderId,\n    Shipping_Cost: shippingCost,\n    Total_Amount: totalAmount,\n    Status: 'Approved',\n    approvedAt: body.approvedAt || new Date().toISOString(),\n  },\n}];"
+      },
+      "id": "code-build-approval-row",
+      "name": "Build Approval Row",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        260,
+        780
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "1aKwY4KOo8uGCRrHASD539Habt5Obam8meacRO-ir0Ks",
+          "mode": "list",
+          "cachedResultName": "Chaphranakhon_DB",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1aKwY4KOo8uGCRrHASD539Habt5Obam8meacRO-ir0Ks/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Orders",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1aKwY4KOo8uGCRrHASD539Habt5Obam8meacRO-ir0Ks/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Order_ID": "={{ $json.Order_ID }}",
+            "Shipping_Cost": "={{ $json.Shipping_Cost }}",
+            "Total_Amount": "={{ $json.Total_Amount }}",
+            "Status": "={{ $json.Status }}"
+          },
+          "matchingColumns": [
+            "Order_ID"
+          ],
+          "schema": [
+            {
+              "id": "Order_ID",
+              "displayName": "Order_ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Timestamp",
+              "displayName": "Timestamp",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "LINE_UID",
+              "displayName": "LINE_UID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Delivery_Address",
+              "displayName": "Delivery_Address",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Order_Details",
+              "displayName": "Order_Details",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Subtotal",
+              "displayName": "Subtotal",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Shipping_Cost",
+              "displayName": "Shipping_Cost",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Total_Amount",
+              "displayName": "Total_Amount",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Status",
+              "displayName": "Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "id": "sheet-update-approval",
+      "name": "Update Shipping & Status",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        520,
+        780
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "ZPODlcDmX45WFVuM",
+          "name": "Google Sheets account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const approval = $node['Build Approval Row'].json;\nreturn [{ json: { success: true, orderId: approval.Order_ID, status: approval.Status, shippingCost: approval.Shipping_Cost, totalAmount: approval.Total_Amount } }];"
+      },
+      "id": "code-approve-response",
+      "name": "Approve Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        780,
+        780
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "GET /get-user-profile": {
+      "main": [
+        [
+          {
+            "node": "Read Users_Addresses",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Users_Addresses": {
+      "main": [
+        [
+          {
+            "node": "Format Profile Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "POST /submit-order": {
+      "main": [
+        [
+          {
+            "node": "Build Order Row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Order Row": {
+      "main": [
+        [
+          {
+            "node": "Read Users For Submit",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Users For Submit": {
+      "main": [
+        [
+          {
+            "node": "Build Address Update Row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Address Update Row": {
+      "main": [
+        [
+          {
+            "node": "Update User Address",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update User Address": {
+      "main": [
+        [
+          {
+            "node": "Save New Order",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save New Order": {
+      "main": [
+        [
+          {
+            "node": "Submit Order Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GET /get-order": {
+      "main": [
+        [
+          {
+            "node": "Read Orders",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Orders": {
+      "main": [
+        [
+          {
+            "node": "Format Order Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "POST /admin-approve": {
+      "main": [
+        [
+          {
+            "node": "Build Approval Row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Approval Row": {
+      "main": [
+        [
+          {
+            "node": "Update Shipping & Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Shipping & Status": {
+      "main": [
+        [
+          {
+            "node": "Approve Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "fixed-local-draft-20260714",
+  "meta": {
+    "instanceId": "c20a6dd4079f66152f6eb0e4f4430ccd14d2f96a74552098f94caca40dd51250"
+  },
+  "nodeGroups": [],
+  "tags": []
+}

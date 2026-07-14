@@ -261,7 +261,7 @@ function normalizeAddressSheetRow(row) {
         'Display_Name', 'displayName', 'display_name',
     ]);
 
-    return [1, 2, 3]
+    return [1, 2, 3, 4, 5]
         .map((num) => {
             const text = pickFirst(row, [
                 `Address_${num}`, `address_${num}`, `address${num}`,
