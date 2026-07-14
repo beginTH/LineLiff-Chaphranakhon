@@ -352,13 +352,20 @@ async function initApp() {
         // 1️⃣ Init LIFF (หรือ fallback เมื่อเปิดจาก browser)
         loadingText.textContent = 'กำลังเชื่อมต่อ LINE...';
 
+        // 🔍 Debug: ตรวจสอบสถานะ LIFF SDK และ User-Agent
+        const liffLoaded = typeof liff !== 'undefined';
+        const isLineUA   = /Line\//i.test(navigator.userAgent);
+        console.log(`[DEBUG] LIFF SDK loaded: ${liffLoaded}`);
+        console.log(`[DEBUG] Is LINE UA: ${isLineUA}`);
+        console.log(`[DEBUG] User-Agent: ${navigator.userAgent}`);
+
         if (CONFIG.IS_DEV_MODE) {
             // 🧪 Dev mode: Mock user, Mock data
             console.log('[DEV] Skipping LIFF.init()');
             await delay(500);
             state.user = { uid: MOCK_USER.uid, displayName: MOCK_USER.displayName };
 
-        } else if (!isLiffAvailable()) {
+        } else if (!liffLoaded) {
             // 🌐 Browser mode: LIFF SDK ไม่ available — ใช้ test UID เพื่อทดสอบ webhook จริง
             console.warn('[BROWSER] LIFF SDK not available. Using browser test mode.');
             const testUid = new URLSearchParams(window.location.search).get('uid') || CONFIG.TEST_UID;
@@ -367,8 +374,11 @@ async function initApp() {
 
         } else {
             // 📱 LINE mode: LIFF จริง
+            loadingText.textContent = 'กำลัง Init LIFF...';
             await liff.init({ liffId: CONFIG.LIFF_ID });
+            console.log(`[LIFF] isInClient: ${liff.isInClient()}, isLoggedIn: ${liff.isLoggedIn()}`);
             if (!liff.isLoggedIn()) {
+                loadingText.textContent = 'กำลัง Login LINE...';
                 liff.login();
                 return;
             }
