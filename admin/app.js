@@ -69,6 +69,8 @@ const state = {
     orderId:  null,   // จาก URL param
     order:    null,   // ข้อมูลออเดอร์เต็ม
     shipping: 0,      // ค่าขนส่งที่แอดมินกรอก
+    discount: 0,      // ส่วนลดที่แอดมินกรอก
+    otherFee: 0,      // ค่าใช้จ่ายอื่นที่แอดมินกรอก
 };
 
 // =====================================================
@@ -222,16 +224,20 @@ function renderOrder(order) {
     }
 
     // Price breakdown
-    setText('price-subtotal',   fmt(order.subtotal || 0));
-    setText('price-shipping',   fmt(state.shipping));
-    setText('price-grand-total', fmt((order.subtotal || 0) + state.shipping));
+    updatePriceDisplay();
 }
 
 /** อัปเดตราคาแบบ real-time เมื่อพิมพ์ค่าขนส่ง */
-function updatePriceDisplay(shippingCost) {
-    const sub   = state.order?.subtotal || 0;
-    const total = sub + shippingCost;
-    setText('price-shipping',    fmt(shippingCost));
+function updatePriceDisplay() {
+    const sub = state.order?.subtotal || 0;
+    const amountBeforeVat = Math.max(0, sub + state.shipping + state.otherFee - state.discount);
+    const vat = amountBeforeVat * 0.07;
+    const total = amountBeforeVat + vat;
+    setText('price-subtotal',    fmt(sub));
+    setText('price-shipping',    fmt(state.shipping));
+    setText('price-discount',    fmt(state.discount));
+    setText('price-other-fee',   fmt(state.otherFee));
+    setText('price-vat',         fmt(vat));
     setText('price-grand-total', fmt(total));
 }
 
@@ -332,7 +338,19 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('input-shipping').addEventListener('input', (e) => {
         const val = parseFloat(e.target.value) || 0;
         state.shipping = Math.max(0, val);
-        updatePriceDisplay(state.shipping);
+        updatePriceDisplay();
+    });
+
+    document.getElementById('input-discount').addEventListener('input', (e) => {
+        const val = parseFloat(e.target.value) || 0;
+        state.discount = Math.max(0, val);
+        updatePriceDisplay();
+    });
+
+    document.getElementById('input-other-fee').addEventListener('input', (e) => {
+        const val = parseFloat(e.target.value) || 0;
+        state.otherFee = Math.max(0, val);
+        updatePriceDisplay();
     });
 
     // ─────────────────────────────────────────────
@@ -342,6 +360,9 @@ document.addEventListener('DOMContentLoaded', () => {
         // Validate shipping cost
         const shippingInput = document.getElementById('input-shipping');
         const shippingCost  = parseFloat(shippingInput.value);
+        const discount      = Math.max(0, parseFloat(document.getElementById('input-discount').value) || 0);
+        const otherFee      = Math.max(0, parseFloat(document.getElementById('input-other-fee').value) || 0);
+        const adminNote     = document.getElementById('input-admin-note').value.trim();
 
         if (isNaN(shippingCost) || shippingCost < 0) {
             alert('กรุณาระบุค่าขนส่ง (ถ้าไม่มีค่าขนส่ง ให้กรอก 0)');
@@ -351,12 +372,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Confirm
         const subtotal   = state.order?.subtotal || 0;
-        const totalAmount = subtotal + shippingCost;
+        const amountBeforeVat = Math.max(0, subtotal + shippingCost + otherFee - discount);
+        const vatAmount = amountBeforeVat * 0.07;
+        const totalAmount = amountBeforeVat + vatAmount;
         const confirmed  = confirm(
             `ยืนยันการอนุมัติออเดอร์?\n\n` +
             `รหัส: ${state.orderId}\n` +
             `สาขา: ${state.order?.branchInfo?.displayName}\n` +
             `ค่าขนส่ง: ${fmt(shippingCost)}\n` +
+            `ส่วนลด: ${fmt(discount)}\n` +
+            `ค่าใช้จ่ายอื่น: ${fmt(otherFee)}\n` +
+            `VAT 7%: ${fmt(vatAmount)}\n` +
             `ยอดรวม: ${fmt(totalAmount)}`
         );
         if (!confirmed) return;
@@ -376,6 +402,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 adminUid:     state.admin?.uid,
                 adminName:    state.admin?.displayName,
                 shippingCost: shippingCost,
+                discount:     discount,
+                otherFee:     otherFee,
+                vatAmount:    vatAmount,
+                adminNote:    adminNote,
                 subtotal:     subtotal,
                 totalAmount:  totalAmount,
                 approvedAt:   new Date().toISOString(),

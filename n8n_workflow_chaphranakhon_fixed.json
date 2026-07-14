@@ -86,7 +86,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const body = $json.body || $json;\nconst now = new Date();\nconst yyyy = now.getFullYear();\nconst mm = String(now.getMonth() + 1).padStart(2, '0');\nconst dd = String(now.getDate()).padStart(2, '0');\nconst rand = String(Math.floor(Math.random() * 1000)).padStart(3, '0');\nconst orderId = body.orderId || `PO-${yyyy}${mm}${dd}-${rand}`;\nconst deliveryAddress = body.deliveryAddress || {};\nconst orderItems = Array.isArray(body.orderItems) ? body.orderItems : [];\nconst subtotal = Number(body.subtotal || 0);\n\nreturn [{\n  json: {\n    Order_ID: orderId,\n    Timestamp: body.timestamp || now.toISOString(),\n    LINE_UID: body.lineUid || body.uid || '',\n    Delivery_Address: JSON.stringify(deliveryAddress),\n    Order_Details: JSON.stringify({\n      displayName: body.displayName || '',\n      orderItems,\n      note: body.note || '',\n      isNewAddress: Boolean(body.isNewAddress),\n    }),\n    Subtotal: subtotal,\n    Shipping_Cost: 0,\n    Total_Amount: subtotal,\n    Status: 'Pending',\n    response: {\n      success: true,\n      orderId,\n      status: 'Pending',\n    },\n  },\n}];"
+        "jsCode": "const body = $json.body || $json;\nconst now = new Date();\nconst yyyy = now.getFullYear();\nconst mm = String(now.getMonth() + 1).padStart(2, '0');\nconst dd = String(now.getDate()).padStart(2, '0');\nconst rand = String(Math.floor(Math.random() * 1000)).padStart(3, '0');\nconst orderId = body.orderId || `PO-${yyyy}${mm}${dd}-${rand}`;\nconst deliveryAddress = body.deliveryAddress || {};\nconst orderItems = Array.isArray(body.orderItems) ? body.orderItems : [];\nconst subtotal = Number(body.subtotal || 0);\n\nreturn [{\n  json: {\n    Order_ID: orderId,\n    Timestamp: body.timestamp || now.toISOString(),\n    LINE_UID: body.lineUid || body.uid || '',\n    Delivery_Address: JSON.stringify(deliveryAddress),\n    Order_Details: JSON.stringify({\n      displayName: body.displayName || '',\n      orderItems,\n      note: body.note || '',\n      isNewAddress: Boolean(body.isNewAddress),\n    }),\n    Subtotal: subtotal,\n    Shipping_Cost: 0,\n    Discount: 0,\n    Other_Fee: 0,\n    VAT_Amount: 0,\n    Total_Amount: subtotal,\n    Status: 'Pending',\n    response: {\n      success: true,\n      orderId,\n      status: 'Pending',\n    },\n  },\n}];"
       },
       "id": "code-build-order-row",
       "name": "Build Order Row",
@@ -367,7 +367,15 @@
             "Subtotal": "={{ $node['Build Order Row'].json.Subtotal }}",
             "Shipping_Cost": "={{ $node['Build Order Row'].json.Shipping_Cost }}",
             "Total_Amount": "={{ $node['Build Order Row'].json.Total_Amount }}",
-            "Status": "={{ $node['Build Order Row'].json.Status }}"
+            "Status": "={{ $node['Build Order Row'].json.Status }}",
+            "Discount": "={{ $node['Build Order Row'].json.Discount }}",
+            "Other_Fee": "={{ $node['Build Order Row'].json.Other_Fee }}",
+            "VAT_Amount": "={{ $node['Build Order Row'].json.VAT_Amount }}",
+            "Admin_Note": "",
+            "Approved_By": "",
+            "Approved_At": "",
+            "PO_PDF_File_ID": "",
+            "PO_PDF_URL": ""
           },
           "matchingColumns": [],
           "schema": [
@@ -451,6 +459,78 @@
               "display": true,
               "type": "string",
               "canBeUsedToMatch": true
+            },
+            {
+              "id": "Discount",
+              "displayName": "Discount",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Other_Fee",
+              "displayName": "Other_Fee",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "VAT_Amount",
+              "displayName": "VAT_Amount",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Admin_Note",
+              "displayName": "Admin_Note",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Approved_By",
+              "displayName": "Approved_By",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Approved_At",
+              "displayName": "Approved_At",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "PO_PDF_File_ID",
+              "displayName": "PO_PDF_File_ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "PO_PDF_URL",
+              "displayName": "PO_PDF_URL",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
             }
           ],
           "attemptToConvertTypes": false,
@@ -482,7 +562,7 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1560,
+        2080,
         260
       ]
     },
@@ -571,7 +651,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const body = $json.body || $json;\nconst shippingCost = Number(body.shippingCost || 0);\nconst subtotal = Number(body.subtotal || 0);\nconst totalAmount = Number(body.totalAmount || subtotal + shippingCost);\n\nreturn [{\n  json: {\n    Order_ID: body.orderId,\n    Shipping_Cost: shippingCost,\n    Total_Amount: totalAmount,\n    Status: 'Approved',\n    approvedAt: body.approvedAt || new Date().toISOString(),\n  },\n}];"
+        "jsCode": "const body = $json.body || $json;\nconst shippingCost = Number(body.shippingCost || 0);\nconst discount = Number(body.discount || 0);\nconst otherFee = Number(body.otherFee || 0);\nconst subtotal = Number(body.subtotal || 0);\nconst amountBeforeVat = Math.max(0, subtotal + shippingCost + otherFee - discount);\nconst vatAmount = Number((body.vatAmount !== undefined ? Number(body.vatAmount) : amountBeforeVat * 0.07).toFixed(2));\nconst totalAmount = Number((body.totalAmount !== undefined ? Number(body.totalAmount) : amountBeforeVat + vatAmount).toFixed(2));\n\nreturn [{\n  json: {\n    Order_ID: body.orderId,\n    Branch_UID: body.branchUid || '',\n    Shipping_Cost: shippingCost,\n    Discount: discount,\n    Other_Fee: otherFee,\n    VAT_Amount: vatAmount,\n    Total_Amount: totalAmount,\n    Status: 'Approved',\n    Admin_Note: body.adminNote || '',\n    Approved_By: body.adminName || body.adminUid || '',\n    Approved_At: body.approvedAt || new Date().toISOString(),\n  },\n}];"
       },
       "id": "code-build-approval-row",
       "name": "Build Approval Row",
@@ -605,7 +685,13 @@
             "Order_ID": "={{ $json.Order_ID }}",
             "Shipping_Cost": "={{ $json.Shipping_Cost }}",
             "Total_Amount": "={{ $json.Total_Amount }}",
-            "Status": "={{ $json.Status }}"
+            "Status": "={{ $json.Status }}",
+            "Discount": "={{ $json.Discount }}",
+            "Other_Fee": "={{ $json.Other_Fee }}",
+            "VAT_Amount": "={{ $json.VAT_Amount }}",
+            "Admin_Note": "={{ $json.Admin_Note }}",
+            "Approved_By": "={{ $json.Approved_By }}",
+            "Approved_At": "={{ $json.Approved_At }}"
           },
           "matchingColumns": [
             "Order_ID"
@@ -691,6 +777,60 @@
               "display": true,
               "type": "string",
               "canBeUsedToMatch": true
+            },
+            {
+              "id": "Discount",
+              "displayName": "Discount",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Other_Fee",
+              "displayName": "Other_Fee",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "VAT_Amount",
+              "displayName": "VAT_Amount",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Admin_Note",
+              "displayName": "Admin_Note",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Approved_By",
+              "displayName": "Approved_By",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Approved_At",
+              "displayName": "Approved_At",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
             }
           ],
           "attemptToConvertTypes": false,
@@ -715,16 +855,380 @@
     },
     {
       "parameters": {
-        "jsCode": "const approval = $node['Build Approval Row'].json;\nreturn [{ json: { success: true, orderId: approval.Order_ID, status: approval.Status, shippingCost: approval.Shipping_Cost, totalAmount: approval.Total_Amount } }];"
+        "jsCode": "const approval = $node['Build Approval Row'].json;\nconst pdf = $node['Build PDF URL'].json;\nreturn [{\n  json: {\n    success: true,\n    orderId: approval.Order_ID,\n    status: approval.Status,\n    shippingCost: approval.Shipping_Cost,\n    discount: approval.Discount,\n    otherFee: approval.Other_Fee,\n    vatAmount: approval.VAT_Amount,\n    totalAmount: approval.Total_Amount,\n    pdfUrl: pdf.pdfUrl,\n  },\n}];"
       },
       "id": "code-approve-response",
       "name": "Approve Response",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        780,
+        3900,
         780
       ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const order = $node['Build Order Row'].json;\nconst details = JSON.parse(order.Order_Details || '{}');\nconst delivery = JSON.parse(order.Delivery_Address || '{}');\nconst adminBaseUrl = $env.ADMIN_LIFF_URL || 'https://beginth.github.io/LineLiff-Chaphranakhon/admin/';\nconst url = `${adminBaseUrl}${adminBaseUrl.includes('?') ? '&' : '?'}orderId=${encodeURIComponent(order.Order_ID)}`;\nconst items = details.orderItems || [];\nconst firstItems = items.slice(0, 4).map(item => ({\n  type: 'text',\n  text: `• ${item.productName} x${item.quantity} = ฿${Number(item.lineTotal || 0).toLocaleString('th-TH')}`,\n  size: 'sm',\n  color: '#555555',\n  wrap: true,\n}));\n\nreturn [{\n  json: {\n    to: 'Ubf8eac64b74f2561e7191c2109fde8ea',\n    messages: [{\n      type: 'flex',\n      altText: `มีออเดอร์ใหม่ ${order.Order_ID}`,\n      contents: {\n        type: 'bubble',\n        header: {\n          type: 'box',\n          layout: 'vertical',\n          contents: [\n            { type: 'text', text: 'ออเดอร์ใหม่', weight: 'bold', size: 'lg', color: '#B11226' },\n            { type: 'text', text: order.Order_ID, size: 'sm', color: '#666666' },\n          ],\n        },\n        body: {\n          type: 'box',\n          layout: 'vertical',\n          spacing: 'sm',\n          contents: [\n            { type: 'text', text: `สาขา: ${delivery.label || details.displayName || order.LINE_UID}`, wrap: true },\n            { type: 'text', text: `ยอดวัตถุดิบ: ฿${Number(order.Subtotal || 0).toLocaleString('th-TH')}`, weight: 'bold' },\n            ...firstItems,\n          ],\n        },\n        footer: {\n          type: 'box',\n          layout: 'vertical',\n          contents: [{\n            type: 'button',\n            style: 'primary',\n            color: '#B11226',\n            action: { type: 'uri', label: 'ตรวจสอบ / อนุมัติ', uri: url },\n          }],\n        },\n      },\n    }],\n  },\n}];"
+      },
+      "id": "code-build-admin-line-message",
+      "name": "Build Admin LINE Message",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1560,
+        260
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.line.me/v2/bot/message/push",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "={{ 'Bearer ' + $env.LINE_CHANNEL_ACCESS_TOKEN }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json) }}",
+        "options": {}
+      },
+      "id": "http-notify-admin-line",
+      "name": "Notify Admin LINE",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1820,
+        260
+      ]
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1aKwY4KOo8uGCRrHASD539Habt5Obam8meacRO-ir0Ks",
+          "mode": "list",
+          "cachedResultName": "Chaphranakhon_DB",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1aKwY4KOo8uGCRrHASD539Habt5Obam8meacRO-ir0Ks/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Orders",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1aKwY4KOo8uGCRrHASD539Habt5Obam8meacRO-ir0Ks/edit#gid=0"
+        },
+        "options": {}
+      },
+      "id": "sheet-read-orders-for-pdf",
+      "name": "Read Orders For PDF",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        780,
+        780
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "ZPODlcDmX45WFVuM",
+          "name": "Google Sheets account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "function parseJson(value, fallback) {\n  try { return value ? JSON.parse(value) : fallback; } catch { return fallback; }\n}\n\nconst approval = $node['Build Approval Row'].json;\nconst rows = $input.all().map(item => item.json);\nconst row = rows.find(r => String(r.Order_ID || '').trim() === String(approval.Order_ID || '').trim());\nif (!row) throw new Error(`Order not found for PDF: ${approval.Order_ID}`);\n\nconst deliveryAddress = parseJson(row.Delivery_Address, { label: '', text: row.Delivery_Address || '' });\nconst details = parseJson(row.Order_Details, { displayName: '', orderItems: [], note: '' });\nconst items = details.orderItems || [];\nconst subtotal = Number(row.Subtotal || 0);\nconst shippingCost = Number(approval.Shipping_Cost || row.Shipping_Cost || 0);\nconst discount = Number(approval.Discount || 0);\nconst otherFee = Number(approval.Other_Fee || 0);\nconst amount = Math.max(0, subtotal + shippingCost + otherFee - discount);\nconst vat = Number((amount * 0.07).toFixed(2));\nconst total = Number((amount + vat).toFixed(2));\n\nconst values = [\n  { range: 'Form VAT!C15', values: [[details.displayName || deliveryAddress.label || row.LINE_UID || '']] },\n  { range: 'Form VAT!C16', values: [[deliveryAddress.label || details.displayName || '']] },\n  { range: 'Form VAT!C17', values: [[deliveryAddress.text || '']] },\n  { range: 'Form VAT!C18', values: [[details.displayName || '']] },\n  { range: 'Form VAT!C19', values: [['']] },\n  { range: 'Form VAT!G16', values: [['เลขที่ :']] },\n  { range: 'Form VAT!H16', values: [[approval.Order_ID]] },\n  { range: 'Form VAT!G18', values: [['วันที่ :']] },\n  { range: 'Form VAT!H18', values: [[approval.Approved_At || new Date().toISOString()]] },\n];\n\nconst itemRows = Array.from({ length: 15 }, (_, index) => {\n  const item = items[index];\n  if (!item) return ['', '', '', '', '', '', ''];\n  return [\n    index + 1,\n    approval.Order_ID,\n    item.productName || '',\n    Number(item.quantity || 0),\n    item.unit || '',\n    Number(item.pricePerUnit || 0),\n    Number(item.lineTotal || 0),\n  ];\n});\nvalues.push({ range: 'Form VAT!B22:H36', values: itemRows });\nvalues.push({ range: 'Form VAT!H37', values: [[subtotal]] });\nvalues.push({ range: 'Form VAT!H38', values: [[discount]] });\nvalues.push({ range: 'Form VAT!H39', values: [[amount]] });\nvalues.push({ range: 'Form VAT!H40', values: [[vat]] });\nvalues.push({ range: 'Form VAT!H41', values: [[shippingCost + otherFee]] });\nvalues.push({ range: 'Form VAT!H43', values: [[total]] });\n\nreturn [{\n  json: {\n    orderId: approval.Order_ID,\n    branchUid: approval.Branch_UID || row.LINE_UID || '',\n    branchName: deliveryAddress.label || details.displayName || row.LINE_UID || '',\n    subtotal,\n    shippingCost,\n    discount,\n    otherFee,\n    vatAmount: vat,\n    totalAmount: total,\n    fileName: `PO_${approval.Order_ID}.pdf`,\n    copiedSheetName: `VAT_${approval.Order_ID}`,\n    templateFileId: $env.VAT_TEMPLATE_FILE_ID || 'PUT_VAT_TEMPLATE_FILE_ID_HERE',\n    folderId: $env.PO_DRIVE_FOLDER_ID || 'PUT_PO_DRIVE_FOLDER_ID_HERE',\n    valuesBatchUpdate: {\n      valueInputOption: 'USER_ENTERED',\n      data: values,\n    },\n  },\n}];"
+      },
+      "id": "code-build-vat-payload",
+      "name": "Build VAT PDF Payload",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1040,
+        780
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ 'https://www.googleapis.com/drive/v3/files/' + $json.templateFileId + '/copy' }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleOAuth2Api",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ name: $json.copiedSheetName, parents: [$json.folderId], mimeType: 'application/vnd.google-apps.spreadsheet' }) }}",
+        "options": {}
+      },
+      "id": "http-copy-vat-template",
+      "name": "Copy VAT Template",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1300,
+        780
+      ],
+      "credentials": {
+        "googleOAuth2Api": {
+          "id": "ZPODlcDmX45WFVuM",
+          "name": "Google Sheets account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const payload = $node['Build VAT PDF Payload'].json;\nconst copied = $json;\nreturn [{\n  json: {\n    ...payload,\n    spreadsheetId: copied.id,\n    copiedFileId: copied.id,\n  },\n}];"
+      },
+      "id": "code-merge-copied-template",
+      "name": "Merge Copied Template",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1560,
+        780
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ 'https://sheets.googleapis.com/v4/spreadsheets/' + $json.spreadsheetId + '/values:batchUpdate' }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleOAuth2Api",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.valuesBatchUpdate) }}",
+        "options": {}
+      },
+      "id": "http-fill-vat-template",
+      "name": "Fill VAT Template",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1820,
+        780
+      ],
+      "credentials": {
+        "googleOAuth2Api": {
+          "id": "ZPODlcDmX45WFVuM",
+          "name": "Google Sheets account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const payload = $node['Merge Copied Template'].json;\nreturn [{ json: payload }];"
+      },
+      "id": "code-restore-vat-payload",
+      "name": "Restore VAT Payload",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2080,
+        780
+      ]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{ 'https://www.googleapis.com/drive/v3/files/' + $json.copiedFileId + '/export?mimeType=application/pdf' }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleOAuth2Api",
+        "responseFormat": "file",
+        "outputPropertyName": "data",
+        "options": {}
+      },
+      "id": "http-export-vat-pdf",
+      "name": "Export VAT PDF",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2340,
+        780
+      ],
+      "credentials": {
+        "googleOAuth2Api": {
+          "id": "ZPODlcDmX45WFVuM",
+          "name": "Google Sheets account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const payload = $node['Restore VAT Payload'].json;\nconst upload = $json;\nconst pdfFileId = upload.id || payload.copiedFileId;\nreturn [{\n  json: {\n    ...payload,\n    pdfFileId,\n    pdfUrl: `https://drive.google.com/file/d/${pdfFileId}/view?usp=drivesdk`,\n  },\n  binary: $binary,\n}];"
+      },
+      "id": "code-build-pdf-url",
+      "name": "Build PDF URL",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2860,
+        780
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "1aKwY4KOo8uGCRrHASD539Habt5Obam8meacRO-ir0Ks",
+          "mode": "list",
+          "cachedResultName": "Chaphranakhon_DB",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1aKwY4KOo8uGCRrHASD539Habt5Obam8meacRO-ir0Ks/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Orders",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1aKwY4KOo8uGCRrHASD539Habt5Obam8meacRO-ir0Ks/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Order_ID": "={{ $json.orderId }}",
+            "PO_PDF_File_ID": "={{ $json.pdfFileId }}",
+            "PO_PDF_URL": "={{ $json.pdfUrl }}"
+          },
+          "matchingColumns": [
+            "Order_ID"
+          ],
+          "schema": [
+            {
+              "id": "Order_ID",
+              "displayName": "Order_ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "PO_PDF_File_ID",
+              "displayName": "PO_PDF_File_ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "PO_PDF_URL",
+              "displayName": "PO_PDF_URL",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "id": "sheet-update-pdf-url",
+      "name": "Update PDF URL",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        3120,
+        780
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "ZPODlcDmX45WFVuM",
+          "name": "Google Sheets account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const payload = $node['Build PDF URL'].json;\nreturn [{\n  json: {\n    to: payload.branchUid,\n    messages: [{\n      type: 'flex',\n      altText: `ใบสั่งซื้อ ${payload.orderId} อนุมัติแล้ว`,\n      contents: {\n        type: 'bubble',\n        header: {\n          type: 'box',\n          layout: 'vertical',\n          contents: [\n            { type: 'text', text: 'อนุมัติคำสั่งซื้อแล้ว', weight: 'bold', size: 'lg', color: '#B11226' },\n            { type: 'text', text: payload.orderId, size: 'sm', color: '#666666' },\n          ],\n        },\n        body: {\n          type: 'box',\n          layout: 'vertical',\n          spacing: 'sm',\n          contents: [\n            { type: 'text', text: `สาขา: ${payload.branchName}`, wrap: true },\n            { type: 'text', text: `ยอดรวมสุทธิ: ฿${Number(payload.totalAmount || 0).toLocaleString('th-TH', { minimumFractionDigits: 2 })}`, weight: 'bold' },\n          ],\n        },\n        footer: {\n          type: 'box',\n          layout: 'vertical',\n          contents: [{\n            type: 'button',\n            style: 'primary',\n            color: '#B11226',\n            action: { type: 'uri', label: 'ดูใบสั่งซื้อ PDF', uri: payload.pdfUrl },\n          }],\n        },\n      },\n    }],\n  },\n}];"
+      },
+      "id": "code-build-branch-line-message",
+      "name": "Build Branch LINE Message",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3380,
+        780
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.line.me/v2/bot/message/push",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "={{ 'Bearer ' + $env.LINE_CHANNEL_ACCESS_TOKEN }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json) }}",
+        "options": {}
+      },
+      "id": "http-notify-branch-line",
+      "name": "Notify Branch LINE",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        3640,
+        780
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleOAuth2Api",
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "metadata",
+              "value": "={{ JSON.stringify({ name: $node['Restore VAT Payload'].json.fileName, parents: [$node['Restore VAT Payload'].json.folderId], mimeType: 'application/pdf' }) }}"
+            },
+            {
+              "name": "file",
+              "parameterType": "formBinaryData",
+              "inputDataFieldName": "data"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "http-upload-vat-pdf",
+      "name": "Upload VAT PDF",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2600,
+        780
+      ],
+      "credentials": {
+        "googleOAuth2Api": {
+          "id": "ZPODlcDmX45WFVuM",
+          "name": "Google Sheets account 2"
+        }
+      }
     }
   ],
   "pinData": {},
@@ -810,7 +1314,7 @@
       "main": [
         [
           {
-            "node": "Submit Order Response",
+            "node": "Build Admin LINE Message",
             "type": "main",
             "index": 0
           }
@@ -865,7 +1369,161 @@
       "main": [
         [
           {
+            "node": "Read Orders For PDF",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Admin LINE Message": {
+      "main": [
+        [
+          {
+            "node": "Notify Admin LINE",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Notify Admin LINE": {
+      "main": [
+        [
+          {
+            "node": "Submit Order Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Orders For PDF": {
+      "main": [
+        [
+          {
+            "node": "Build VAT PDF Payload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build VAT PDF Payload": {
+      "main": [
+        [
+          {
+            "node": "Copy VAT Template",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Copy VAT Template": {
+      "main": [
+        [
+          {
+            "node": "Merge Copied Template",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge Copied Template": {
+      "main": [
+        [
+          {
+            "node": "Fill VAT Template",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fill VAT Template": {
+      "main": [
+        [
+          {
+            "node": "Restore VAT Payload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Restore VAT Payload": {
+      "main": [
+        [
+          {
+            "node": "Export VAT PDF",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Export VAT PDF": {
+      "main": [
+        [
+          {
+            "node": "Upload VAT PDF",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build PDF URL": {
+      "main": [
+        [
+          {
+            "node": "Update PDF URL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update PDF URL": {
+      "main": [
+        [
+          {
+            "node": "Build Branch LINE Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Branch LINE Message": {
+      "main": [
+        [
+          {
+            "node": "Notify Branch LINE",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Notify Branch LINE": {
+      "main": [
+        [
+          {
             "node": "Approve Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload VAT PDF": {
+      "main": [
+        [
+          {
+            "node": "Build PDF URL",
             "type": "main",
             "index": 0
           }

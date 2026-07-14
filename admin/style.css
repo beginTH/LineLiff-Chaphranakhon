@@ -517,6 +517,27 @@ body {
 .shipping-input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
 .shipping-input[type=number] { -moz-appearance: textfield; }
 
+.admin-note-input {
+    width: 100%;
+    min-height: 96px;
+    resize: vertical;
+    background: var(--bg-input);
+    border: 2px solid var(--border-light);
+    border-radius: var(--r-lg);
+    padding: var(--sp-md);
+    font-family: var(--font);
+    font-size: 15px;
+    line-height: 1.5;
+    color: var(--text-primary);
+    outline: none;
+    transition: border-color var(--t-fast), box-shadow var(--t-fast);
+}
+.admin-note-input:focus {
+    border-color: var(--gold);
+    box-shadow: 0 0 0 3px rgba(212,160,23,0.15);
+}
+.admin-note-input::placeholder { color: var(--text-muted); }
+
 /* ===================================================
    BUTTONS
 =================================================== */
