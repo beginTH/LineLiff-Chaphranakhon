@@ -868,7 +868,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const order = $node['Build Order Row'].json;\nconst details = JSON.parse(order.Order_Details || '{}');\nconst delivery = JSON.parse(order.Delivery_Address || '{}');\nconst adminBaseUrl = $env.ADMIN_LIFF_URL || 'https://beginth.github.io/LineLiff-Chaphranakhon/admin/';\nconst url = `${adminBaseUrl}${adminBaseUrl.includes('?') ? '&' : '?'}orderId=${encodeURIComponent(order.Order_ID)}`;\nconst items = details.orderItems || [];\nconst firstItems = items.slice(0, 4).map(item => ({\n  type: 'text',\n  text: `• ${item.productName} x${item.quantity} = ฿${Number(item.lineTotal || 0).toLocaleString('th-TH')}`,\n  size: 'sm',\n  color: '#555555',\n  wrap: true,\n}));\n\nreturn [{\n  json: {\n    to: 'Ubf8eac64b74f2561e7191c2109fde8ea',\n    messages: [{\n      type: 'flex',\n      altText: `มีออเดอร์ใหม่ ${order.Order_ID}`,\n      contents: {\n        type: 'bubble',\n        header: {\n          type: 'box',\n          layout: 'vertical',\n          contents: [\n            { type: 'text', text: 'ออเดอร์ใหม่', weight: 'bold', size: 'lg', color: '#B11226' },\n            { type: 'text', text: order.Order_ID, size: 'sm', color: '#666666' },\n          ],\n        },\n        body: {\n          type: 'box',\n          layout: 'vertical',\n          spacing: 'sm',\n          contents: [\n            { type: 'text', text: `สาขา: ${delivery.label || details.displayName || order.LINE_UID}`, wrap: true },\n            { type: 'text', text: `ยอดวัตถุดิบ: ฿${Number(order.Subtotal || 0).toLocaleString('th-TH')}`, weight: 'bold' },\n            ...firstItems,\n          ],\n        },\n        footer: {\n          type: 'box',\n          layout: 'vertical',\n          contents: [{\n            type: 'button',\n            style: 'primary',\n            color: '#B11226',\n            action: { type: 'uri', label: 'ตรวจสอบ / อนุมัติ', uri: url },\n          }],\n        },\n      },\n    }],\n  },\n}];"
+        "jsCode": "const order = $node['Build Order Row'].json;\nconst details = JSON.parse(order.Order_Details || '{}');\nconst delivery = JSON.parse(order.Delivery_Address || '{}');\nconst adminBaseUrl = 'https://beginth.github.io/LineLiff-Chaphranakhon/admin/';\nconst url = `${adminBaseUrl}${adminBaseUrl.includes('?') ? '&' : '?'}orderId=${encodeURIComponent(order.Order_ID)}`;\nconst items = details.orderItems || [];\nconst firstItems = items.slice(0, 4).map(item => ({\n  type: 'text',\n  text: `• ${item.productName} x${item.quantity} = ฿${Number(item.lineTotal || 0).toLocaleString('th-TH')}`,\n  size: 'sm',\n  color: '#555555',\n  wrap: true,\n}));\n\nreturn [{\n  json: {\n    to: 'Ubf8eac64b74f2561e7191c2109fde8ea',\n    messages: [{\n      type: 'flex',\n      altText: `มีออเดอร์ใหม่ ${order.Order_ID}`,\n      contents: {\n        type: 'bubble',\n        header: {\n          type: 'box',\n          layout: 'vertical',\n          contents: [\n            { type: 'text', text: 'ออเดอร์ใหม่', weight: 'bold', size: 'lg', color: '#B11226' },\n            { type: 'text', text: order.Order_ID, size: 'sm', color: '#666666' },\n          ],\n        },\n        body: {\n          type: 'box',\n          layout: 'vertical',\n          spacing: 'sm',\n          contents: [\n            { type: 'text', text: `สาขา: ${delivery.label || details.displayName || order.LINE_UID}`, wrap: true },\n            { type: 'text', text: `ยอดวัตถุดิบ: ฿${Number(order.Subtotal || 0).toLocaleString('th-TH')}`, weight: 'bold' },\n            ...firstItems,\n          ],\n        },\n        footer: {\n          type: 'box',\n          layout: 'vertical',\n          contents: [{\n            type: 'button',\n            style: 'primary',\n            color: '#B11226',\n            action: { type: 'uri', label: 'ตรวจสอบ / อนุมัติ', uri: url },\n          }],\n        },\n      },\n    }],\n  },\n}];"
       },
       "id": "code-build-admin-line-message",
       "name": "Build Admin LINE Message",
@@ -888,7 +888,7 @@
           "parameters": [
             {
               "name": "Authorization",
-              "value": "={{ 'Bearer ' + $env.LINE_CHANNEL_ACCESS_TOKEN }}"
+              "value": "Bearer PUT_LINE_CHANNEL_ACCESS_TOKEN_HERE"
             },
             {
               "name": "Content-Type",
@@ -908,7 +908,8 @@
       "position": [
         1820,
         260
-      ]
+      ],
+      "continueOnFail": true
     },
     {
       "parameters": {
@@ -945,7 +946,7 @@
     },
     {
       "parameters": {
-        "jsCode": "function parseJson(value, fallback) {\n  try { return value ? JSON.parse(value) : fallback; } catch { return fallback; }\n}\n\nconst approval = $node['Build Approval Row'].json;\nconst rows = $input.all().map(item => item.json);\nconst row = rows.find(r => String(r.Order_ID || '').trim() === String(approval.Order_ID || '').trim());\nif (!row) throw new Error(`Order not found for PDF: ${approval.Order_ID}`);\n\nconst deliveryAddress = parseJson(row.Delivery_Address, { label: '', text: row.Delivery_Address || '' });\nconst details = parseJson(row.Order_Details, { displayName: '', orderItems: [], note: '' });\nconst items = details.orderItems || [];\nconst subtotal = Number(row.Subtotal || 0);\nconst shippingCost = Number(approval.Shipping_Cost || row.Shipping_Cost || 0);\nconst discount = Number(approval.Discount || 0);\nconst otherFee = Number(approval.Other_Fee || 0);\nconst amount = Math.max(0, subtotal + shippingCost + otherFee - discount);\nconst vat = Number((amount * 0.07).toFixed(2));\nconst total = Number((amount + vat).toFixed(2));\n\nconst values = [\n  { range: 'Form VAT!C15', values: [[details.displayName || deliveryAddress.label || row.LINE_UID || '']] },\n  { range: 'Form VAT!C16', values: [[deliveryAddress.label || details.displayName || '']] },\n  { range: 'Form VAT!C17', values: [[deliveryAddress.text || '']] },\n  { range: 'Form VAT!C18', values: [[details.displayName || '']] },\n  { range: 'Form VAT!C19', values: [['']] },\n  { range: 'Form VAT!G16', values: [['เลขที่ :']] },\n  { range: 'Form VAT!H16', values: [[approval.Order_ID]] },\n  { range: 'Form VAT!G18', values: [['วันที่ :']] },\n  { range: 'Form VAT!H18', values: [[approval.Approved_At || new Date().toISOString()]] },\n];\n\nconst itemRows = Array.from({ length: 15 }, (_, index) => {\n  const item = items[index];\n  if (!item) return ['', '', '', '', '', '', ''];\n  return [\n    index + 1,\n    approval.Order_ID,\n    item.productName || '',\n    Number(item.quantity || 0),\n    item.unit || '',\n    Number(item.pricePerUnit || 0),\n    Number(item.lineTotal || 0),\n  ];\n});\nvalues.push({ range: 'Form VAT!B22:H36', values: itemRows });\nvalues.push({ range: 'Form VAT!H37', values: [[subtotal]] });\nvalues.push({ range: 'Form VAT!H38', values: [[discount]] });\nvalues.push({ range: 'Form VAT!H39', values: [[amount]] });\nvalues.push({ range: 'Form VAT!H40', values: [[vat]] });\nvalues.push({ range: 'Form VAT!H41', values: [[shippingCost + otherFee]] });\nvalues.push({ range: 'Form VAT!H43', values: [[total]] });\n\nreturn [{\n  json: {\n    orderId: approval.Order_ID,\n    branchUid: approval.Branch_UID || row.LINE_UID || '',\n    branchName: deliveryAddress.label || details.displayName || row.LINE_UID || '',\n    subtotal,\n    shippingCost,\n    discount,\n    otherFee,\n    vatAmount: vat,\n    totalAmount: total,\n    fileName: `PO_${approval.Order_ID}.pdf`,\n    copiedSheetName: `VAT_${approval.Order_ID}`,\n    templateFileId: $env.VAT_TEMPLATE_FILE_ID || 'PUT_VAT_TEMPLATE_FILE_ID_HERE',\n    folderId: $env.PO_DRIVE_FOLDER_ID || 'PUT_PO_DRIVE_FOLDER_ID_HERE',\n    valuesBatchUpdate: {\n      valueInputOption: 'USER_ENTERED',\n      data: values,\n    },\n  },\n}];"
+        "jsCode": "function parseJson(value, fallback) {\n  try { return value ? JSON.parse(value) : fallback; } catch { return fallback; }\n}\n\nconst approval = $node['Build Approval Row'].json;\nconst rows = $input.all().map(item => item.json);\nconst row = rows.find(r => String(r.Order_ID || '').trim() === String(approval.Order_ID || '').trim());\nif (!row) throw new Error(`Order not found for PDF: ${approval.Order_ID}`);\n\nconst deliveryAddress = parseJson(row.Delivery_Address, { label: '', text: row.Delivery_Address || '' });\nconst details = parseJson(row.Order_Details, { displayName: '', orderItems: [], note: '' });\nconst items = details.orderItems || [];\nconst subtotal = Number(row.Subtotal || 0);\nconst shippingCost = Number(approval.Shipping_Cost || row.Shipping_Cost || 0);\nconst discount = Number(approval.Discount || 0);\nconst otherFee = Number(approval.Other_Fee || 0);\nconst amount = Math.max(0, subtotal + shippingCost + otherFee - discount);\nconst vat = Number((amount * 0.07).toFixed(2));\nconst total = Number((amount + vat).toFixed(2));\n\nconst values = [\n  { range: 'Form VAT!C15', values: [[details.displayName || deliveryAddress.label || row.LINE_UID || '']] },\n  { range: 'Form VAT!C16', values: [[deliveryAddress.label || details.displayName || '']] },\n  { range: 'Form VAT!C17', values: [[deliveryAddress.text || '']] },\n  { range: 'Form VAT!C18', values: [[details.displayName || '']] },\n  { range: 'Form VAT!C19', values: [['']] },\n  { range: 'Form VAT!G16', values: [['เลขที่ :']] },\n  { range: 'Form VAT!H16', values: [[approval.Order_ID]] },\n  { range: 'Form VAT!G18', values: [['วันที่ :']] },\n  { range: 'Form VAT!H18', values: [[approval.Approved_At || new Date().toISOString()]] },\n];\n\nconst itemRows = Array.from({ length: 15 }, (_, index) => {\n  const item = items[index];\n  if (!item) return ['', '', '', '', '', '', ''];\n  return [\n    index + 1,\n    approval.Order_ID,\n    item.productName || '',\n    Number(item.quantity || 0),\n    item.unit || '',\n    Number(item.pricePerUnit || 0),\n    Number(item.lineTotal || 0),\n  ];\n});\nvalues.push({ range: 'Form VAT!B22:H36', values: itemRows });\nvalues.push({ range: 'Form VAT!H37', values: [[subtotal]] });\nvalues.push({ range: 'Form VAT!H38', values: [[discount]] });\nvalues.push({ range: 'Form VAT!H39', values: [[amount]] });\nvalues.push({ range: 'Form VAT!H40', values: [[vat]] });\nvalues.push({ range: 'Form VAT!H41', values: [[shippingCost + otherFee]] });\nvalues.push({ range: 'Form VAT!H43', values: [[total]] });\n\nreturn [{\n  json: {\n    orderId: approval.Order_ID,\n    branchUid: approval.Branch_UID || row.LINE_UID || '',\n    branchName: deliveryAddress.label || details.displayName || row.LINE_UID || '',\n    subtotal,\n    shippingCost,\n    discount,\n    otherFee,\n    vatAmount: vat,\n    totalAmount: total,\n    fileName: `PO_${approval.Order_ID}.pdf`,\n    copiedSheetName: `VAT_${approval.Order_ID}`,\n    templateFileId: 'PUT_VAT_TEMPLATE_FILE_ID_HERE',\n    folderId: 'PUT_PO_DRIVE_FOLDER_ID_HERE',\n    valuesBatchUpdate: {\n      valueInputOption: 'USER_ENTERED',\n      data: values,\n    },\n  },\n}];"
       },
       "id": "code-build-vat-payload",
       "name": "Build VAT PDF Payload",
@@ -1170,7 +1171,7 @@
           "parameters": [
             {
               "name": "Authorization",
-              "value": "={{ 'Bearer ' + $env.LINE_CHANNEL_ACCESS_TOKEN }}"
+              "value": "Bearer PUT_LINE_CHANNEL_ACCESS_TOKEN_HERE"
             },
             {
               "name": "Content-Type",
@@ -1190,7 +1191,8 @@
       "position": [
         3640,
         780
-      ]
+      ],
+      "continueOnFail": true
     },
     {
       "parameters": {
@@ -1229,6 +1231,67 @@
           "name": "Google Sheets account 2"
         }
       }
+    },
+    {
+      "parameters": {
+        "path": "get-products",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "id": "webhook-get-products",
+      "name": "GET /get-products",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        1040
+      ],
+      "webhookId": "chaphranakhon-get-products"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1aKwY4KOo8uGCRrHASD539Habt5Obam8meacRO-ir0Ks",
+          "mode": "list",
+          "cachedResultName": "Chaphranakhon_DB",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1aKwY4KOo8uGCRrHASD539Habt5Obam8meacRO-ir0Ks/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Products",
+          "mode": "list",
+          "cachedResultName": "Products"
+        },
+        "options": {}
+      },
+      "id": "gs-read-products",
+      "name": "Read Products",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        260,
+        1040
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "ZPODlcDmX45WFVuM",
+          "name": "Google Sheets account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "function pick(row, keys) {\n  for (const key of keys) {\n    const value = row[key];\n    if (value !== undefined && value !== null && String(value).trim() !== '') return String(value).trim();\n  }\n  return '';\n}\n\nfunction emojiFor(name, index) {\n  const text = String(name || '');\n  if (text.includes('ชา')) return '🍂';\n  if (text.includes('นม')) return '🥛';\n  if (text.includes('น้ำตาล')) return '🍬';\n  if (text.includes('ไซรัป') || text.includes('เชื่อม')) return '🍯';\n  if (text.includes('แก้ว') || text.includes('ถ้วย')) return '☕';\n  if (text.includes('หลอด')) return '🥤';\n  if (text.includes('ถุง')) return '🛍️';\n  return ['📦', '🧾', '🥄', '🫙'][index % 4];\n}\n\nconst products = $input.all()\n  .map((item, index) => {\n    const row = item.json || {};\n    const name = pick(row, ['Product_Name', 'productName', 'product_name', 'Name', 'name']);\n    const price = Number(pick(row, ['Price', 'price', 'Unit_Price', 'unitPrice', 'pricePerUnit']) || 0);\n    const status = pick(row, ['Status', 'status']) || 'active';\n    return {\n      id: pick(row, ['Product_ID', 'productId', 'product_id', 'ID', 'id']) || `P${String(index + 1).padStart(3, '0')}`,\n      name,\n      unit: pick(row, ['Unit', 'unit', 'UOM', 'uom']) || '-',\n      price,\n      emoji: pick(row, ['Emoji', 'emoji']) || emojiFor(name, index),\n      status,\n    };\n  })\n  .filter((product) => {\n    const status = String(product.status || '').trim().toLowerCase();\n    return product.name && product.price > 0 && !['inactive', 'disabled', 'ปิด'].includes(status);\n  });\n\nreturn [{ json: { products } }];"
+      },
+      "id": "code-format-products-response",
+      "name": "Format Products Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        520,
+        1040
+      ]
     }
   ],
   "pinData": {},
@@ -1528,6 +1591,33 @@
             "index": 0
           }
         ]
+      ]
+    },
+    "GET /get-products": {
+      "main": [
+        [
+          {
+            "node": "Read Products",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Products": {
+      "main": [
+        [
+          {
+            "node": "Format Products Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Products Response": {
+      "main": [
+        []
       ]
     }
   },

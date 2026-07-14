@@ -19,6 +19,7 @@ const CONFIG = {
     N8N_BASE_URL: 'https://n8n.n8n-kokujapan.org',          // ✅ n8n instance URL
     WEBHOOK: {
         GET_PROFILE:  '/webhook/get-user-profile',     // GET  ?uid=xxx  → Lookup Address sheet
+        GET_PRODUCTS: '/webhook/get-products',         // GET           → Lookup Products sheet
         SUBMIT_ORDER: '/webhook/submit-order',         // POST           → Save New Order sheet
     },
     IS_DEV_MODE: false, // ✅ Production mode
@@ -32,7 +33,7 @@ const isLiffAvailable = () => typeof liff !== 'undefined';
  * รอ LIFF SDK โหลดสูงสุด maxMs มิลลิวินาที
  * ป้องกัน race condition ใน LINE WebView ที่ SDK อาจโหลดช้ากว่า app.js
  */
-async function waitForLiff(maxMs = 5000) {
+async function waitForLiff(maxMs = 10000) {
     const interval = 100;
     let elapsed = 0;
     while (typeof liff === 'undefined' && elapsed < maxMs) {
@@ -176,6 +177,22 @@ async function apiGetProfile(uid) {
     return res.json();
 }
 
+/** ดึงรายการสินค้าจาก n8n */
+async function apiGetProducts() {
+    if (CONFIG.IS_DEV_MODE) {
+        console.log('[DEV] apiGetProducts');
+        await delay(500);
+        return MOCK_PRODUCTS;
+    }
+
+    const res = await fetch(
+        `${CONFIG.N8N_BASE_URL}${CONFIG.WEBHOOK.GET_PRODUCTS}`,
+        { method: 'GET', headers: { 'Content-Type': 'application/json' } }
+    );
+    if (!res.ok) throw new Error(`GET Products failed: ${res.status}`);
+    return normalizeProducts(await res.json());
+}
+
 /**
  * ส่งคำสั่งซื้อไปยัง n8n
  * Dev mode: log และคืน success
@@ -224,6 +241,64 @@ function pickFirst(obj, keys) {
         }
     }
     return '';
+}
+
+function unwrapProductResponse(raw) {
+    if (Array.isArray(raw)) return raw;
+    if (!raw || typeof raw !== 'object') return [];
+
+    const keys = ['products', 'data', 'items', 'rows', 'body', 'result'];
+    for (const key of keys) {
+        const value = raw[key];
+        if (Array.isArray(value)) return value;
+        if (value && typeof value === 'object') {
+            const nested = unwrapProductResponse(value);
+            if (nested.length > 0) return nested;
+        }
+    }
+
+    return [raw];
+}
+
+function pickProductEmoji(name, index) {
+    const text = String(name || '');
+    if (text.includes('ชา')) return '🍂';
+    if (text.includes('นม')) return '🥛';
+    if (text.includes('น้ำตาล')) return '🍬';
+    if (text.includes('ไซรัป') || text.includes('เชื่อม')) return '🍯';
+    if (text.includes('แก้ว') || text.includes('ถ้วย')) return '☕';
+    if (text.includes('หลอด')) return '🥤';
+    if (text.includes('ถุง')) return '🛍️';
+    return ['📦', '🧾', '🥄', '🫙'][index % 4];
+}
+
+function normalizeProducts(raw) {
+    return unwrapProductResponse(raw)
+        .map((row, index) => {
+            const source = unwrapProfileResponse(row);
+            const name = pickFirst(source, [
+                'Product_Name', 'productName', 'product_name', 'Name', 'name',
+            ]);
+            const price = Number(pickFirst(source, [
+                'Price', 'price', 'Unit_Price', 'unitPrice', 'pricePerUnit',
+            ]) || 0);
+            const status = pickFirst(source, ['Status', 'status']) || 'active';
+
+            return {
+                id: pickFirst(source, [
+                    'Product_ID', 'productId', 'product_id', 'ID', 'id',
+                ]) || `P${String(index + 1).padStart(3, '0')}`,
+                name,
+                unit: pickFirst(source, ['Unit', 'unit', 'UOM', 'uom']) || '-',
+                price,
+                emoji: pickFirst(source, ['Emoji', 'emoji']) || pickProductEmoji(name, index),
+                status,
+            };
+        })
+        .filter(product => {
+            const status = String(product.status || '').trim().toLowerCase();
+            return product.name && product.price > 0 && !['inactive', 'disabled', 'ปิด'].includes(status);
+        });
 }
 
 function normalizeAddressRecord(item, index, fallbackLabel = '') {
@@ -488,7 +563,7 @@ async function initApp() {
 
         // 🔍 Debug: รอ LIFF SDK โหลด (ป้องกัน race condition ใน LINE WebView)
         loadingText.textContent = 'กำลังโหลด LIFF SDK...';
-        const liffLoaded = await waitForLiff(5000);
+        const liffLoaded = await waitForLiff(10000);
         const isLineUA   = /Line\//i.test(navigator.userAgent);
         console.log(`[DEBUG] LIFF SDK loaded: ${liffLoaded} (after wait)`);
         console.log(`[DEBUG] Is LINE UA: ${isLineUA}`);
@@ -502,8 +577,8 @@ async function initApp() {
             state.user = { uid: MOCK_USER.uid, displayName: MOCK_USER.displayName };
 
         } else if (!liffLoaded) {
-            // 🌐 Browser mode: LIFF SDK โหลดไม่สำเร็จภายใน 5 วินาที
-            console.warn(`[BROWSER] LIFF SDK unavailable after 5s. UA: ${navigator.userAgent}`);
+            // 🌐 Browser mode: LIFF SDK โหลดไม่สำเร็จภายในเวลาที่กำหนด
+            console.warn(`[BROWSER] LIFF SDK unavailable after wait. UA: ${navigator.userAgent}`);
             const testUid = new URLSearchParams(window.location.search).get('uid') || CONFIG.TEST_UID;
             state.user = { uid: testUid, displayName: `Browser Test (${testUid.slice(-6)})` };
             showBrowserTestBanner(testUid, isLineUA);
@@ -531,7 +606,14 @@ async function initApp() {
         state.addresses = userData.addresses;
         console.log('[PROFILE] normalized addresses:', state.addresses);
 
-        state.products = MOCK_PRODUCTS;
+        loadingText.textContent = 'กำลังดึงรายการสินค้า...';
+        try {
+            state.products = await apiGetProducts();
+            if (state.products.length === 0) throw new Error('Products response is empty');
+        } catch (productErr) {
+            console.warn('[Products] fallback to mock products:', productErr);
+            state.products = MOCK_PRODUCTS;
+        }
 
         // 4️⃣ อัปเดต greeting
         document.getElementById('user-greeting').textContent =
