@@ -22,7 +22,7 @@ const CONFIG = {
         SUBMIT_ORDER: '/webhook/submit-order',         // POST           → Save New Order sheet
     },
     IS_DEV_MODE: false, // ✅ Production mode
-    TEST_UID: 'browser-test-uid-001',                       // UID สำหรับทดสอบจาก browser (ไม่ใช่ LINE)
+    TEST_UID: 'id-001',                                     // UID สำหรับทดสอบจาก browser (ต้องตรงกับ Users_Addresses)
 };
 
 /** ตรวจสอบว่าอยู่ใน LINE environment หรือเปล่า */
@@ -201,6 +201,126 @@ async function apiSubmitOrder(payload) {
 
 /** Sleep helper */
 const delay = (ms) => new Promise(r => setTimeout(r, ms));
+
+function unwrapProfileResponse(raw) {
+    if (Array.isArray(raw)) return raw[0] || {};
+    if (!raw || typeof raw !== 'object') return {};
+
+    const keys = ['body', 'data', 'json', 'user', 'profile', 'result'];
+    for (const key of keys) {
+        const value = raw[key];
+        if (Array.isArray(value)) return value[0] || {};
+        if (value && typeof value === 'object') return value;
+    }
+
+    return raw;
+}
+
+function pickFirst(obj, keys) {
+    for (const key of keys) {
+        const value = obj?.[key];
+        if (value !== undefined && value !== null && String(value).trim() !== '') {
+            return String(value).trim();
+        }
+    }
+    return '';
+}
+
+function normalizeAddressRecord(item, index, fallbackLabel = '') {
+    if (typeof item === 'string') {
+        const text = item.trim();
+        return text ? { id: `addr-${index + 1}`, label: fallbackLabel || `ที่อยู่ ${index + 1}`, text } : null;
+    }
+
+    if (!item || typeof item !== 'object') return null;
+
+    const label = pickFirst(item, [
+        'label', 'name', 'branchName', 'branch_name', 'Branch_Name',
+        'branch', 'title', 'Address_Label', 'addressLabel',
+    ]) || fallbackLabel || `ที่อยู่ ${index + 1}`;
+
+    const text = pickFirst(item, [
+        'text', 'address', 'fullAddress', 'full_address', 'Address',
+        'Delivery_Address', 'deliveryAddress', 'value',
+    ]);
+
+    if (!text) return null;
+
+    return {
+        id: pickFirst(item, ['id', 'addressId', 'address_id', 'Address_ID']) || `addr-${index + 1}`,
+        label,
+        text,
+    };
+}
+
+function normalizeAddressSheetRow(row) {
+    if (!row || typeof row !== 'object') return [];
+
+    const branchName = pickFirst(row, [
+        'Branch_Name', 'branchName', 'branch_name', 'Branch', 'branch',
+        'Display_Name', 'displayName', 'display_name',
+    ]);
+
+    return [1, 2, 3]
+        .map((num) => {
+            const text = pickFirst(row, [
+                `Address_${num}`, `address_${num}`, `address${num}`,
+                `Address ${num}`, `address ${num}`,
+            ]);
+            if (!text) return null;
+
+            const label = pickFirst(row, [
+                `Address_Label_${num}`, `address_label_${num}`, `Label_${num}`, `label_${num}`,
+            ]) || (branchName ? (num === 1 ? branchName : `${branchName} (${num})`) : `ที่อยู่ ${num}`);
+
+            return { id: `addr-${num}`, label, text };
+        })
+        .filter(Boolean);
+}
+
+function normalizeProfile(raw) {
+    const source = unwrapProfileResponse(raw);
+    const rawAddresses = source.addresses || source.Addresses || source.addressList || source.address_list;
+    const displayName = pickFirst(source, ['displayName', 'display_name', 'Display_Name', 'name']);
+    const uid = pickFirst(source, ['uid', 'lineUid', 'line_uid', 'LINE_UID', 'userId']);
+
+    let addresses = [];
+    if (Array.isArray(rawAddresses)) {
+        addresses = rawAddresses
+            .map((addr, index) => normalizeAddressRecord(addr, index, displayName))
+            .filter(Boolean);
+    } else if (rawAddresses && typeof rawAddresses === 'object') {
+        addresses = normalizeAddressSheetRow(rawAddresses);
+        if (addresses.length === 0) {
+            const normalized = normalizeAddressRecord(rawAddresses, 0, displayName);
+            if (normalized) addresses = [normalized];
+        }
+    } else if (Array.isArray(raw)) {
+        addresses = raw.flatMap((row, rowIndex) => {
+            const unwrapped = unwrapProfileResponse(row);
+            const fromRow = normalizeAddressSheetRow(unwrapped);
+            if (fromRow.length > 0) return fromRow;
+            const normalized = normalizeAddressRecord(unwrapped, rowIndex, displayName);
+            return normalized ? [normalized] : [];
+        });
+    } else {
+        addresses = normalizeAddressSheetRow(source);
+        if (addresses.length === 0) {
+            const normalized = normalizeAddressRecord(source, 0, displayName);
+            if (normalized) addresses = [normalized];
+        }
+    }
+
+    const seen = new Set();
+    addresses = addresses.filter(addr => {
+        const key = `${addr.label}|${addr.text}`.toLowerCase();
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+    });
+
+    return { uid, displayName, addresses };
+}
 
 // =====================================================
 // 🖼️ RENDER
@@ -404,10 +524,12 @@ async function initApp() {
 
         // 2️⃣ ดึงข้อมูลสาขา (เรียก webhook จริงเสมอ ยกเว้น Dev mode)
         loadingText.textContent = 'กำลังดึงข้อมูลสาขา...';
-        const userData = await apiGetProfile(state.user.uid);
+        const userData = normalizeProfile(await apiGetProfile(state.user.uid));
 
         // 3️⃣ Set state
-        state.addresses = userData.addresses || [];
+        if (userData.displayName) state.user.displayName = userData.displayName;
+        state.addresses = userData.addresses;
+        console.log('[PROFILE] normalized addresses:', state.addresses);
 
         state.products = MOCK_PRODUCTS;
 
