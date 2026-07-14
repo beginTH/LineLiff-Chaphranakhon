@@ -28,6 +28,20 @@ const CONFIG = {
 /** ตรวจสอบว่าอยู่ใน LINE environment หรือเปล่า */
 const isLiffAvailable = () => typeof liff !== 'undefined';
 
+/**
+ * รอ LIFF SDK โหลดสูงสุด maxMs มิลลิวินาที
+ * ป้องกัน race condition ใน LINE WebView ที่ SDK อาจโหลดช้ากว่า app.js
+ */
+async function waitForLiff(maxMs = 5000) {
+    const interval = 100;
+    let elapsed = 0;
+    while (typeof liff === 'undefined' && elapsed < maxMs) {
+        await new Promise(r => setTimeout(r, interval));
+        elapsed += interval;
+    }
+    return typeof liff !== 'undefined';
+}
+
 // =====================================================
 // 🗄️ MOCK DATA (ใช้ขณะ Dev — ลบออกเมื่อ API พร้อม)
 // =====================================================
@@ -352,12 +366,14 @@ async function initApp() {
         // 1️⃣ Init LIFF (หรือ fallback เมื่อเปิดจาก browser)
         loadingText.textContent = 'กำลังเชื่อมต่อ LINE...';
 
-        // 🔍 Debug: ตรวจสอบสถานะ LIFF SDK และ User-Agent
-        const liffLoaded = typeof liff !== 'undefined';
+        // 🔍 Debug: รอ LIFF SDK โหลด (ป้องกัน race condition ใน LINE WebView)
+        loadingText.textContent = 'กำลังโหลด LIFF SDK...';
+        const liffLoaded = await waitForLiff(5000);
         const isLineUA   = /Line\//i.test(navigator.userAgent);
-        console.log(`[DEBUG] LIFF SDK loaded: ${liffLoaded}`);
+        console.log(`[DEBUG] LIFF SDK loaded: ${liffLoaded} (after wait)`);
         console.log(`[DEBUG] Is LINE UA: ${isLineUA}`);
         console.log(`[DEBUG] User-Agent: ${navigator.userAgent}`);
+        loadingText.textContent = 'กำลังเชื่อมต่อ LINE...';
 
         if (CONFIG.IS_DEV_MODE) {
             // 🧪 Dev mode: Mock user, Mock data
@@ -366,11 +382,11 @@ async function initApp() {
             state.user = { uid: MOCK_USER.uid, displayName: MOCK_USER.displayName };
 
         } else if (!liffLoaded) {
-            // 🌐 Browser mode: LIFF SDK ไม่ available — ใช้ test UID เพื่อทดสอบ webhook จริง
-            console.warn('[BROWSER] LIFF SDK not available. Using browser test mode.');
+            // 🌐 Browser mode: LIFF SDK โหลดไม่สำเร็จภายใน 5 วินาที
+            console.warn(`[BROWSER] LIFF SDK unavailable after 5s. UA: ${navigator.userAgent}`);
             const testUid = new URLSearchParams(window.location.search).get('uid') || CONFIG.TEST_UID;
             state.user = { uid: testUid, displayName: `Browser Test (${testUid.slice(-6)})` };
-            showBrowserTestBanner(testUid);
+            showBrowserTestBanner(testUid, isLineUA);
 
         } else {
             // 📱 LINE mode: LIFF จริง
@@ -410,16 +426,17 @@ async function initApp() {
     }
 }
 
-/** แสดง banner แจ้งว่ากำลังทดสอบจาก browser (ไม่ใช่ LINE) */
-function showBrowserTestBanner(uid) {
+/** แสดง banner แจ้งว่ากำลังทดสอบจาก browser หรือ LIFF SDK โหลดไม่สำเร็จ */
+function showBrowserTestBanner(uid, isLineUA = false) {
     const banner = document.createElement('div');
     banner.style.cssText = [
         'position:fixed', 'top:0', 'left:0', 'right:0', 'z-index:9999',
-        'background:#f59e0b', 'color:#1a1a1a', 'font-size:11px',
+        'background:#f59e0b', 'color:#1a1a1a', 'font-size:10px',
         'font-weight:600', 'text-align:center', 'padding:4px 8px',
-        'letter-spacing:0.5px',
+        'letter-spacing:0.3px', 'line-height:1.4',
     ].join(';');
-    banner.textContent = `🌐 BROWSER TEST MODE — UID: ${uid} — Webhook จริงถูกเรียกอยู่`;
+    const context = isLineUA ? '📱 LINE Browser (SDK fail)' : '🌐 External Browser';
+    banner.textContent = `BROWSER TEST MODE | ${context} | UID: ${uid}`;
     document.body.prepend(banner);
 }
 
