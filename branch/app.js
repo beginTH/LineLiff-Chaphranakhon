@@ -15,7 +15,7 @@
 // ⚙️ CONFIGURATION
 // =====================================================
 const CONFIG = {
-    LIFF_ID:      '2010570929-oEalS3oQ',                    // ✅ LIFF ID: สั่งซื้อวัตถุดิบ (สาขา)
+    LIFF_ID:      '2010570929-oEaIS3oQ',                    // ✅ LIFF ID: สั่งซื้อวัตถุดิบ (สาขา)
     N8N_BASE_URL: 'https://n8n.n8n-kokujapan.org',          // ✅ n8n instance URL
     WEBHOOK: {
         GET_PROFILE:  '/webhook/get-user-profile',     // GET  ?uid=xxx  → Lookup Address sheet
