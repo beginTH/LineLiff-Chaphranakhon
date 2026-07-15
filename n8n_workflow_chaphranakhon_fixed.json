@@ -145,7 +145,7 @@
     },
     {
       "parameters": {
-        "operation": "update",
+        "operation": "appendOrUpdate",
         "documentId": {
           "__rl": true,
           "value": "1aKwY4KOo8uGCRrHASD539Habt5Obam8meacRO-ir0Ks",
