@@ -304,15 +304,18 @@ function normalizeProducts(raw) {
                 'Price', 'price', 'Unit_Price', 'unitPrice', 'pricePerUnit',
             ]) || 0);
             const status = pickFirst(source, ['Status', 'status']) || 'active';
+            const id = pickFirst(source, [
+                'Product_ID', 'productId', 'product_id', 'ID', 'id',
+            ]) || `P${String(index + 1).padStart(3, '0')}`;
 
             return {
-                id: pickFirst(source, [
-                    'Product_ID', 'productId', 'product_id', 'ID', 'id',
-                ]) || `P${String(index + 1).padStart(3, '0')}`,
+                id,
                 name,
                 unit: pickFirst(source, ['Unit', 'unit', 'UOM', 'uom']) || '-',
                 price,
                 emoji: pickFirst(source, ['Emoji', 'emoji']) || pickProductEmoji(name, index),
+                imageUrl: pickFirst(source, ['Image_URL', 'imageUrl', 'image_url', 'Image', 'image'])
+                    || localProductImage(id, index),
                 status,
             };
         })
@@ -477,9 +480,12 @@ function renderProducts() {
     const grid = document.getElementById('product-grid');
     grid.innerHTML = state.products.map(p => {
         const qty = state.cart[p.id] || 0;
+        const visual = p.imageUrl
+            ? `<img class="product-image" src="${escapeHtml(p.imageUrl)}" alt="${escapeHtml(p.name)}" loading="lazy" onerror="this.classList.add('is-hidden');this.nextElementSibling.classList.remove('is-hidden');"><span class="product-emoji is-hidden">${p.emoji}</span>`
+            : `<span class="product-emoji">${p.emoji}</span>`;
         return `
             <div class="product-card${qty > 0 ? ' in-cart' : ''}" id="prod-${p.id}">
-                <span class="product-emoji">${p.emoji}</span>
+                <div class="product-visual">${visual}</div>
                 <div>
                     <p class="product-name">${escapeHtml(p.name)}</p>
                     <p class="product-unit">/ ${escapeHtml(p.unit)}</p>
