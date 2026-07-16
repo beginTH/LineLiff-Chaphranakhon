@@ -144,6 +144,22 @@ function getQueryParam(key) {
     return new URLSearchParams(window.location.search).get(key);
 }
 
+function getOrderIdFromUrl() {
+    const direct = getQueryParam('orderId');
+    if (direct) return direct;
+
+    const liffState = getQueryParam('liff.state');
+    if (!liffState) return '';
+
+    try {
+        const stateParams = new URLSearchParams(decodeURIComponent(liffState));
+        return stateParams.get('orderId') || '';
+    } catch (err) {
+        console.warn('[Admin] Cannot parse liff.state:', err);
+        return '';
+    }
+}
+
 const delay = (ms) => new Promise(r => setTimeout(r, ms));
 
 // =====================================================
@@ -280,7 +296,7 @@ async function initApp() {
 
     try {
         // 1️⃣ อ่าน orderId จาก URL
-        state.orderId = getQueryParam('orderId');
+        state.orderId = getOrderIdFromUrl();
         if (!state.orderId && CONFIG.IS_DEV_MODE) state.orderId = MOCK_ORDER.orderId;
         if (!state.orderId) throw new Error('ไม่พบรหัสออเดอร์ใน URL กรุณาเปิดผ่านลิงก์ที่ได้รับ');
 
