@@ -281,49 +281,24 @@ async function initApp() {
     try {
         // 1️⃣ อ่าน orderId จาก URL
         state.orderId = getQueryParam('orderId');
+        if (!state.orderId && CONFIG.IS_DEV_MODE) state.orderId = MOCK_ORDER.orderId;
+        if (!state.orderId) throw new Error('ไม่พบรหัสออเดอร์ใน URL กรุณาเปิดผ่านลิงก์ที่ได้รับ');
 
-        const liffLoaded = await waitForLiff(10000);
-
-        if (CONFIG.IS_DEV_MODE) {
-            // 🧪 Dev mode
-            if (!state.orderId) state.orderId = MOCK_ORDER.orderId;
-            console.log('[DEV] orderId:', state.orderId);
-            await delay(400);
-            state.admin = { uid: 'admin-uid-dev', displayName: 'แอดมิน (Dev)' };
-
-        } else if (!liffLoaded) {
-            // 🌐 Browser mode: ข้าม LIFF auth, ใช้ mock admin + orderId จาก URL
-            console.warn('[BROWSER] LIFF SDK not available after wait. Using browser test mode.');
-            if (!state.orderId) state.orderId = CONFIG.TEST_ORDER_ID;
-            state.admin = { uid: 'admin-browser-test', displayName: 'Admin (Browser Test)' };
-            showBrowserTestBanner(state.orderId);
-
-        } else {
-            // 📱 LINE mode: LIFF จริง
-            if (!state.orderId) throw new Error('ไม่พบรหัสออเดอร์ใน URL กรุณาเปิดผ่านลิงก์ที่ได้รับ');
-
-            try {
-                loadingText.textContent = 'กำลังเชื่อมต่อ LINE Admin...';
-                await withTimeout(liff.init({ liffId: CONFIG.LIFF_ID }), 10000, 'LIFF init timeout');
-                if (!liff.isLoggedIn()) {
-                    liff.login({ redirectUri: window.location.href });
-                    return;
-                }
-
-                loadingText.textContent = 'กำลังอ่านข้อมูล Admin...';
-                const profile = await withTimeout(liff.getProfile(), 8000, 'LIFF profile timeout');
-                state.admin = { uid: profile.userId, displayName: profile.displayName };
-            } catch (liffErr) {
-                console.warn('[Admin LIFF fallback]', liffErr);
-                state.admin = { uid: 'admin-liff-fallback', displayName: 'Admin (LIFF fallback)' };
-                showBrowserTestBanner(state.orderId);
-            }
-        }
-
-        // 2️⃣ ดึงข้อมูลออเดอร์
+        // 2️⃣ ดึงข้อมูลออเดอร์ก่อน เพื่อไม่ให้หน้า Admin ค้างรอ LIFF auth
         loadingText.textContent = `กำลังโหลดออเดอร์ ${state.orderId}...`;
         const order = await apiGetOrder(state.orderId);
         state.order = order;
+
+        state.admin = { uid: 'admin-pending', displayName: 'Admin' };
+
+        if (CONFIG.IS_DEV_MODE) {
+            // 🧪 Dev mode
+            console.log('[DEV] orderId:', state.orderId);
+            state.admin = { uid: 'admin-uid-dev', displayName: 'แอดมิน (Dev)' };
+
+        } else {
+            initAdminProfileInBackground(state.orderId);
+        }
 
         // 3️⃣ เช็คว่าออเดอร์นี้อนุมัติแล้วหรือยัง
         if (order.status === 'Approved' || order.status === 'Completed') {
@@ -342,6 +317,27 @@ async function initApp() {
         console.error('[Admin LIFF Error]', err);
         setText('not-found-msg', err.message || 'เกิดข้อผิดพลาดในการโหลดข้อมูล');
         goTo('screen-not-found');
+    }
+}
+
+async function initAdminProfileInBackground(orderId) {
+    try {
+        const liffLoaded = await waitForLiff(5000);
+        if (!liffLoaded) {
+            console.warn('[Admin LIFF] SDK not available. Continue without profile.');
+            return;
+        }
+
+        await withTimeout(liff.init({ liffId: CONFIG.LIFF_ID }), 8000, 'LIFF init timeout');
+        if (!liff.isLoggedIn()) {
+            console.warn('[Admin LIFF] Not logged in. Continue without login to keep approval screen usable.');
+            return;
+        }
+
+        const profile = await withTimeout(liff.getProfile(), 5000, 'LIFF profile timeout');
+        state.admin = { uid: profile.userId, displayName: profile.displayName };
+    } catch (err) {
+        console.warn('[Admin LIFF background fallback]', err, { orderId });
     }
 }
 
