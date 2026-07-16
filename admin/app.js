@@ -90,6 +90,8 @@ const state = {
     shipping: 0,      // ค่าขนส่งที่แอดมินกรอก
     discount: 0,      // ส่วนลดที่แอดมินกรอก
     otherFee: 0,      // ค่าใช้จ่ายอื่นที่แอดมินกรอก
+    liffReady: false,
+    adminProfilePromise: null,
 };
 
 // =====================================================
@@ -338,22 +340,50 @@ async function initApp() {
 
 async function initAdminProfileInBackground(orderId) {
     try {
+        await ensureAdminProfile();
+    } catch (err) {
+        console.warn('[Admin LIFF background fallback]', err, { orderId });
+    }
+}
+
+async function ensureAdminProfile() {
+    if (state.admin?.uid && state.admin.uid !== 'admin-pending') {
+        return state.admin;
+    }
+
+    if (state.adminProfilePromise) {
+        return state.adminProfilePromise;
+    }
+
+    state.adminProfilePromise = (async () => {
         const liffLoaded = await waitForLiff(5000);
         if (!liffLoaded) {
-            console.warn('[Admin LIFF] SDK not available. Continue without profile.');
-            return;
+            throw new Error('ไม่พบ LINE LIFF SDK กรุณาเปิดลิงก์อนุมัติผ่านแอป LINE');
         }
 
-        await withTimeout(liff.init({ liffId: CONFIG.LIFF_ID }), 8000, 'LIFF init timeout');
+        if (!state.liffReady) {
+            await withTimeout(liff.init({ liffId: CONFIG.LIFF_ID }), 8000, 'LIFF init timeout');
+            state.liffReady = true;
+        }
+
         if (!liff.isLoggedIn()) {
-            console.warn('[Admin LIFF] Not logged in. Continue without login to keep approval screen usable.');
-            return;
+            liff.login({ redirectUri: window.location.href });
+            throw new Error('กรุณาเข้าสู่ระบบ LINE แล้วลองอนุมัติอีกครั้ง');
         }
 
         const profile = await withTimeout(liff.getProfile(), 5000, 'LIFF profile timeout');
-        state.admin = { uid: profile.userId, displayName: profile.displayName };
-    } catch (err) {
-        console.warn('[Admin LIFF background fallback]', err, { orderId });
+        if (!profile?.userId) {
+            throw new Error('ไม่สามารถอ่าน LINE User ID ได้ กรุณาเปิดผ่านแอป LINE อีกครั้ง');
+        }
+
+        state.admin = { uid: profile.userId, displayName: profile.displayName || 'Admin' };
+        return state.admin;
+    })();
+
+    try {
+        return await state.adminProfilePromise;
+    } finally {
+        state.adminProfilePromise = null;
     }
 }
 
@@ -440,11 +470,13 @@ document.addEventListener('DOMContentLoaded', () => {
         spinner.classList.remove('hidden');
 
         try {
+            const admin = await ensureAdminProfile();
+
             // Build payload ตาม spec ของ n8n webhook POST /webhook/admin-approve
             const payload = {
                 orderId:      state.orderId,
-                adminUid:     state.admin?.uid,
-                adminName:    state.admin?.displayName,
+                adminUid:     admin.uid,
+                adminName:    admin.displayName,
                 shippingCost: shippingCost,
                 discount:     discount,
                 otherFee:     otherFee,
