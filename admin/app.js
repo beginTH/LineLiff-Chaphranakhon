@@ -34,6 +34,25 @@ const CONFIG = {
 /** ตรวจสอบว่า LIFF SDK โหลดแล้วหรือไม่ */
 const isLiffAvailable = () => typeof liff !== 'undefined';
 
+/** รอ LIFF SDK โหลด เพื่อกัน race condition ใน LINE WebView */
+async function waitForLiff(maxMs = 10000) {
+    const interval = 100;
+    let elapsed = 0;
+    while (typeof liff === 'undefined' && elapsed < maxMs) {
+        await new Promise(r => setTimeout(r, interval));
+        elapsed += interval;
+    }
+    return typeof liff !== 'undefined';
+}
+
+function withTimeout(promise, ms, message) {
+    let timer;
+    const timeout = new Promise((_, reject) => {
+        timer = setTimeout(() => reject(new Error(message)), ms);
+    });
+    return Promise.race([promise, timeout]).finally(() => clearTimeout(timer));
+}
+
 // =====================================================
 // 🗄️ MOCK ORDER DATA (ใช้ขณะ Dev — ลบออกเมื่อ API พร้อม)
 // =====================================================
@@ -263,6 +282,8 @@ async function initApp() {
         // 1️⃣ อ่าน orderId จาก URL
         state.orderId = getQueryParam('orderId');
 
+        const liffLoaded = await waitForLiff(10000);
+
         if (CONFIG.IS_DEV_MODE) {
             // 🧪 Dev mode
             if (!state.orderId) state.orderId = MOCK_ORDER.orderId;
@@ -270,9 +291,9 @@ async function initApp() {
             await delay(400);
             state.admin = { uid: 'admin-uid-dev', displayName: 'แอดมิน (Dev)' };
 
-        } else if (!isLiffAvailable()) {
+        } else if (!liffLoaded) {
             // 🌐 Browser mode: ข้าม LIFF auth, ใช้ mock admin + orderId จาก URL
-            console.warn('[BROWSER] LIFF SDK not available. Using browser test mode.');
+            console.warn('[BROWSER] LIFF SDK not available after wait. Using browser test mode.');
             if (!state.orderId) state.orderId = CONFIG.TEST_ORDER_ID;
             state.admin = { uid: 'admin-browser-test', displayName: 'Admin (Browser Test)' };
             showBrowserTestBanner(state.orderId);
@@ -281,11 +302,22 @@ async function initApp() {
             // 📱 LINE mode: LIFF จริง
             if (!state.orderId) throw new Error('ไม่พบรหัสออเดอร์ใน URL กรุณาเปิดผ่านลิงก์ที่ได้รับ');
 
-            await liff.init({ liffId: CONFIG.LIFF_ID });
-            if (!liff.isLoggedIn()) { liff.login(); return; }
+            try {
+                loadingText.textContent = 'กำลังเชื่อมต่อ LINE Admin...';
+                await withTimeout(liff.init({ liffId: CONFIG.LIFF_ID }), 10000, 'LIFF init timeout');
+                if (!liff.isLoggedIn()) {
+                    liff.login({ redirectUri: window.location.href });
+                    return;
+                }
 
-            const profile = await liff.getProfile();
-            state.admin = { uid: profile.userId, displayName: profile.displayName };
+                loadingText.textContent = 'กำลังอ่านข้อมูล Admin...';
+                const profile = await withTimeout(liff.getProfile(), 8000, 'LIFF profile timeout');
+                state.admin = { uid: profile.userId, displayName: profile.displayName };
+            } catch (liffErr) {
+                console.warn('[Admin LIFF fallback]', liffErr);
+                state.admin = { uid: 'admin-liff-fallback', displayName: 'Admin (LIFF fallback)' };
+                showBrowserTestBanner(state.orderId);
+            }
         }
 
         // 2️⃣ ดึงข้อมูลออเดอร์
