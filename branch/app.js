@@ -272,6 +272,27 @@ function pickProductEmoji(name, index) {
     return ['📦', '🧾', '🥄', '🫙'][index % 4];
 }
 
+const PRODUCT_IMAGE_BY_INDEX = [
+    'assets/products/P001-red-thai-tea.png',
+    'assets/products/P002-green-tea.png',
+    'assets/products/P003-traditional-coffee.png',
+    'assets/products/P004-cocoa.png',
+    'assets/products/P005-fresh-coffee-powder.png',
+    'assets/products/P006-creamer.png',
+    'assets/products/P007-rose-tea.png',
+    'assets/products/P008-butterfly-pea-tea.png',
+    'assets/products/P009-jasmine-tea.png',
+    'assets/products/P010-taiwan-milk-tea.png',
+    'assets/products/P011-fruit-green-tea.png',
+    'assets/products/P012-hong-kong-tea.png',
+];
+
+function localProductImage(id, index) {
+    const match = String(id || '').match(/^P(\d{3})$/i);
+    const byIdIndex = match ? Number(match[1]) - 1 : -1;
+    return PRODUCT_IMAGE_BY_INDEX[byIdIndex] || PRODUCT_IMAGE_BY_INDEX[index] || '';
+}
+
 function normalizeProducts(raw) {
     return unwrapProductResponse(raw)
         .map((row, index) => {
