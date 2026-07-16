@@ -7,13 +7,13 @@
         "responseMode": "lastNode",
         "options": {}
       },
-      "id": "webhook-get-user-profile",
+      "id": "aab3a380-7994-4256-8f49-0887a719d462",
       "name": "GET /get-user-profile",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 1,
       "position": [
-        0,
-        0
+        28976,
+        8832
       ],
       "webhookId": "2cc68d37-dad0-4dcd-93f7-b9fc2c29c3de",
       "notesInFlow": true,
@@ -37,13 +37,13 @@
         },
         "options": {}
       },
-      "id": "sheet-read-users",
+      "id": "4f1e97ba-d5e5-4ff5-8bc3-54bd76f71252",
       "name": "Read Users_Addresses",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4,
       "position": [
-        260,
-        0
+        29248,
+        8832
       ],
       "credentials": {
         "googleSheetsOAuth2Api": {
@@ -56,13 +56,13 @@
       "parameters": {
         "jsCode": "const uid = String($node['GET /get-user-profile'].json.query?.uid || '').trim();\nconst rows = $input.all().map(item => item.json);\nconst row = rows.find(r => String(r.LINE_UID || '').trim() === uid);\n\nif (!row) {\n  return [{ json: { uid, displayName: '', branchName: '', addresses: [] } }];\n}\n\nconst branchName = String(row.Branch_Name || '').trim();\nconst displayName = String(row.Display_Name || '').trim();\nconst addresses = [1, 2, 3, 4, 5]\n  .map(num => {\n    const text = String(row[`Address_${num}`] || '').trim();\n    if (!text) return null;\n    const savedLabel = String(row[`Address_Label_${num}`] || '').trim();\n    return {\n      id: `addr-${num}`,\n      label: savedLabel || (num === 1 ? (branchName || displayName || `ที่อยู่ ${num}`) : `${branchName || displayName || 'ที่อยู่'} (${num})`),\n      text,\n    };\n  })\n  .filter(Boolean);\n\nreturn [{\n  json: {\n    uid,\n    displayName,\n    branchName,\n    opening: row.Opening || '',\n    tel: row.Tel || '',\n    addresses,\n  },\n}];"
       },
-      "id": "code-format-profile",
+      "id": "056e6e8e-cac8-4f41-9818-7f82fcbbc39d",
       "name": "Format Profile Response",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        520,
-        0
+        29504,
+        8832
       ]
     },
     {
@@ -72,13 +72,13 @@
         "responseMode": "lastNode",
         "options": {}
       },
-      "id": "webhook-submit-order",
+      "id": "c6e4e86f-2feb-4be2-89c5-2c3ace4456e2",
       "name": "POST /submit-order",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 1,
       "position": [
-        0,
-        260
+        28976,
+        9104
       ],
       "webhookId": "ddebc1fe-7a15-413f-98ca-a5e1cac9a01b",
       "notesInFlow": true,
@@ -88,13 +88,13 @@
       "parameters": {
         "jsCode": "const body = $json.body || $json;\nconst now = new Date();\nconst yyyy = now.getFullYear();\nconst mm = String(now.getMonth() + 1).padStart(2, '0');\nconst dd = String(now.getDate()).padStart(2, '0');\nconst rand = String(Math.floor(Math.random() * 1000)).padStart(3, '0');\nconst orderId = body.orderId || `PO-${yyyy}${mm}${dd}-${rand}`;\nconst deliveryAddress = body.deliveryAddress || {};\nconst orderItems = Array.isArray(body.orderItems) ? body.orderItems : [];\nconst subtotal = Number(body.subtotal || 0);\n\nreturn [{\n  json: {\n    Order_ID: orderId,\n    Timestamp: body.timestamp || now.toISOString(),\n    LINE_UID: body.lineUid || body.uid || '',\n    Delivery_Address: JSON.stringify(deliveryAddress),\n    Order_Details: JSON.stringify({\n      displayName: body.displayName || '',\n      orderItems,\n      note: body.note || '',\n      isNewAddress: Boolean(body.isNewAddress),\n    }),\n    Subtotal: subtotal,\n    Shipping_Cost: 0,\n    Discount: 0,\n    Other_Fee: 0,\n    VAT_Amount: 0,\n    Total_Amount: subtotal,\n    Status: 'Pending',\n    response: {\n      success: true,\n      orderId,\n      status: 'Pending',\n    },\n  },\n}];"
       },
-      "id": "code-build-order-row",
+      "id": "df3414ea-1db5-4d46-a8ef-ab184f1cdd03",
       "name": "Build Order Row",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        260,
-        260
+        29248,
+        9104
       ]
     },
     {
@@ -115,13 +115,13 @@
         },
         "options": {}
       },
-      "id": "sheet-read-users-for-submit",
+      "id": "afed00bd-b2f1-4dae-9554-3a58ca34610f",
       "name": "Read Users For Submit",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4,
       "position": [
-        520,
-        260
+        29504,
+        9104
       ],
       "credentials": {
         "googleSheetsOAuth2Api": {
@@ -132,15 +132,15 @@
     },
     {
       "parameters": {
-        "jsCode": "function parseJson(value, fallback) {\n  try { return value ? JSON.parse(value) : fallback; } catch { return fallback; }\n}\n\nconst order = $node['Build Order Row'].json;\nconst details = parseJson(order.Order_Details, {});\nconst deliveryAddress = parseJson(order.Delivery_Address, {});\nconst rows = $input.all().map(item => item.json);\nconst row = rows.find(r => String(r.LINE_UID || '').trim() === String(order.LINE_UID || '').trim()) || {};\n\nconst update = {\n  LINE_UID: order.LINE_UID,\n  Display_Name: row.Display_Name || details.displayName || '',\n  Branch_Name: row.Branch_Name || deliveryAddress.label || details.displayName || '',\n  Opening: row.Opening || '',\n  Tel: row.Tel || '',\n};\n\nfor (const num of [1, 2, 3, 4, 5]) {\n  update[`Address_${num}`] = row[`Address_${num}`] || '';\n  update[`Address_Label_${num}`] = row[`Address_Label_${num}`] || '';\n}\n\nconst newText = String(deliveryAddress.text || '').trim();\nconst newLabel = String(deliveryAddress.label || '').trim();\nconst existing = [1, 2, 3, 4, 5]\n  .map(num => String(update[`Address_${num}`] || '').trim())\n  .filter(Boolean);\n\nif (details.isNewAddress && newText && !existing.includes(newText)) {\n  const emptyNum = [1, 2, 3, 4, 5].find(num => !String(update[`Address_${num}`] || '').trim());\n  if (emptyNum) {\n    update[`Address_${emptyNum}`] = newText;\n    update[`Address_Label_${emptyNum}`] = newLabel || update.Branch_Name || `ที่อยู่ ${emptyNum}`;\n  }\n}\n\nreturn [{ json: update }];"
+        "jsCode": "function parseJson(value, fallback) {\n  try { return value ? JSON.parse(value) : fallback; } catch { return fallback; }\n}\n\nconst order = $node['Build Order Row'].json;\nconst details = parseJson(order.Order_Details, {});\nconst deliveryAddress = parseJson(order.Delivery_Address, {});\nconst rows = $input.all().map(item => item.json);\nconst row = rows.find(r => String(r.LINE_UID || '').trim() === String(order.LINE_UID || '').trim()) || {};\nconst newTel = String(deliveryAddress.tel || deliveryAddress.Tel || details.tel || '').trim();\n\nconst update = {\n  LINE_UID: order.LINE_UID,\n  Display_Name: row.Display_Name || details.displayName || '',\n  Branch_Name: row.Branch_Name || deliveryAddress.label || details.displayName || '',\n  Opening: row.Opening || '',\n  Tel: newTel || row.Tel || '',\n};\n\nfor (const num of [1, 2, 3, 4, 5]) {\n  update['Address_' + num] = row['Address_' + num] || '';\n  update['Address_Label_' + num] = row['Address_Label_' + num] || '';\n}\n\nconst newText = String(deliveryAddress.text || '').trim();\nconst newLabel = String(deliveryAddress.label || '').trim();\nconst existing = [1, 2, 3, 4, 5]\n  .map(num => String(update['Address_' + num] || '').trim())\n  .filter(Boolean);\n\nif (details.isNewAddress && newText && !existing.includes(newText)) {\n  const emptyNum = [1, 2, 3, 4, 5].find(num => !String(update['Address_' + num] || '').trim());\n  if (emptyNum) {\n    update['Address_' + emptyNum] = newText;\n    update['Address_Label_' + emptyNum] = newLabel || update.Branch_Name || ('ที่อยู่ ' + emptyNum);\n  }\n}\n\nreturn [{ json: update }];"
       },
-      "id": "code-build-address-update-row",
+      "id": "a81ee954-da12-4943-b716-0facd230ecc5",
       "name": "Build Address Update Row",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        780,
-        260
+        29760,
+        9104
       ]
     },
     {
@@ -324,21 +324,21 @@
         },
         "options": {}
       },
-      "id": "sheet-update-user-address",
+      "id": "fcda0e9d-7d34-4134-bd27-6c8401f912d0",
       "name": "Update User Address",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4,
       "position": [
-        1040,
-        260
+        30016,
+        9104
       ],
+      "alwaysOutputData": true,
       "credentials": {
         "googleSheetsOAuth2Api": {
           "id": "ZPODlcDmX45WFVuM",
           "name": "Google Sheets account 2"
         }
       },
-      "alwaysOutputData": true,
       "continueOnFail": true
     },
     {
@@ -540,13 +540,13 @@
         },
         "options": {}
       },
-      "id": "sheet-save-order",
+      "id": "90c9e832-b56e-407b-bbf3-8ad24983e173",
       "name": "Save New Order",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4,
       "position": [
-        1300,
-        260
+        30288,
+        9104
       ],
       "credentials": {
         "googleSheetsOAuth2Api": {
@@ -559,13 +559,13 @@
       "parameters": {
         "jsCode": "const order = $node['Build Order Row'].json;\nreturn [{ json: order.response || { success: true, orderId: order.Order_ID } }];"
       },
-      "id": "code-submit-response",
+      "id": "add6b3f3-e28a-4fb8-8147-fe0881329dfd",
       "name": "Submit Order Response",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        2080,
-        260
+        31312,
+        9104
       ]
     },
     {
@@ -574,13 +574,13 @@
         "responseMode": "lastNode",
         "options": {}
       },
-      "id": "webhook-get-order",
+      "id": "aa189d69-11d0-4cb7-9391-dfd2b691efd1",
       "name": "GET /get-order",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 1,
       "position": [
-        0,
-        520
+        28976,
+        9360
       ],
       "webhookId": "get-order-chaphranakhon",
       "notesInFlow": true,
@@ -604,13 +604,13 @@
         },
         "options": {}
       },
-      "id": "sheet-read-orders-for-get",
+      "id": "1cf41b0b-0605-4e3e-8305-eae63688acd5",
       "name": "Read Orders",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4,
       "position": [
-        260,
-        520
+        29248,
+        9360
       ],
       "credentials": {
         "googleSheetsOAuth2Api": {
@@ -623,13 +623,13 @@
       "parameters": {
         "jsCode": "function parseJson(value, fallback) {\n  try { return value ? JSON.parse(value) : fallback; } catch { return fallback; }\n}\n\nconst orderId = String($node['GET /get-order'].json.query?.orderId || '').trim();\nconst rows = $input.all().map(item => item.json);\nconst row = rows.find(r => String(r.Order_ID || '').trim() === orderId);\n\nif (!row) {\n  return [{ json: { success: false, message: 'Order not found', orderId } }];\n}\n\nconst deliveryAddress = parseJson(row.Delivery_Address, { label: '', text: row.Delivery_Address || '' });\nconst details = parseJson(row.Order_Details, { displayName: '', orderItems: [], note: '' });\nconst subtotal = Number(row.Subtotal || 0);\nconst shippingCost = Number(row.Shipping_Cost || 0);\nconst totalAmount = Number(row.Total_Amount || subtotal + shippingCost);\n\nreturn [{\n  json: {\n    orderId: row.Order_ID,\n    timestamp: row.Timestamp,\n    status: row.Status || 'Pending',\n    branchInfo: {\n      uid: row.LINE_UID || '',\n      displayName: details.displayName || row.LINE_UID || '',\n    },\n    deliveryAddress,\n    orderItems: details.orderItems || [],\n    subtotal,\n    shippingCost,\n    totalAmount,\n    note: details.note || '',\n  },\n}];"
       },
-      "id": "code-format-order-response",
+      "id": "7890d7fa-37ce-4dbc-8ac8-efe4f178e59b",
       "name": "Format Order Response",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        520,
-        520
+        29504,
+        9360
       ]
     },
     {
@@ -639,13 +639,13 @@
         "responseMode": "lastNode",
         "options": {}
       },
-      "id": "webhook-admin-approve",
+      "id": "c3d59247-b226-4ffe-840b-d12903efbf3d",
       "name": "POST /admin-approve",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 1,
       "position": [
-        0,
-        780
+        28976,
+        9616
       ],
       "webhookId": "e259ba51-f5e9-47ac-8ebf-590f4086d827",
       "notesInFlow": true,
@@ -653,15 +653,15 @@
     },
     {
       "parameters": {
-        "jsCode": "const body = $json.body || $json;\nconst shippingCost = Number(body.shippingCost || 0);\nconst discount = Number(body.discount || 0);\nconst otherFee = Number(body.otherFee || 0);\nconst subtotal = Number(body.subtotal || 0);\nconst amountBeforeVat = Math.max(0, subtotal + shippingCost + otherFee - discount);\nconst vatAmount = Number((body.vatAmount !== undefined ? Number(body.vatAmount) : amountBeforeVat * 0.07).toFixed(2));\nconst totalAmount = Number((body.totalAmount !== undefined ? Number(body.totalAmount) : amountBeforeVat + vatAmount).toFixed(2));\n\nreturn [{\n  json: {\n    Order_ID: body.orderId,\n    Branch_UID: body.branchUid || '',\n    Shipping_Cost: shippingCost,\n    Discount: discount,\n    Other_Fee: otherFee,\n    VAT_Amount: vatAmount,\n    Total_Amount: totalAmount,\n    Status: 'Approved',\n    Admin_Note: body.adminNote || '',\n    Approved_By: body.adminName || body.adminUid || '',\n    Approved_At: body.approvedAt || new Date().toISOString(),\n  },\n}];"
+        "jsCode": "const body = $json.body || $json;\nconst shippingCost = Number(body.shippingCost || 0);\nconst discount = Number(body.discount || 0);\nconst otherFee = Number(body.otherFee || 0);\nconst subtotal = Number(body.subtotal || 0);\nconst amountBeforeVat = Math.max(0, subtotal + shippingCost + otherFee - discount);\nconst vatAmount = Number((body.vatAmount !== undefined ? Number(body.vatAmount) : amountBeforeVat * 0.07).toFixed(2));\nconst totalAmount = Number((body.totalAmount !== undefined ? Number(body.totalAmount) : amountBeforeVat + vatAmount).toFixed(2));\nconst authorizedAdmin = body.authorizedAdmin || {};\n\nreturn [{\n  json: {\n    Order_ID: body.orderId,\n    Branch_UID: body.branchUid || '',\n    Shipping_Cost: shippingCost,\n    Discount: discount,\n    Other_Fee: otherFee,\n    VAT_Amount: vatAmount,\n    Total_Amount: totalAmount,\n    Status: 'Approved',\n    Admin_Note: body.adminNote || '',\n    Approved_By: body.adminName || authorizedAdmin.Display_Name || authorizedAdmin.Admin_ID || body.adminUid || '',\n    Approved_At: body.approvedAt || new Date().toISOString(),\n  },\n}];"
       },
-      "id": "code-build-approval-row",
+      "id": "d1a93d0e-c95c-4c05-a075-c045cd1c2fe3",
       "name": "Build Approval Row",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        260,
-        780
+        29760,
+        9616
       ]
     },
     {
@@ -840,13 +840,13 @@
         },
         "options": {}
       },
-      "id": "sheet-update-approval",
+      "id": "73917c73-a452-4981-8af0-4b629e14357d",
       "name": "Update Shipping & Status",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4,
       "position": [
-        520,
-        780
+        29504,
+        9616
       ],
       "credentials": {
         "googleSheetsOAuth2Api": {
@@ -859,59 +859,27 @@
       "parameters": {
         "jsCode": "const approval = $node['Build Approval Row'].json;\nconst pdf = $node['Build PDF URL'].json;\nreturn [{\n  json: {\n    success: true,\n    orderId: approval.Order_ID,\n    status: approval.Status,\n    shippingCost: approval.Shipping_Cost,\n    discount: approval.Discount,\n    otherFee: approval.Other_Fee,\n    vatAmount: approval.VAT_Amount,\n    totalAmount: approval.Total_Amount,\n    pdfUrl: pdf.pdfUrl,\n  },\n}];"
       },
-      "id": "code-approve-response",
+      "id": "3a853552-97f0-434d-8dce-2a641c94e8ac",
       "name": "Approve Response",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        3900,
-        780
+        32880,
+        9616
       ]
     },
     {
       "parameters": {
-        "jsCode": "const order = $node['Build Order Row'].json;\nconst details = JSON.parse(order.Order_Details || '{}');\nconst delivery = JSON.parse(order.Delivery_Address || '{}');\nconst adminBaseUrl = 'https://beginth.github.io/LineLiff-Chaphranakhon/admin/';\nconst url = `${adminBaseUrl}${adminBaseUrl.includes('?') ? '&' : '?'}orderId=${encodeURIComponent(order.Order_ID)}`;\nconst items = details.orderItems || [];\nconst firstItems = items.slice(0, 4).map(item => ({\n  type: 'text',\n  text: `• ${item.productName} x${item.quantity} = ฿${Number(item.lineTotal || 0).toLocaleString('th-TH')}`,\n  size: 'sm',\n  color: '#555555',\n  wrap: true,\n}));\n\nreturn [{\n  json: {\n    to: 'Ubf8eac64b74f2561e7191c2109fde8ea',\n    messages: [{\n      type: 'flex',\n      altText: `มีออเดอร์ใหม่ ${order.Order_ID}`,\n      contents: {\n        type: 'bubble',\n        header: {\n          type: 'box',\n          layout: 'vertical',\n          contents: [\n            { type: 'text', text: 'ออเดอร์ใหม่', weight: 'bold', size: 'lg', color: '#B11226' },\n            { type: 'text', text: order.Order_ID, size: 'sm', color: '#666666' },\n          ],\n        },\n        body: {\n          type: 'box',\n          layout: 'vertical',\n          spacing: 'sm',\n          contents: [\n            { type: 'text', text: `สาขา: ${delivery.label || details.displayName || order.LINE_UID}`, wrap: true },\n            { type: 'text', text: `ยอดวัตถุดิบ: ฿${Number(order.Subtotal || 0).toLocaleString('th-TH')}`, weight: 'bold' },\n            ...firstItems,\n          ],\n        },\n        footer: {\n          type: 'box',\n          layout: 'vertical',\n          contents: [{\n            type: 'button',\n            style: 'primary',\n            color: '#B11226',\n            action: { type: 'uri', label: 'ตรวจสอบ / อนุมัติ', uri: url },\n          }],\n        },\n      },\n    }],\n  },\n}];"
+        "jsCode": "function parseJson(value, fallback) {\n  try { return value ? JSON.parse(value) : fallback; } catch { return fallback; }\n}\n\nfunction norm(value) {\n  return String(value || '').trim().toLowerCase();\n}\n\nfunction asBool(value) {\n  if (typeof value === 'boolean') return value;\n  return ['true', '1', 'yes', 'y'].includes(norm(value));\n}\n\nfunction canApprove(role) {\n  const value = norm(role);\n  return value === 'owner' || value === 'approve' || value.includes('owner') || value.includes('approve');\n}\n\nconst order = $node['Build Order Row'].json;\nconst details = parseJson(order.Order_Details, {});\nconst delivery = parseJson(order.Delivery_Address, {});\nconst admins = $input.all().map(item => item.json);\nconst activeAdmins = admins.filter(admin => {\n  const uid = String(admin.LINE_UID || admin.lineUid || '').trim();\n  return uid && norm(admin.Status) === 'active' && asBool(admin.Notify_Order) && canApprove(admin.Role);\n});\n\nif (activeAdmins.length === 0) {\n  throw new Error('No active admin found in Admins sheet for order notification');\n}\n\nconst adminBaseUrl = 'https://liff.line.me/2010570929-BJxo68XQ';\nconst url = adminBaseUrl + (adminBaseUrl.includes('?') ? '&' : '?') + 'orderId=' + encodeURIComponent(order.Order_ID);\nconst branchName = delivery.label || details.displayName || order.LINE_UID;\nconst subtotal = Number(order.Subtotal || 0).toLocaleString('th-TH');\n\nreturn activeAdmins.map(admin => ({\n  json: {\n    adminId: admin.Admin_ID || '',\n    adminName: admin.Display_Name || '',\n    to: String(admin.LINE_UID || admin.lineUid || '').trim(),\n    text: [\n      'มีออเดอร์ใหม่',\n      'เลขที่: ' + order.Order_ID,\n      'สาขา: ' + branchName,\n      'ยอดวัตถุดิบ: ฿' + subtotal,\n      'กดอนุมัติ: ' + url,\n    ].join('\\n'),\n  },\n}));"
       },
-      "id": "code-build-admin-line-message",
+      "id": "227de478-d676-4364-9ce0-51587ca0430c",
       "name": "Build Admin LINE Message",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1560,
-        260
+        30800,
+        9104
       ]
-    },
-    {
-      "parameters": {
-        "method": "POST",
-        "url": "https://api.line.me/v2/bot/message/push",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "Authorization",
-              "value": "Bearer PUT_LINE_CHANNEL_ACCESS_TOKEN_HERE"
-            },
-            {
-              "name": "Content-Type",
-              "value": "application/json"
-            }
-          ]
-        },
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify($json) }}",
-        "options": {}
-      },
-      "id": "http-notify-admin-line",
-      "name": "Notify Admin LINE",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [
-        1820,
-        260
-      ],
-      "continueOnFail": true
     },
     {
       "parameters": {
@@ -931,13 +899,13 @@
         },
         "options": {}
       },
-      "id": "sheet-read-orders-for-pdf",
+      "id": "e4741832-e66f-4da1-839e-88d655e0b18f",
       "name": "Read Orders For PDF",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4,
       "position": [
-        780,
-        780
+        29760,
+        9616
       ],
       "credentials": {
         "googleSheetsOAuth2Api": {
@@ -948,15 +916,15 @@
     },
     {
       "parameters": {
-        "jsCode": "function parseJson(value, fallback) {\n  try { return value ? JSON.parse(value) : fallback; } catch { return fallback; }\n}\n\nconst approval = $node['Build Approval Row'].json;\nconst rows = $input.all().map(item => item.json);\nconst row = rows.find(r => String(r.Order_ID || '').trim() === String(approval.Order_ID || '').trim());\nif (!row) throw new Error(`Order not found for PDF: ${approval.Order_ID}`);\n\nconst deliveryAddress = parseJson(row.Delivery_Address, { label: '', text: row.Delivery_Address || '' });\nconst details = parseJson(row.Order_Details, { displayName: '', orderItems: [], note: '' });\nconst items = details.orderItems || [];\nconst subtotal = Number(row.Subtotal || 0);\nconst shippingCost = Number(approval.Shipping_Cost || row.Shipping_Cost || 0);\nconst discount = Number(approval.Discount || 0);\nconst otherFee = Number(approval.Other_Fee || 0);\nconst amount = Math.max(0, subtotal + shippingCost + otherFee - discount);\nconst vat = Number((amount * 0.07).toFixed(2));\nconst total = Number((amount + vat).toFixed(2));\n\nconst values = [\n  { range: 'Form VAT!C15', values: [[details.displayName || deliveryAddress.label || row.LINE_UID || '']] },\n  { range: 'Form VAT!C16', values: [[deliveryAddress.label || details.displayName || '']] },\n  { range: 'Form VAT!C17', values: [[deliveryAddress.text || '']] },\n  { range: 'Form VAT!C18', values: [[details.displayName || '']] },\n  { range: 'Form VAT!C19', values: [['']] },\n  { range: 'Form VAT!G16', values: [['เลขที่ :']] },\n  { range: 'Form VAT!H16', values: [[approval.Order_ID]] },\n  { range: 'Form VAT!G18', values: [['วันที่ :']] },\n  { range: 'Form VAT!H18', values: [[approval.Approved_At || new Date().toISOString()]] },\n];\n\nconst itemRows = Array.from({ length: 15 }, (_, index) => {\n  const item = items[index];\n  if (!item) return ['', '', '', '', '', '', ''];\n  return [\n    index + 1,\n    approval.Order_ID,\n    item.productName || '',\n    Number(item.quantity || 0),\n    item.unit || '',\n    Number(item.pricePerUnit || 0),\n    Number(item.lineTotal || 0),\n  ];\n});\nvalues.push({ range: 'Form VAT!B22:H36', values: itemRows });\nvalues.push({ range: 'Form VAT!H37', values: [[subtotal]] });\nvalues.push({ range: 'Form VAT!H38', values: [[discount]] });\nvalues.push({ range: 'Form VAT!H39', values: [[amount]] });\nvalues.push({ range: 'Form VAT!H40', values: [[vat]] });\nvalues.push({ range: 'Form VAT!H41', values: [[shippingCost + otherFee]] });\nvalues.push({ range: 'Form VAT!H43', values: [[total]] });\n\nreturn [{\n  json: {\n    orderId: approval.Order_ID,\n    branchUid: approval.Branch_UID || row.LINE_UID || '',\n    branchName: deliveryAddress.label || details.displayName || row.LINE_UID || '',\n    subtotal,\n    shippingCost,\n    discount,\n    otherFee,\n    vatAmount: vat,\n    totalAmount: total,\n    fileName: `PO_${approval.Order_ID}.pdf`,\n    copiedSheetName: `VAT_${approval.Order_ID}`,\n    templateFileId: 'PUT_VAT_TEMPLATE_FILE_ID_HERE',\n    folderId: 'PUT_PO_DRIVE_FOLDER_ID_HERE',\n    valuesBatchUpdate: {\n      valueInputOption: 'USER_ENTERED',\n      data: values,\n    },\n  },\n}];"
+        "jsCode": "function parseJson(value, fallback) {\n  try { return value ? JSON.parse(value) : fallback; } catch { return fallback; }\n}\n\nfunction formatThaiDateTime(value) {\n  const date = value ? new Date(value) : new Date();\n  const d = Number.isNaN(date.getTime()) ? new Date() : date;\n  const parts = new Intl.DateTimeFormat('en-GB', {\n    timeZone: 'Asia/Bangkok',\n    day: '2-digit',\n    month: '2-digit',\n    year: 'numeric',\n    hour: '2-digit',\n    minute: '2-digit',\n    hour12: false,\n  }).formatToParts(d).reduce((acc, part) => {\n    acc[part.type] = part.value;\n    return acc;\n  }, {});\n  return parts.day + '/' + parts.month + '/' + parts.year + ' ' + parts.hour + ':' + parts.minute;\n}\n\nconst approval = $node['Build Approval Row'].json;\nconst rows = $input.all().map(item => item.json);\nconst row = rows.find(r => String(r.Order_ID || '').trim() === String(approval.Order_ID || '').trim());\nif (!row) throw new Error('Order not found for PDF: ' + approval.Order_ID);\n\nconst deliveryAddress = parseJson(row.Delivery_Address, { label: '', text: row.Delivery_Address || '' });\nconst details = parseJson(row.Order_Details, { displayName: '', orderItems: [], note: '' });\nconst items = details.orderItems || [];\nconst subtotal = Number(row.Subtotal || 0);\nconst shippingCost = Number(approval.Shipping_Cost || row.Shipping_Cost || 0);\nconst discount = Number(approval.Discount || 0);\nconst otherFee = Number(approval.Other_Fee || 0);\nconst amount = Math.max(0, subtotal + shippingCost + otherFee - discount);\nconst vat = Number((amount * 0.07).toFixed(2));\nconst total = Number((amount + vat).toFixed(2));\nconst contactName = details.displayName || deliveryAddress.contactName || '';\nconst contactTel = String(deliveryAddress.tel || deliveryAddress.Tel || row.Tel || '').trim();\nconst contactLine = contactTel ? (contactName + '   Tel. ' + contactTel) : contactName;\nconst approvedDate = formatThaiDateTime(approval.Approved_At || row.ApprovedAt || row.Timestamp || new Date());\n\nconst values = [\n  { range: 'Form VAT!C15', values: [[details.displayName || deliveryAddress.label || row.LINE_UID || '']] },\n  { range: 'Form VAT!C16', values: [[deliveryAddress.label || details.displayName || '']] },\n  { range: 'Form VAT!C17', values: [[deliveryAddress.text || '']] },\n  { range: 'Form VAT!C18', values: [[contactLine]] },\n  { range: 'Form VAT!C19', values: [[details.note || '']] },\n  { range: 'Form VAT!G16', values: [['เลขที่ :']] },\n  { range: 'Form VAT!H16', values: [[approval.Order_ID]] },\n  { range: 'Form VAT!G18', values: [['วันที่ :']] },\n  { range: 'Form VAT!H18', values: [[approvedDate]] },\n];\n\nconst itemRows = Array.from({ length: 15 }, (_, index) => {\n  const item = items[index];\n  if (!item) return ['', '', '', '', '', '', ''];\n  return [index + 1, approval.Order_ID, item.productName || '', Number(item.quantity || 0), item.unit || '', Number(item.pricePerUnit || 0), Number(item.lineTotal || 0)];\n});\nvalues.push({ range: 'Form VAT!B22:H36', values: itemRows });\nvalues.push({ range: 'Form VAT!H37', values: [[subtotal]] });\nvalues.push({ range: 'Form VAT!H38', values: [[discount]] });\nvalues.push({ range: 'Form VAT!H39', values: [[amount]] });\nvalues.push({ range: 'Form VAT!H40', values: [[vat]] });\nvalues.push({ range: 'Form VAT!H41', values: [[shippingCost + otherFee]] });\nvalues.push({ range: 'Form VAT!H43', values: [[total]] });\n\nreturn [{\n  json: {\n    orderId: approval.Order_ID,\n    branchUid: approval.Branch_UID || row.LINE_UID || '',\n    branchName: deliveryAddress.label || details.displayName || row.LINE_UID || '',\n    subtotal, shippingCost, discount, otherFee, vatAmount: vat, totalAmount: total,\n    fileName: approval.Order_ID + '.pdf',\n    copiedSheetName: 'VAT_' + approval.Order_ID,\n    templateFileId: '1TaNIehtqTua1rWetnuIu6MIU7QPt60Bl',\n    folderId: '1mnFGZrSUFsEA9NkohmNYwXKJf6OEqrhj',\n    valuesBatchUpdate: { valueInputOption: 'USER_ENTERED', data: values },\n  },\n}];"
       },
-      "id": "code-build-vat-payload",
+      "id": "27e1749d-2597-40f9-9c74-580394bd9f3e",
       "name": "Build VAT PDF Payload",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1040,
-        780
+        30016,
+        9616
       ]
     },
     {
@@ -970,18 +938,18 @@
         "jsonBody": "={{ JSON.stringify({ name: $json.copiedSheetName, parents: [$json.folderId], mimeType: 'application/vnd.google-apps.spreadsheet' }) }}",
         "options": {}
       },
-      "id": "http-copy-vat-template",
+      "id": "12bb3642-a83e-4bfc-a3cf-49adb3f62eed",
       "name": "Copy VAT Template",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        1300,
-        780
+        30288,
+        9616
       ],
       "credentials": {
         "googleOAuth2Api": {
-          "id": "ZPODlcDmX45WFVuM",
-          "name": "Google Sheets account 2"
+          "id": "QFxTIh9zRRzFm0DM",
+          "name": "Google account DevCharphranakhon"
         }
       }
     },
@@ -989,13 +957,13 @@
       "parameters": {
         "jsCode": "const payload = $node['Build VAT PDF Payload'].json;\nconst copied = $json;\nreturn [{\n  json: {\n    ...payload,\n    spreadsheetId: copied.id,\n    copiedFileId: copied.id,\n  },\n}];"
       },
-      "id": "code-merge-copied-template",
+      "id": "2639f12e-7d77-4802-ad14-c15c0dcbdc57",
       "name": "Merge Copied Template",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1560,
-        780
+        30544,
+        9616
       ]
     },
     {
@@ -1009,18 +977,18 @@
         "jsonBody": "={{ JSON.stringify($json.valuesBatchUpdate) }}",
         "options": {}
       },
-      "id": "http-fill-vat-template",
+      "id": "ca19e1ab-a4d4-446f-a1fe-eaa1c527e9f4",
       "name": "Fill VAT Template",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        1820,
-        780
+        30800,
+        9616
       ],
       "credentials": {
         "googleOAuth2Api": {
-          "id": "ZPODlcDmX45WFVuM",
-          "name": "Google Sheets account 2"
+          "id": "QFxTIh9zRRzFm0DM",
+          "name": "Google account DevCharphranakhon"
         }
       }
     },
@@ -1028,37 +996,34 @@
       "parameters": {
         "jsCode": "const payload = $node['Merge Copied Template'].json;\nreturn [{ json: payload }];"
       },
-      "id": "code-restore-vat-payload",
+      "id": "1cb96e7d-ba07-4289-a9a7-7a57d4eaeb3c",
       "name": "Restore VAT Payload",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        2080,
-        780
+        31056,
+        9616
       ]
     },
     {
       "parameters": {
-        "method": "GET",
         "url": "={{ 'https://www.googleapis.com/drive/v3/files/' + $json.copiedFileId + '/export?mimeType=application/pdf' }}",
         "authentication": "predefinedCredentialType",
         "nodeCredentialType": "googleOAuth2Api",
-        "responseFormat": "file",
-        "outputPropertyName": "data",
         "options": {}
       },
-      "id": "http-export-vat-pdf",
+      "id": "5da689a6-df0a-4fa6-9487-91570a5ef579",
       "name": "Export VAT PDF",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        2340,
-        780
+        31328,
+        9616
       ],
       "credentials": {
         "googleOAuth2Api": {
-          "id": "ZPODlcDmX45WFVuM",
-          "name": "Google Sheets account 2"
+          "id": "QFxTIh9zRRzFm0DM",
+          "name": "Google account DevCharphranakhon"
         }
       }
     },
@@ -1066,13 +1031,13 @@
       "parameters": {
         "jsCode": "const payload = $node['Restore VAT Payload'].json;\nconst upload = $json;\nconst pdfFileId = upload.id || payload.copiedFileId;\nreturn [{\n  json: {\n    ...payload,\n    pdfFileId,\n    pdfUrl: `https://drive.google.com/file/d/${pdfFileId}/view?usp=drivesdk`,\n  },\n  binary: $binary,\n}];"
       },
-      "id": "code-build-pdf-url",
+      "id": "72156d07-9433-4e3c-a3fb-81884c7b1fcc",
       "name": "Build PDF URL",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        2860,
-        780
+        31840,
+        9616
       ]
     },
     {
@@ -1136,14 +1101,15 @@
         },
         "options": {}
       },
-      "id": "sheet-update-pdf-url",
+      "id": "892f7647-3e80-41cc-8821-f3422e660b46",
       "name": "Update PDF URL",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4,
       "position": [
-        3120,
-        780
+        32096,
+        9616
       ],
+      "alwaysOutputData": true,
       "credentials": {
         "googleSheetsOAuth2Api": {
           "id": "ZPODlcDmX45WFVuM",
@@ -1155,82 +1121,72 @@
       "parameters": {
         "jsCode": "const payload = $node['Build PDF URL'].json;\nreturn [{\n  json: {\n    to: payload.branchUid,\n    messages: [{\n      type: 'flex',\n      altText: `ใบสั่งซื้อ ${payload.orderId} อนุมัติแล้ว`,\n      contents: {\n        type: 'bubble',\n        header: {\n          type: 'box',\n          layout: 'vertical',\n          contents: [\n            { type: 'text', text: 'อนุมัติคำสั่งซื้อแล้ว', weight: 'bold', size: 'lg', color: '#B11226' },\n            { type: 'text', text: payload.orderId, size: 'sm', color: '#666666' },\n          ],\n        },\n        body: {\n          type: 'box',\n          layout: 'vertical',\n          spacing: 'sm',\n          contents: [\n            { type: 'text', text: `สาขา: ${payload.branchName}`, wrap: true },\n            { type: 'text', text: `ยอดรวมสุทธิ: ฿${Number(payload.totalAmount || 0).toLocaleString('th-TH', { minimumFractionDigits: 2 })}`, weight: 'bold' },\n          ],\n        },\n        footer: {\n          type: 'box',\n          layout: 'vertical',\n          contents: [{\n            type: 'button',\n            style: 'primary',\n            color: '#B11226',\n            action: { type: 'uri', label: 'ดูใบสั่งซื้อ PDF', uri: payload.pdfUrl },\n          }],\n        },\n      },\n    }],\n  },\n}];"
       },
-      "id": "code-build-branch-line-message",
+      "id": "878678d0-9198-4092-b4f6-0e09caa4a830",
       "name": "Build Branch LINE Message",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        3380,
-        780
+        32368,
+        9616
       ]
     },
     {
       "parameters": {
-        "method": "POST",
-        "url": "https://api.line.me/v2/bot/message/push",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
+        "operation": "send",
+        "to": "={{ $('Build PDF URL').item.json.branchUid }}",
+        "messages": {
+          "values": [
             {
-              "name": "Authorization",
-              "value": "Bearer PUT_LINE_CHANNEL_ACCESS_TOKEN_HERE"
-            },
-            {
-              "name": "Content-Type",
-              "value": "application/json"
+              "text": "=อนุมัติคำสั่งซื้อแล้ว\nเลขที่: {{ $('Build PDF URL').item.json.orderId }}\nสาขา: {{ $('Build PDF URL').item.json.branchName }}\nยอดรวมสุทธิ: ฿{{ Number($('Build PDF URL').item.json.totalAmount || 0).toLocaleString('th-TH', { minimumFractionDigits: 2 }) }}\nดูใบสั่งซื้อ PDF: {{ $('Build PDF URL').item.json.pdfUrl }}"
             }
           ]
-        },
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify($json) }}",
-        "options": {}
+        }
       },
-      "id": "http-notify-branch-line",
+      "id": "2f8d33af-4293-4176-a972-0e20afe14251",
       "name": "Notify Branch LINE",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
+      "type": "@aotoki/n8n-nodes-line-messaging.lineMessaging",
+      "typeVersion": 1,
       "position": [
-        3640,
-        780
+        32624,
+        9616
       ],
+      "credentials": {
+        "lineMessagingApi": {
+          "id": "4YlidIdv3s5ML4GE",
+          "name": "Line Messaging rkitja2523"
+        }
+      },
       "continueOnFail": true
     },
     {
       "parameters": {
-        "method": "POST",
-        "url": "https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart",
-        "authentication": "predefinedCredentialType",
-        "nodeCredentialType": "googleOAuth2Api",
-        "sendBody": true,
-        "contentType": "multipart-form-data",
-        "bodyParameters": {
-          "parameters": [
-            {
-              "name": "metadata",
-              "value": "={{ JSON.stringify({ name: $node['Restore VAT Payload'].json.fileName, parents: [$node['Restore VAT Payload'].json.folderId], mimeType: 'application/pdf' }) }}"
-            },
-            {
-              "name": "file",
-              "parameterType": "formBinaryData",
-              "inputDataFieldName": "data"
-            }
-          ]
+        "name": "={{ $node['Restore VAT Payload'].json.fileName }}",
+        "driveId": {
+          "__rl": true,
+          "value": "My Drive",
+          "mode": "list",
+          "cachedResultName": "My Drive",
+          "cachedResultUrl": "https://drive.google.com/drive/my-drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "value": "https://drive.google.com/drive/folders/1mnFGZrSUFsEA9NkohmNYwXKJf6OEqrhj",
+          "mode": "url"
         },
         "options": {}
       },
-      "id": "http-upload-vat-pdf",
+      "id": "5d85105c-cc8c-4632-9dde-40c139b66d23",
       "name": "Upload VAT PDF",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
       "position": [
-        2600,
-        780
+        31584,
+        9616
       ],
       "credentials": {
-        "googleOAuth2Api": {
-          "id": "ZPODlcDmX45WFVuM",
-          "name": "Google Sheets account 2"
+        "googleDriveOAuth2Api": {
+          "id": "cdmoEPoXq7Z84EIJ",
+          "name": "Google Drive account 2"
         }
       }
     },
@@ -1240,13 +1196,13 @@
         "responseMode": "lastNode",
         "options": {}
       },
-      "id": "webhook-get-products",
+      "id": "5dff43a3-8178-4b98-b3a5-75f364e69bc5",
       "name": "GET /get-products",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
       "position": [
-        0,
-        1040
+        28976,
+        9872
       ],
       "webhookId": "chaphranakhon-get-products"
     },
@@ -1261,20 +1217,20 @@
         },
         "sheetName": {
           "__rl": true,
-          "value": "gid=1323666545",
+          "value": 1323666545,
           "mode": "list",
           "cachedResultName": "Products",
           "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1aKwY4KOo8uGCRrHASD539Habt5Obam8meacRO-ir0Ks/edit#gid=1323666545"
         },
         "options": {}
       },
-      "id": "gs-read-products",
+      "id": "de81eb38-83fd-40e2-9697-812171e9aea6",
       "name": "Read Products",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4,
       "position": [
-        260,
-        1040
+        29248,
+        9872
       ],
       "credentials": {
         "googleSheetsOAuth2Api": {
@@ -1285,16 +1241,123 @@
     },
     {
       "parameters": {
-        "jsCode": "function pick(row, keys) {\n  for (const key of keys) {\n    const value = row[key];\n    if (value !== undefined && value !== null && String(value).trim() !== '') return String(value).trim();\n  }\n  return '';\n}\n\nfunction emojiFor(name, index) {\n  const text = String(name || '');\n  if (text.includes('ชา')) return '🍂';\n  if (text.includes('นม')) return '🥛';\n  if (text.includes('น้ำตาล')) return '🍬';\n  if (text.includes('ไซรัป') || text.includes('เชื่อม')) return '🍯';\n  if (text.includes('แก้ว') || text.includes('ถ้วย')) return '☕';\n  if (text.includes('หลอด')) return '🥤';\n  if (text.includes('ถุง')) return '🛍️';\n  return ['📦', '🧾', '🥄', '🫙'][index % 4];\n}\n\nconst products = $input.all()\n  .map((item, index) => {\n    const row = item.json || {};\n    const name = pick(row, ['Product_Name', 'productName', 'product_name', 'Name', 'name']);\n    const price = Number(pick(row, ['Price', 'price', 'Unit_Price', 'unitPrice', 'pricePerUnit']) || 0);\n    const status = pick(row, ['Status', 'status']) || 'active';\n    return {\n      id: pick(row, ['Product_ID', 'productId', 'product_id', 'ID', 'id']) || `P${String(index + 1).padStart(3, '0')}`,\n      name,\n      unit: pick(row, ['Unit', 'unit', 'UOM', 'uom']) || '-',\n      price,\n      emoji: pick(row, ['Emoji', 'emoji']) || emojiFor(name, index),\n      status,\n    };\n  })\n  .filter((product) => {\n    const status = String(product.status || '').trim().toLowerCase();\n    return product.name && product.price > 0 && !['inactive', 'disabled', 'ปิด'].includes(status);\n  });\n\nreturn [{ json: { products } }];"
+        "jsCode": "function normalizeStatus(status) {\n  return String(status || '').trim().toLowerCase();\n}\n\nfunction isHiddenStatus(status) {\n  return ['ยกเลิก', 'cancelled', 'canceled', 'inactive', 'disabled', 'ปิด'].includes(normalizeStatus(status));\n}\n\nconst rows = $input.all().map(item => item.json);\nconst products = rows.map((row, index) => {\n  const productId = row.Product_ID || row.productId || row.ID || row.id || ('P' + String(index + 1).padStart(3, '0'));\n  const productName = row.Product_Name || row.productName || row.Name || row.name || '';\n  const price = Number(row.Price || row.price || 0);\n  const unit = row.Unit || row.unit || '';\n  const imageUrl = row.Image_URL || row.imageUrl || row.Image || row.image || '';\n  const status = row.Status || row.status || '';\n  return { productId, productName, price, unit, imageUrl, status };\n}).filter(product => product.productName && product.price > 0 && !isHiddenStatus(product.status));\n\nreturn [{ json: { success: true, products } }];"
       },
-      "id": "code-format-products-response",
+      "id": "4a965df4-ed58-468e-adbc-d041656aee8d",
       "name": "Format Products Response",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        520,
-        1040
+        29504,
+        9872
       ]
+    },
+    {
+      "parameters": {
+        "operation": "send",
+        "to": "={{ $json.to }}",
+        "messages": {
+          "values": [
+            {
+              "text": "={{ $json.text }}"
+            }
+          ]
+        }
+      },
+      "type": "@aotoki/n8n-nodes-line-messaging.lineMessaging",
+      "typeVersion": 1,
+      "position": [
+        31056,
+        9104
+      ],
+      "id": "b1024399-08f0-483e-9e32-2fa0b984bc6b",
+      "name": "Send Line Admin02",
+      "credentials": {
+        "lineMessagingApi": {
+          "id": "4YlidIdv3s5ML4GE",
+          "name": "Line Messaging rkitja2523"
+        }
+      },
+      "continueOnFail": true
+    },
+    {
+      "id": "b74514b8-78dc-4aae-a260-5c7c49bef394",
+      "name": "Read Admins For Notify",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        30544,
+        9104
+      ],
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1aKwY4KOo8uGCRrHASD539Habt5Obam8meacRO-ir0Ks",
+          "mode": "list",
+          "cachedResultName": "Chaphranakhon_DB",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1aKwY4KOo8uGCRrHASD539Habt5Obam8meacRO-ir0Ks/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Admins",
+          "mode": "name",
+          "cachedResultName": "Admins",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1aKwY4KOo8uGCRrHASD539Habt5Obam8meacRO-ir0Ks/edit"
+        },
+        "options": {}
+      },
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "ZPODlcDmX45WFVuM",
+          "name": "Google Sheets account 2"
+        }
+      }
+    },
+    {
+      "id": "9d72d98f-1156-4839-abc4-f8ca5091d0bd",
+      "name": "Read Admins For Approve",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        29248,
+        9616
+      ],
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1aKwY4KOo8uGCRrHASD539Habt5Obam8meacRO-ir0Ks",
+          "mode": "list",
+          "cachedResultName": "Chaphranakhon_DB",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1aKwY4KOo8uGCRrHASD539Habt5Obam8meacRO-ir0Ks/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Admins",
+          "mode": "name",
+          "cachedResultName": "Admins",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1aKwY4KOo8uGCRrHASD539Habt5Obam8meacRO-ir0Ks/edit"
+        },
+        "options": {}
+      },
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "ZPODlcDmX45WFVuM",
+          "name": "Google Sheets account 2"
+        }
+      }
+    },
+    {
+      "id": "6a6598a5-eeef-48b4-9c5d-1c4818640b2d",
+      "name": "Authorize Admin Approval",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        29504,
+        9616
+      ],
+      "parameters": {
+        "jsCode": "function norm(value) {\n  return String(value || '').trim().toLowerCase();\n}\n\nfunction canApprove(role) {\n  const value = norm(role);\n  return value === 'owner' || value === 'approve' || value.includes('owner') || value.includes('approve');\n}\n\nconst request = $node['POST /admin-approve'].json;\nconst body = request.body || request;\nconst adminUid = String(body.adminUid || '').trim();\nif (!adminUid) {\n  throw new Error('Missing adminUid. Please open approve page in LINE LIFF and login as admin.');\n}\n\nconst admins = $input.all().map(item => item.json);\nconst admin = admins.find(row => String(row.LINE_UID || row.lineUid || '').trim() === adminUid);\nif (!admin) {\n  throw new Error('This LINE user is not listed in Admins sheet: ' + adminUid);\n}\nif (norm(admin.Status) !== 'active') {\n  throw new Error('This admin is inactive: ' + (admin.Display_Name || adminUid));\n}\nif (!canApprove(admin.Role)) {\n  throw new Error('This admin role cannot approve orders: ' + (admin.Role || ''));\n}\n\nreturn [{\n  json: {\n    ...body,\n    adminUid,\n    adminName: body.adminName || admin.Display_Name || admin.Admin_ID || adminUid,\n    authorizedAdmin: admin,\n  },\n}];"
+      }
     }
   ],
   "pinData": {},
@@ -1380,7 +1443,7 @@
       "main": [
         [
           {
-            "node": "Build Admin LINE Message",
+            "node": "Read Admins For Notify",
             "type": "main",
             "index": 0
           }
@@ -1413,7 +1476,7 @@
       "main": [
         [
           {
-            "node": "Build Approval Row",
+            "node": "Read Admins For Approve",
             "type": "main",
             "index": 0
           }
@@ -1446,18 +1509,7 @@
       "main": [
         [
           {
-            "node": "Notify Admin LINE",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Notify Admin LINE": {
-      "main": [
-        [
-          {
-            "node": "Submit Order Response",
+            "node": "Send Line Admin02",
             "type": "main",
             "index": 0
           }
@@ -1618,22 +1670,63 @@
         ]
       ]
     },
-    "Format Products Response": {
+    "Send Line Admin02": {
       "main": [
-        []
+        [
+          {
+            "node": "Submit Order Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Admins For Notify": {
+      "main": [
+        [
+          {
+            "node": "Build Admin LINE Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Admins For Approve": {
+      "main": [
+        [
+          {
+            "node": "Authorize Admin Approval",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Authorize Admin Approval": {
+      "main": [
+        [
+          {
+            "node": "Build Approval Row",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     }
   },
-  "active": false,
+  "active": true,
   "settings": {
     "executionOrder": "v1",
     "binaryMode": "separate",
     "availableInMCP": false
   },
-  "versionId": "fixed-local-draft-20260714",
+  "versionId": "62535525-efd2-46c9-8112-00de4444797d",
   "meta": {
+    "templateCredsSetupCompleted": true,
     "instanceId": "c20a6dd4079f66152f6eb0e4f4430ccd14d2f96a74552098f94caca40dd51250"
   },
   "nodeGroups": [],
+  "id": "J3xwohRu7uOfR0O3",
   "tags": []
 }
