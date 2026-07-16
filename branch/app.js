@@ -322,6 +322,19 @@ function localProductImage(id, index) {
     return PRODUCT_IMAGE_BY_INDEX[byIdIndex] || PRODUCT_IMAGE_BY_INDEX[index] || '';
 }
 
+function normalizeStatus(status) {
+    return String(status || '').trim().toLowerCase();
+}
+
+function isProductHidden(status) {
+    return ['ยกเลิก', 'cancelled', 'canceled', 'inactive', 'disabled', 'ปิด'].includes(normalizeStatus(status));
+}
+
+function isProductAvailable(status) {
+    const value = normalizeStatus(status);
+    return value === '' || ['พร้อม', 'active', 'available', 'in stock'].includes(value);
+}
+
 function normalizeProducts(raw) {
     return unwrapProductResponse(raw)
         .map((row, index) => {
@@ -349,8 +362,7 @@ function normalizeProducts(raw) {
             };
         })
         .filter(product => {
-            const status = String(product.status || '').trim().toLowerCase();
-            return product.name && product.price > 0 && !['inactive', 'disabled', 'ปิด'].includes(status);
+            return product.name && product.price > 0 && !isProductHidden(product.status);
         });
 }
 
@@ -509,21 +521,23 @@ function renderProducts() {
     const grid = document.getElementById('product-grid');
     grid.innerHTML = state.products.map(p => {
         const qty = state.cart[p.id] || 0;
+        const available = isProductAvailable(p.status);
+        const statusBadge = available ? '' : '<span class="product-status-badge">หมด</span>';
         const visual = p.imageUrl
             ? `<img class="product-image" src="${escapeHtml(p.imageUrl)}" alt="${escapeHtml(p.name)}" loading="lazy" onerror="this.classList.add('is-hidden');this.nextElementSibling.classList.remove('is-hidden');"><span class="product-emoji is-hidden">${p.emoji}</span>`
             : `<span class="product-emoji">${p.emoji}</span>`;
         return `
-            <div class="product-card${qty > 0 ? ' in-cart' : ''}" id="prod-${p.id}">
-                <div class="product-visual">${visual}</div>
+            <div class="product-card${qty > 0 ? ' in-cart' : ''}${available ? '' : ' is-unavailable'}" id="prod-${p.id}">
+                <div class="product-visual">${visual}${statusBadge}</div>
                 <div>
                     <p class="product-name">${escapeHtml(p.name)}</p>
                     <p class="product-unit">/ ${escapeHtml(p.unit)}</p>
                 </div>
                 <p class="product-price">${fmt(p.price)}</p>
                 <div class="qty-control">
-                    <button class="qty-btn dec" data-pid="${p.id}" aria-label="ลด">−</button>
+                    <button class="qty-btn dec" data-pid="${p.id}" aria-label="ลด" ${available ? '' : 'disabled'}>−</button>
                     <span class="qty-value" id="qty-${p.id}">${qty}</span>
-                    <button class="qty-btn inc" data-pid="${p.id}" aria-label="เพิ่ม">+</button>
+                    <button class="qty-btn inc" data-pid="${p.id}" aria-label="เพิ่ม" ${available ? '' : 'disabled'}>+</button>
                 </div>
             </div>`;
     }).join('');
@@ -535,6 +549,9 @@ function renderProducts() {
 
 /** เปลี่ยนจำนวนสินค้าในตะกร้า */
 function changeQty(pid, delta) {
+    const product = state.products.find(p => p.id === pid);
+    if (!product || !isProductAvailable(product.status)) return;
+
     const cur = state.cart[pid] || 0;
     const nxt = Math.max(0, cur + delta);
 
