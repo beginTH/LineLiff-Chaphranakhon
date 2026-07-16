@@ -383,6 +383,10 @@ function normalizeAddressRecord(item, index, fallbackLabel = '') {
         'text', 'address', 'fullAddress', 'full_address', 'Address',
         'Delivery_Address', 'deliveryAddress', 'value',
     ]);
+    const tel = pickFirst(item, [
+        'tel', 'phone', 'mobile', 'contactTel', 'contact_tel',
+        'Tel', 'TEL', 'Phone', 'Mobile',
+    ]);
 
     if (!text) return null;
 
@@ -390,6 +394,7 @@ function normalizeAddressRecord(item, index, fallbackLabel = '') {
         id: pickFirst(item, ['id', 'addressId', 'address_id', 'Address_ID']) || `addr-${index + 1}`,
         label,
         text,
+        tel: tel || '',
     };
 }
 
@@ -400,6 +405,9 @@ function normalizeAddressSheetRow(row) {
         'Branch_Name', 'branchName', 'branch_name', 'Branch', 'branch',
         'Display_Name', 'displayName', 'display_name',
     ]);
+    const tel = pickFirst(row, [
+        'Tel', 'TEL', 'tel', 'Phone', 'phone', 'Mobile', 'mobile',
+    ]) || '';
 
     return [1, 2, 3, 4, 5]
         .map((num) => {
@@ -413,7 +421,7 @@ function normalizeAddressSheetRow(row) {
                 `Address_Label_${num}`, `address_label_${num}`, `Label_${num}`, `label_${num}`,
             ]) || (branchName ? (num === 1 ? branchName : `${branchName} (${num})`) : `ที่อยู่ ${num}`);
 
-            return { id: `addr-${num}`, label, text };
+            return { id: `addr-${num}`, label, text, tel };
         })
         .filter(Boolean);
 }
@@ -587,7 +595,10 @@ function renderSummary() {
     // Address
     const addrEl = document.getElementById('summary-address-text');
     if (state.selectedAddress) {
-        addrEl.innerHTML = `<strong style="color:var(--text-primary)">${escapeHtml(state.selectedAddress.label)}</strong><br>${escapeHtml(state.selectedAddress.text)}`;
+        const telLine = state.selectedAddress.tel
+            ? `<br><span>Tel. ${escapeHtml(state.selectedAddress.tel)}</span>`
+            : '';
+        addrEl.innerHTML = `<strong style="color:var(--text-primary)">${escapeHtml(state.selectedAddress.label)}</strong><br>${escapeHtml(state.selectedAddress.text)}${telLine}`;
     }
 
     // Items
@@ -737,14 +748,15 @@ document.addEventListener('DOMContentLoaded', () => {
     /** ปุ่ม "บันทึกที่อยู่นี้" */
     document.getElementById('btn-confirm-new-address').addEventListener('click', () => {
         const label = document.getElementById('input-branch-name').value.trim();
+        const tel   = document.getElementById('input-contact-tel').value.trim();
         const text  = document.getElementById('input-address').value.trim();
 
-        if (!label || !text) {
-            alert('กรุณากรอกชื่อสาขา และที่อยู่ให้ครบก่อนบันทึก');
+        if (!label || !tel || !text) {
+            alert('กรุณากรอกชื่อสาขา เบอร์ติดต่อ และที่อยู่ให้ครบก่อนบันทึก');
             return;
         }
 
-        const newAddr = { id: `new-${Date.now()}`, label, text, isNew: true };
+        const newAddr = { id: `new-${Date.now()}`, label, tel, text, isNew: true };
         state.addresses.push(newAddr);
         renderAddressList();
         selectAddress(newAddr.id);
@@ -752,6 +764,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Clear inputs
         document.getElementById('input-branch-name').value = '';
+        document.getElementById('input-contact-tel').value = '';
         document.getElementById('input-address').value     = '';
     });
 
@@ -839,6 +852,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 deliveryAddress: {
                     id:    state.selectedAddress.id,
                     label: state.selectedAddress.label,
+                    tel:   state.selectedAddress.tel || '',
                     text:  state.selectedAddress.text,
                 },
                 isNewAddress: Boolean(state.selectedAddress.isNew),
