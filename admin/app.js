@@ -90,6 +90,7 @@ const state = {
     shipping: 0,      // ค่าขนส่งที่แอดมินกรอก
     discount: 0,      // ส่วนลดที่แอดมินกรอก
     otherFee: 0,      // ค่าใช้จ่ายอื่นที่แอดมินกรอก
+    adjustedItems: [], // รายการหลัง Admin ปรับลดจำนวน
     liffReady: false,
     adminProfilePromise: null,
 };
@@ -239,17 +240,22 @@ function renderOrder(order) {
     setText('delivery-label',   order.deliveryAddress?.label || '—');
     setText('delivery-address', order.deliveryAddress?.text  || '—');
 
-    // Order items
+    // Order items — Admin ลดได้แต่เพิ่มเกินจำนวนเดิมไม่ได้
     const itemsContainer = document.getElementById('order-items-list');
-    itemsContainer.innerHTML = (order.orderItems || []).map(item => `
-        <div class="order-item">
+    itemsContainer.innerHTML = state.adjustedItems.map((item, index) => `
+        <div class="order-item adjustable-item">
             <span class="oi-name">${esc(item.productName)}</span>
-            <span class="oi-qty">×${item.quantity} ${esc(item.unit)}</span>
+            <div class="qty-adjuster">
+                <button type="button" class="qty-adjust-btn" data-index="${index}" data-change="-1">−</button>
+                <input type="number" class="approved-qty-input" data-index="${index}"
+                    min="0" max="${item.originalQuantity}" value="${item.quantity}" inputmode="numeric">
+                <button type="button" class="qty-adjust-btn" data-index="${index}" data-change="1">+</button>
+                <span class="oi-unit">${esc(item.unit)} / สั่ง ${item.originalQuantity}</span>
+            </div>
             <span class="oi-unit-price">${fmt(item.pricePerUnit)} / หน่วย</span>
             <span class="oi-total">${fmt(item.lineTotal)}</span>
         </div>
     `).join('');
-
     // Item count badge
     setText('item-count-badge', `${order.orderItems?.length || 0} รายการ`);
 
@@ -266,7 +272,7 @@ function renderOrder(order) {
 
 /** อัปเดตราคาแบบ real-time เมื่อพิมพ์ค่าขนส่ง */
 function updatePriceDisplay() {
-    const sub = state.order?.subtotal || 0;
+    const sub = state.adjustedItems.reduce((sum, item) => sum + Number(item.lineTotal || 0), 0);
     const amountBeforeVat = Math.max(0, sub + state.shipping + state.otherFee - state.discount);
     const vat = amountBeforeVat * 0.07;
     const total = amountBeforeVat + vat;
@@ -306,6 +312,12 @@ async function initApp() {
         loadingText.textContent = `กำลังโหลดออเดอร์ ${state.orderId}...`;
         const order = await apiGetOrder(state.orderId);
         state.order = order;
+        state.adjustedItems = (order.orderItems || []).map(item => ({
+            ...item,
+            originalQuantity: Number(item.originalQuantity ?? item.quantity ?? 0),
+            quantity: Number(item.quantity || 0),
+            lineTotal: Number(item.pricePerUnit || 0) * Number(item.quantity || 0),
+        }));
 
         state.admin = { uid: 'admin-pending', displayName: 'Admin' };
 
@@ -427,6 +439,27 @@ document.addEventListener('DOMContentLoaded', () => {
         updatePriceDisplay();
     });
 
+
+    document.getElementById('order-items-list').addEventListener('click', (event) => {
+        const button = event.target.closest('.qty-adjust-btn');
+        if (!button) return;
+        const index = Number(button.dataset.index);
+        const item = state.adjustedItems[index];
+        const next = Math.min(item.originalQuantity, Math.max(0, item.quantity + Number(button.dataset.change)));
+        item.quantity = next;
+        item.lineTotal = next * Number(item.pricePerUnit || 0);
+        renderOrder(state.order);
+    });
+
+    document.getElementById('order-items-list').addEventListener('change', (event) => {
+        if (!event.target.matches('.approved-qty-input')) return;
+        const index = Number(event.target.dataset.index);
+        const item = state.adjustedItems[index];
+        item.quantity = Math.min(item.originalQuantity, Math.max(0, Math.floor(Number(event.target.value) || 0)));
+        item.lineTotal = item.quantity * Number(item.pricePerUnit || 0);
+        renderOrder(state.order);
+    });
+
     // ─────────────────────────────────────────────
     // APPROVE BUTTON
     // ─────────────────────────────────────────────
@@ -437,6 +470,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const discount      = Math.max(0, parseFloat(document.getElementById('input-discount').value) || 0);
         const otherFee      = Math.max(0, parseFloat(document.getElementById('input-other-fee').value) || 0);
         const adminNote     = document.getElementById('input-admin-note').value.trim();
+        const adjustmentReason = document.getElementById('input-adjustment-reason').value.trim();
+        const hasReduction = state.adjustedItems.some(item => item.quantity < item.originalQuantity);
 
         if (isNaN(shippingCost) || shippingCost < 0) {
             alert('กรุณาระบุค่าขนส่ง (ถ้าไม่มีค่าขนส่ง ให้กรอก 0)');
@@ -444,8 +479,14 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
+        if (hasReduction && !adjustmentReason) {
+            alert('กรุณาระบุสาเหตุการปรับลดจำนวนสินค้า');
+            document.getElementById('input-adjustment-reason').focus();
+            return;
+        }
+
         // Confirm
-        const subtotal   = state.order?.subtotal || 0;
+        const subtotal = state.adjustedItems.reduce((sum, item) => sum + Number(item.lineTotal || 0), 0);
         const amountBeforeVat = Math.max(0, subtotal + shippingCost + otherFee - discount);
         const vatAmount = amountBeforeVat * 0.07;
         const totalAmount = amountBeforeVat + vatAmount;
@@ -475,6 +516,8 @@ document.addEventListener('DOMContentLoaded', () => {
             // Build payload ตาม spec ของ n8n webhook POST /webhook/admin-approve
             const payload = {
                 orderId:      state.orderId,
+                branchDisplayName: state.order?.branchInfo?.displayName || '',
+                orderNote: state.order?.note || '',
                 adminUid:     admin.uid,
                 adminName:    admin.displayName,
                 shippingCost: shippingCost,
@@ -482,6 +525,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 otherFee:     otherFee,
                 vatAmount:    vatAmount,
                 adminNote:    adminNote,
+                adjustmentReason,
+                approvalHistory: state.order?.approvalHistory || [],
+                adjustedOrderItems: state.adjustedItems.map(item => ({
+                    productId: item.productId, productName: item.productName, unit: item.unit,
+                    pricePerUnit: Number(item.pricePerUnit || 0),
+                    originalQuantity: item.originalQuantity, quantity: item.quantity, lineTotal: item.lineTotal,
+                })),
                 subtotal:     subtotal,
                 totalAmount:  totalAmount,
                 approvedAt:   new Date().toISOString(),

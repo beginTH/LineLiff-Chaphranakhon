@@ -757,3 +757,8 @@ body {
    UTILITY
 =================================================== */
 .hidden { display: none !important; }
+
+.qty-adjuster { display:flex; align-items:center; gap:8px; grid-column:1 / -1; flex-wrap:wrap; }
+.qty-adjust-btn { width:32px; height:32px; border:1px solid var(--border-light); border-radius:8px; background:var(--admin-bg); color:var(--admin-light); font-size:20px; }
+.approved-qty-input { width:64px; height:32px; text-align:center; border:1px solid var(--border-light); border-radius:8px; background:var(--bg-primary); color:var(--text-primary); }
+.oi-unit { font-size:11px; color:var(--text-muted); }
