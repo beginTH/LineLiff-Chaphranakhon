@@ -915,3 +915,5 @@ body {
    UTILITY
 =================================================== */
 .hidden { display: none !important; }
+
+.address-contact { color: var(--gold); font-size: 12px; margin-top: 5px; }

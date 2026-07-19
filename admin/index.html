@@ -207,6 +207,14 @@
                 ></textarea>
             </div>
 
+            <div class="shipping-input-section" id="adjustment-reason-section">
+                <label class="shipping-input-label" for="input-adjustment-reason">
+                    สาเหตุการปรับลดจำนวน <span class="required-star">*</span>
+                    <span class="shipping-input-hint">(บังคับเมื่อมีรายการถูกลด)</span>
+                </label>
+                <textarea id="input-adjustment-reason" class="admin-note-input" rows="3" placeholder="เช่น สินค้าคงเหลือไม่เพียงพอ จัดส่งได้เพียง 2 หน่วย"></textarea>
+            </div>
+
             <!-- Approve Button -->
             <div class="bottom-action">
                 <button class="btn-approve btn-full" id="btn-approve-order">
@@ -307,6 +315,6 @@
 
     <!-- LINE LIFF SDK -->
     <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-    <script src="app.js?v=20260716-admin-profile"></script>
+    <script src="app.js?v=20260719-adjust-qty-delivery-note"></script>
 </body>
 </html>
