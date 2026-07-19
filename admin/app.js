@@ -273,9 +273,9 @@ function renderOrder(order) {
 /** อัปเดตราคาแบบ real-time เมื่อพิมพ์ค่าขนส่ง */
 function updatePriceDisplay() {
     const sub = state.adjustedItems.reduce((sum, item) => sum + Number(item.lineTotal || 0), 0);
-    const amountBeforeVat = Math.max(0, sub + state.shipping + state.otherFee - state.discount);
+    const amountBeforeVat = Math.max(0, sub - state.discount);
     const vat = amountBeforeVat * 0.07;
-    const total = amountBeforeVat + vat;
+    const total = amountBeforeVat + vat + state.shipping + state.otherFee;
     setText('price-subtotal',    fmt(sub));
     setText('price-shipping',    fmt(state.shipping));
     setText('price-discount',    fmt(state.discount));
@@ -487,9 +487,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Confirm
         const subtotal = state.adjustedItems.reduce((sum, item) => sum + Number(item.lineTotal || 0), 0);
-        const amountBeforeVat = Math.max(0, subtotal + shippingCost + otherFee - discount);
+        const amountBeforeVat = Math.max(0, subtotal - discount);
         const vatAmount = amountBeforeVat * 0.07;
-        const totalAmount = amountBeforeVat + vatAmount;
+        const totalAmount = amountBeforeVat + vatAmount + shippingCost + otherFee;
         const confirmed  = confirm(
             `ยืนยันการอนุมัติออเดอร์?\n\n` +
             `รหัส: ${state.orderId}\n` +

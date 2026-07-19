@@ -1,186 +1,191 @@
-# 🍵 LineLiff-Chaphranakhon
+# 🍵 LineLiff Chaphranakhon
 
-> **ระบบสั่งซื้อวัตถุดิบผ่าน LINE LIFF** สำหรับร้านชาพระนคร  
-> สาขาสั่งซื้อวัตถุดิบผ่าน LINE ได้เลย — ไม่ต้องลงแอปเพิ่ม
+ระบบสั่งซื้อวัตถุดิบผ่าน LINE LIFF สำหรับร้านชาพระนคร ครอบคลุมการเลือกที่อยู่และผู้ติดต่อ การสั่งสินค้า การแจ้งผู้อนุมัติ การปรับจำนวน การคำนวณ VAT การสร้างใบส่งของ PDF และการแจ้งผลกลับสาขา
 
-![HTML](https://img.shields.io/badge/HTML5-E34F26?style=flat-square&logo=html5&logoColor=white)
-![CSS](https://img.shields.io/badge/CSS3-1572B6?style=flat-square&logo=css3&logoColor=white)
-![JavaScript](https://img.shields.io/badge/JavaScript-F7DF1E?style=flat-square&logo=javascript&logoColor=black)
-![LINE LIFF](https://img.shields.io/badge/LINE_LIFF-06C755?style=flat-square&logo=line&logoColor=white)
-![n8n](https://img.shields.io/badge/n8n-EA4B71?style=flat-square&logo=n8n&logoColor=white)
-![Google Sheets](https://img.shields.io/badge/Google_Sheets-34A853?style=flat-square&logo=google-sheets&logoColor=white)
+## เริ่มอ่านโปรเจกต์จากตรงไหน
 
----
+แนะนำลำดับการอ่านสำหรับผู้ที่เข้ามาพัฒนาต่อ
 
-## 📋 ภาพรวมระบบ
+1. `README.md` — ภาพรวม สถานะ และวิธีเริ่มต้น
+2. `SYSTEM_FLOW.md` — Flow ธุรกิจตั้งแต่สาขาสั่งจนได้รับ PDF
+3. `structure.md` — Architecture, Schema, Payload และ Webhook
+4. `Design.md` — มาตรฐาน UI/UX ก่อนแก้ Branch/Admin
+5. `plan.md` — สถานะงาน ความเสี่ยง และ Roadmap
+6. ตรวจซอร์สใน `branch/`, `admin/` และ workflow ที่ active ก่อนแก้จริง
 
-ระบบนี้ช่วยให้สาขาของ **ชาพระนคร** สามารถสั่งซื้อวัตถุดิบผ่าน LINE ได้โดยตรง โดยไม่ต้องโทรหรือส่งข้อความแบบ Manual อีกต่อไป ครอบคลุมตั้งแต่การสั่งซื้อ, อนุมัติ, ออกเอกสาร ไปจนถึงแจ้งเตือนทุกฝ่ายอัตโนมัติ
+### แผนที่เอกสาร
 
+| ไฟล์ | เก็บข้อมูลอะไร | ใช้เมื่อใด |
+|   |   |   |
+| `README.md` | ภาพรวม โครงสร้าง วิธีตั้งค่า และสถานะ | จุดเริ่มต้นของนักพัฒนาใหม่ |
+| `SYSTEM_FLOW.md` | Flow ทั้งระบบ Role/Status/Notify, VAT/PDF และ Checklist | ทำความเข้าใจพฤติกรรมระบบ |
+| `structure.md` | Architecture, Google Sheets schema และ API contract | พัฒนา workflow/backend |
+| `Design.md` | สี ฟอนต์ component และกติกา UI | แก้หน้า Branch/Admin |
+| `plan.md` | งานเสร็จ งานเสี่ยง และงานถัดไป | วางแผนพัฒนารอบใหม่ |
+
+### Source of Truth
+
+หากเอกสารขัดกับระบบ ให้ยึดตามลำดับนี้
+
+1. ซอร์สที่ deploy และ workflow ที่ active
+2. `SYSTEM_FLOW.md`
+3. `structure.md`
+4. `README.md`
+5. `plan.md`
+
+หลังเปลี่ยนซอร์ส, Schema หรือ workflow ต้องอัปเดตเอกสารใน PR เดียวกัน
+
+## ภาพรวมการทำงาน
+
+```text
+Branch LIFF เลือกที่อยู่/ผู้ติดต่อ/สินค้า
+→ POST /submit order
+→ n8n บันทึก Orders และแจ้ง Admin
+→ Admin LIFF ตรวจสอบและลดจำนวนได้
+→ POST /admin approve
+→ n8n ตรวจสิทธิ์ คำนวณยอด และบันทึกผู้อนุมัติ
+→ Copy Google Sheets Delivery Note Template
+→ เติมข้อมูลและ Export PDF
+→ อัปโหลด Drive
+→ แจ้งสาขาผ่าน LINE พร้อมลิงก์ PDF
 ```
-สาขา กด LINE  →  LIFF App (สาขา)  →  n8n Webhook  →  Google Sheets
-                                          ↓
-                               แจ้งแอดมินผ่าน Flex Message
-                                          ↓
-                         LIFF App (แอดมิน) ใส่ค่าขนส่ง + อนุมัติ
-                                          ↓
-                     ออก PDF + CSV + ส่ง Email ฝ่ายบัญชี + แจ้งสาขา
-```
 
----
+รายละเอียดอยู่ใน [SYSTEM_FLOW.md](SYSTEM_FLOW.md)
 
-## 🏗️ Tech Stack
+## Tech Stack
 
 | Layer | Technology | หน้าที่ |
-|-------|-----------|--------|
-| **Frontend** | LINE LIFF (HTML/CSS/JS) | หน้าจอสำหรับสาขาและแอดมิน |
-| **Backend / Orchestrator** | n8n | รับ Webhook, ประมวลผล, Automation |
-| **Database** | Google Sheets | เก็บข้อมูลสินค้า, ที่อยู่, ออเดอร์ |
-| **Document** | Google Docs → PDF | ออกเอกสารใบ PO อัตโนมัติ |
-| **Messaging** | LINE Messaging API | แจ้งเตือน Flex Message |
-| **Email** | Gmail / SMTP | ส่งเอกสารให้ฝ่ายบัญชี |
+|   |   |   |
+| Frontend | HTML, CSS, JavaScript | Branch LIFF และ Admin LIFF |
+| Identity | LINE LIFF SDK | อ่าน LINE UID/Profile |
+| Orchestrator | n8n | Webhook, validation และ automation |
+| Database | Google Sheets | Products, Users_Addresses, Admins, Orders |
+| Document | Google Sheets Template + Drive API | เติมข้อมูล Export/Upload PDF |
+| Messaging | LINE Messaging API | แจ้ง Admin และสาขา |
 
----
+ระบบปัจจุบันยังไม่มี CSV/Email pipeline ที่ใช้งานจริง
 
-## 📁 โครงสร้างโปรเจค
+## โครงสร้างโปรเจกต์
 
-```
-LineLiff-Chaphranakhon/
-│
-├── branch/                     # LIFF App สำหรับสาขา (ลูกค้า)
-│   ├── index.html              # 5 Screens: Loading → ที่อยู่ → สินค้า → ยืนยัน → Success
-│   ├── style.css               # Dark/Gold theme, Mobile-first
-│   └── app.js                  # State management + API stubs + LIFF SDK
-│
-├── admin/                      # LIFF App สำหรับแอดมิน
-│   ├── index.html              # 4 States: Loading → รายละเอียด → Approved → Success
-│   ├── style.css               # Dark/Purple admin theme
-│   └── app.js                  # Order detail + Shipping input + Approve
-│
-├── plan.md                     # แผนการดำเนินงาน 4 เฟส
-├── structure.md                # สถาปัตยกรรมระบบ + DB Schema + Webhooks
-├── .gitignore
+```text
+├── branch/                 # LIFF สำหรับสาขา
+├── admin/                  # LIFF สำหรับผู้อนุมัติ
+├── outputs/                # Workflow/Template ที่สร้างเพื่อส่งมอบ
+├── scripts/                # สคริปต์ปรับ workflow/template
+├── SYSTEM_FLOW.md          # Flow ธุรกิจล่าสุด
+├── structure.md            # Architecture และ API/DB schema
+├── Design.md               # Design system
+├── plan.md                 # Roadmap
 └── README.md
 ```
 
----
+## ความสามารถปัจจุบัน
 
-## ✨ ฟีเจอร์หลัก
+### Branch LIFF
 
-### 🏪 หน้าสาขา (`/branch/`)
-- ✅ เชื่อมต่อ LINE LIFF SDK — ดึง UID อัตโนมัติ
-- ✅ แสดงที่อยู่จัดส่งที่เคยบันทึกไว้ (สูงสุด 3 ที่อยู่ต่อสาขา)
-- ✅ เพิ่มที่อยู่จัดส่งใหม่ได้ในแอป
-- ✅ เลือกสินค้าจากแคตตาล็อกวัตถุดิบ พร้อมปุ่ม +/−
-- ✅ Cart Summary Bar แสดงยอดรวม Real-time
-- ✅ หน้าสรุปคำสั่งซื้อพร้อม Order ID
-- ✅ ส่งข้อมูลไปยัง n8n ผ่าน Webhook
+- อ่าน LINE UID ผ่าน LIFF
+- โหลดที่อยู่เดิมได้สูงสุด 5 ที่อยู่
+- เพิ่มชื่อสาขา `contactName` เบอร์โทร และที่อยู่
+- โหลดสินค้า/สถานะจาก Google Sheets
+- เพิ่มลดจำนวนและคำนวณตะกร้า real time
+- ส่ง Order พร้อมสินค้า ราคา หน่วย ผู้ติดต่อ และหมายเหตุ
 
-### 🛠️ หน้าแอดมิน (`/admin/`)
-- ✅ รับ `orderId` จาก URL Query Param (จากปุ่มใน Flex Message)
-- ✅ แสดงรายละเอียดออเดอร์ครบถ้วน (สาขา, ที่อยู่, รายการ, ราคา)
-- ✅ กรอกค่าขนส่ง — คำนวณยอดรวมแบบ Real-time
-- ✅ ป้องกัน Approve ซ้ำ (ตรวจสอบ Status ก่อน)
-- ✅ ส่งการอนุมัติไปยัง n8n พร้อม Payload ครบถ้วน
-- ✅ แสดงรายการ Auto-task ที่ระบบจะทำหลัง Approve
+### Admin LIFF
 
----
+- เปิด Order จาก `orderId`
+- ลดจำนวนได้ แต่เพิ่มเกินจำนวนเดิมไม่ได้
+- บังคับเหตุผลเมื่อปรับลด
+- กรอกค่าขนส่ง ส่วนลด ค่าใช้จ่ายอื่น และหมายเหตุ
+- คำนวณ VAT 7% จากค่าสินค้าหลังหักส่วนลด โดยค่าขนส่ง/ค่าใช้จ่ายอื่นไม่อยู่ในฐาน VAT
+- ส่งรายการหลังปรับและข้อมูลผู้อนุมัติไป n8n
 
-## 🔌 n8n Webhooks
+### n8n
 
-| Endpoint | Method | หน้าที่ |
-|----------|--------|--------|
-| `/webhook/get-user-profile` | `GET` | ดึงที่อยู่จัดส่งของสาขา → ส่งกลับ LIFF |
-| `/webhook/submit-order` | `POST` | บันทึกออเดอร์ + อัปเดตที่อยู่ใหม่ + แจ้งแอดมิน Flex Message |
-| `/webhook/get-order` | `GET` | ดึงรายละเอียดออเดอร์ตาม Order ID (สำหรับแอดมิน) |
-| `/webhook/admin-approve` | `POST` | อนุมัติออเดอร์ + ออก PDF/CSV + ส่ง Email + แจ้งสาขา |
+- อ่าน Profile/ที่อยู่และสินค้า
+- สร้าง Order บันทึกที่อยู่ และแจ้ง Admin หลายคน
+- กรอง Admin ด้วย Role/Status/Notify_Order
+- ตรวจสิทธิ์ผู้อนุมัติ
+- บันทึกยอด ผู้อนุมัติ และ Approval History ใน workflow รุ่นที่รองรับ
+- สร้างใบส่งของ PDF จาก Google Sheets Template และบันทึกในโฟลเดอร์ Drive `ใบส่งของ`
+- แจ้งผลอนุมัติพร้อมลิงก์ PDF ให้สาขาและ Admin ทุกคนที่ `ACTIVE + Notify_Order=TRUE`
 
----
+> การป้องกัน Admin สองคนกดพร้อมกันยังไม่เป็น transaction ที่สมบูรณ์ ดู `plan.md`
 
-## 🗄️ โครงสร้างฐานข้อมูล (Google Sheets)
+## Webhooks
 
-**Sheet 1: Products**
-| Product_ID | Product_Name | Price | Image_URL | Status |
-|-----------|-------------|-------|-----------|--------|
+| Method | Endpoint | หน้าที่ |
+|   |   |   |
+| GET | `/webhook/get user profile` | อ่านข้อมูลสาขา ที่อยู่ และผู้ติดต่อ |
+| GET | `/webhook/get products` | อ่านสินค้า |
+| POST | `/webhook/submit order` | สร้าง Order และแจ้ง Admin |
+| GET | `/webhook/get order` | อ่าน Order สำหรับ Admin |
+| POST | `/webhook/admin approve` | ตรวจสิทธิ์ อนุมัติ สร้าง PDF และแจ้งสาขา |
 
-**Sheet 2: Users_Addresses**
-| LINE_UID | Display_Name | Branch_Name | Address_1 | Address_2 | Address_3 |
-|---------|-------------|------------|----------|----------|----------|
+## Google Sheets
 
-**Sheet 3: Orders**
-| Order_ID | Timestamp | LINE_UID | Delivery_Address | Order_Details | Subtotal | Shipping_Cost | Total_Amount | Status |
-|---------|----------|---------|----------------|--------------|---------|--------------|-------------|--------|
+| Sheet | หน้าที่ |
+|   |   |
+| `Products` | รหัส ชื่อ หน่วย ราคา รูป สถานะ |
+| `Users_Addresses` | สาขา ที่อยู่ ผู้ติดต่อ เบอร์โทร |
+| `Admins` | Role, Status และ Notify_Order |
+| `Orders` | Order ยอด สถานะ ผู้อนุมัติ และ PDF |
 
----
+Schema ฉบับเต็มอยู่ใน [structure.md](structure.md)
 
-## 🚀 การติดตั้ง & ใช้งาน
+## Workflow และ Template
 
-### 1. Clone โปรเจค
+ใน `outputs/` มีหลายรุ่นจากการแก้ปัญหา ห้ามเปิด active พร้อมกันเพราะ Webhook path ซ้ำ
 
-```bash
-git clone https://github.com/beginTH/LineLiff-Chaphranakhon.git
-cd LineLiff-Chaphranakhon
-```
+  `n8n_workflow_current_template_mapping_fixed.json` — mapping Template A4 ถูกต้อง
+  `n8n_workflow_chaphranakhon_admin_adjustment_history.json` — ปรับจำนวน เหตุผล และ Approval History
+  `outputs/delivery-note-template/Chaphranakhon_Delivery_Note_Template_A4.xlsx` — Template ใบส่งของ A4 รองรับ 24 รายการต่อ PDF; รายการเกินจะสร้าง PDF หน้าต่อเนื่อง
 
-### 2. ตั้งค่า Config ใน `app.js` (ทั้ง branch และ admin)
+  `vat template a4/Chaphranakhon_VAT_Template_A4.xlsx` — VAT Template เดิม ใช้เป็นต้นแบบการออกแบบ
+
+ก่อน Production ต้องรวมความสามารถที่ต้องการใน workflow เดียว ทดสอบ End to End และเปิด active เพียงตัวเดียว
+
+Template ต้องอัปโหลดเป็น Google Sheets Native, แชร์ให้ Google OAuth ของ n8n เป็น Editor และแทน `REPLACE_WITH_DELIVERY_NOTE_TEMPLATE_FILE_ID` ใน `Build Delivery Note Payload` ด้วย File ID ใหม่
+
+## การตั้งค่าและรัน Local
+
+ค่าหลักอยู่ใน `branch/app.js` และ `admin/app.js`
 
 ```javascript
-// branch/app.js และ admin/app.js
 const CONFIG = {
-    LIFF_ID:      'YOUR_LIFF_ID_HERE',        // จาก LINE Developers Console
-    N8N_BASE_URL: 'https://your-n8n.com',     // URL n8n ของคุณ
-    IS_DEV_MODE:   false,                     // เปลี่ยนจาก true เป็น false
+  LIFF_ID: 'YOUR_LIFF_ID',
+  N8N_BASE_URL: 'https://your n8n.example',
+  IS_DEV_MODE: false,
 };
 ```
 
-### 3. Deploy ขึ้น Hosting
-
-อัปโหลดโฟลเดอร์ทั้งหมดขึ้น Hosting ที่รองรับ **HTTPS** เช่น:
-- [Vercel](https://vercel.com) (แนะนำ — ฟรี)
-- [Netlify](https://netlify.com)
-- GitHub Pages
-
-### 4. ตั้งค่า LIFF บน LINE Developers
-
-1. ไปที่ [LINE Developers Console](https://developers.line.biz)
-2. สร้าง LIFF App 2 ตัว:
-   - **Branch LIFF** → Endpoint: `https://your-domain.com/branch/`
-   - **Admin LIFF** → Endpoint: `https://your-domain.com/admin/`
-3. นำ LIFF ID ไปใส่ใน `app.js` ของแต่ละหน้า
-
-### 5. ทดสอบใน Dev Mode (Local)
-
 ```bash
-# ติดตั้ง serve (ครั้งแรกครั้งเดียว)
-npm install -g serve
-
-# รัน Local Server
-serve . --listen 3000
-
-# เปิดที่
-# http://localhost:3000/branch/       ← หน้าสาขา
-# http://localhost:3000/admin/?orderId=PO-20260702-001  ← หน้าแอดมิน
+npx serve .   listen 3000
 ```
 
-> **Dev Mode** (`IS_DEV_MODE: true`) จะใช้ Mock Data แทน API จริง ไม่ต้องเชื่อมต่อ LINE หรือ n8n
+```text
+http://localhost:3000/branch/
+http://localhost:3000/admin/?orderId=PO YYYYMMDD XXX
+```
 
----
+## Checklist ก่อน Production
 
-## 📅 แผนการพัฒนา (4 เฟส)
+  Sheets มีหัวคอลัมน์ครบตาม `structure.md`
+  LIFF IDs, n8n URL และ LINE credential ถูกต้อง
+  Google OAuth เข้าถึง Template/Folder
+  Template ใช้ mapping `B:J` รุ่นล่าสุด
+  เปิด active workflow เพียงตัวเดียว
+  ทดสอบ Branch → Notify Admin → Approve → PDF → Notify Branch
+  วางแผนป้องกันอนุมัติพร้อมกันก่อนเพิ่ม Admin จำนวนมาก
 
-- [x] **เฟส 1** — เตรียมฐานข้อมูล Google Sheets + LINE Channel + Google Docs Template
-- [x] **เฟส 2** — พัฒนา LIFF Frontend (สาขา + แอดมิน) ✅ **เสร็จแล้ว**
-- [ ] **เฟส 3** — สร้าง n8n Workflows + เชื่อมต่อ Webhook ทั้งหมด
-- [ ] **เฟส 4** — ระบบออกเอกสาร PDF/CSV + ส่ง Email อัตโนมัติ
+## สถานะการพัฒนา
 
----
+Branch/Admin, Webhook หลัก, LINE notification และ PDF pipeline มี implementation แล้ว งานที่ต้องทำให้แข็งแรงขึ้นอยู่ใน [plan.md](plan.md)
 
-## 👤 ผู้พัฒนา
+## ผู้พัฒนา
 
 **KitjaR (beginTH)**  
 GitHub: [@beginTH](https://github.com/beginTH)
 
----
-
-## 📄 License
+## License
 
 Private — สงวนสิทธิ์สำหรับร้านชาพระนคร
