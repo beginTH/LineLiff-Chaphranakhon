@@ -83,31 +83,32 @@ Branch LIFF เลือกที่อยู่/ผู้ติดต่อ/ส
 
 ### Branch LIFF
 
-- อ่าน LINE UID ผ่าน LIFF
-- โหลดที่อยู่เดิมได้สูงสุด 5 ที่อยู่
-- เพิ่มชื่อสาขา `contactName` เบอร์โทร และที่อยู่
-- โหลดสินค้า/สถานะจาก Google Sheets
-- เพิ่มลดจำนวนและคำนวณตะกร้า real time
-- ส่ง Order พร้อมสินค้า ราคา หน่วย ผู้ติดต่อ และหมายเหตุ
+  อ่าน LINE UID ผ่าน LIFF
+  โหลดที่อยู่เดิมได้สูงสุด 5 ที่อยู่
+  เพิ่มชื่อสาขา `contactName` เบอร์โทร และที่อยู่
+  โหลดสินค้า/สถานะจาก Google Sheets
+  เพิ่มลดจำนวนและคำนวณตะกร้า real time
+  ส่ง Order พร้อมสินค้า ราคา หน่วย ผู้ติดต่อ และหมายเหตุ
 
 ### Admin LIFF
 
-- เปิด Order จาก `orderId`
-- ลดจำนวนได้ แต่เพิ่มเกินจำนวนเดิมไม่ได้
-- บังคับเหตุผลเมื่อปรับลด
-- กรอกค่าขนส่ง ส่วนลด ค่าใช้จ่ายอื่น และหมายเหตุ
-- คำนวณ VAT 7% จากค่าสินค้าหลังหักส่วนลด โดยค่าขนส่ง/ค่าใช้จ่ายอื่นไม่อยู่ในฐาน VAT
-- ส่งรายการหลังปรับและข้อมูลผู้อนุมัติไป n8n
+  เปิด Order จาก `orderId`
+  ลดจำนวนได้ แต่เพิ่มเกินจำนวนเดิมไม่ได้
+  บังคับเหตุผลเมื่อปรับลด
+  กรอกค่าขนส่ง ส่วนลด ค่าใช้จ่ายอื่น และหมายเหตุ
+  คำนวณ VAT 7% จากค่าสินค้าหลังหักส่วนลด โดยค่าขนส่ง/ค่าใช้จ่ายอื่นไม่อยู่ในฐาน VAT
+  ส่งรายการหลังปรับและข้อมูลผู้อนุมัติไป n8n
 
 ### n8n
 
-- อ่าน Profile/ที่อยู่และสินค้า
-- สร้าง Order บันทึกที่อยู่ และแจ้ง Admin หลายคน
-- กรอง Admin ด้วย Role/Status/Notify_Order
-- ตรวจสิทธิ์ผู้อนุมัติ
-- บันทึกยอด ผู้อนุมัติ และ Approval History ใน workflow รุ่นที่รองรับ
-- สร้างใบส่งของ PDF จาก Google Sheets Template และบันทึกในโฟลเดอร์ Drive `ใบส่งของ`
-- แจ้งผลอนุมัติพร้อมลิงก์ PDF ให้สาขาและ Admin ทุกคนที่ `ACTIVE + Notify_Order=TRUE`
+  อ่าน Profile/ที่อยู่และสินค้า
+  สร้าง Order บันทึกที่อยู่ และแจ้ง Admin หลายคน
+  กรอง Admin ด้วย Role/Status/Notify_Order
+  ตรวจสิทธิ์ผู้อนุมัติ
+  บันทึกยอด ผู้อนุมัติ และ Approval History ใน workflow รุ่นที่รองรับ
+  สร้างใบส่งของ PDF จาก Google Sheets Template และบันทึกในโฟลเดอร์ Drive `ใบส่งของ`
+
+  แจ้งผลอนุมัติพร้อมลิงก์ PDF ให้สาขาและ Admin ทุกคนที่ `ACTIVE + Notify_Order=TRUE`
 
 > การป้องกัน Admin สองคนกดพร้อมกันยังไม่เป็น transaction ที่สมบูรณ์ ดู `plan.md`
 
@@ -138,7 +139,7 @@ Schema ฉบับเต็มอยู่ใน [structure.md](structure.md)
 
   `n8n_workflow_current_template_mapping_fixed.json` — mapping Template A4 ถูกต้อง
   `n8n_workflow_chaphranakhon_admin_adjustment_history.json` — ปรับจำนวน เหตุผล และ Approval History
-  `outputs/delivery-note-template/Chaphranakhon_Delivery_Note_Template_A4.xlsx` — Template ใบส่งของ A4 รองรับ 24 รายการต่อ PDF; รายการเกินจะสร้าง PDF หน้าต่อเนื่อง
+  `outputs/delivery note template/Chaphranakhon_Delivery_Note_Template_A4.xlsx` — Template ใบส่งของ A4 รองรับ 24 รายการต่อ PDF; รายการเกินจะสร้าง PDF หน้าต่อเนื่อง
 
   `vat template a4/Chaphranakhon_VAT_Template_A4.xlsx` — VAT Template เดิม ใช้เป็นต้นแบบการออกแบบ
 

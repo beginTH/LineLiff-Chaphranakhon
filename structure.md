@@ -236,9 +236,9 @@ POST /admin-approve
 → Build Delivery Note Payload
 → Copy Delivery Note Template
 → Merge Delivery Note Template
-→ Fill Delivery Note Template
+→ Compact Delivery Note Layout
 → Restore Delivery Note Payload
-→ Export Delivery Note PDF
+→ Export Delivery Note PDF (A4 portrait, scale=4)
 → Upload Delivery Note PDF
 → Build PDF URL
 → Update PDF URL

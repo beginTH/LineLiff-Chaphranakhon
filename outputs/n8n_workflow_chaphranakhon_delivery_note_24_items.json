@@ -986,7 +986,7 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        34144,
+        34688,
         9616
       ]
     },
@@ -1105,7 +1105,7 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        30800,
+        31360,
         9616
       ],
       "credentials": {
@@ -1125,13 +1125,13 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        31056,
+        31616,
         9616
       ]
     },
     {
       "parameters": {
-        "url": "={{ 'https://www.googleapis.com/drive/v3/files/' + $json.copiedFileId + '/export?mimeType=application/pdf' }}",
+        "url": "={{ 'https://docs.google.com/spreadsheets/d/' + $json.copiedFileId + '/export?format=pdf&size=A4&portrait=true&scale=4&sheetnames=false&printtitle=false&pagenumbers=false&gridlines=false&fzr=false&top_margin=0.15&bottom_margin=0.15&left_margin=0.20&right_margin=0.20&gid=360034478' }}",
         "authentication": "predefinedCredentialType",
         "nodeCredentialType": "googleOAuth2Api",
         "options": {}
@@ -1141,7 +1141,7 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        31328,
+        31872,
         9616
       ],
       "credentials": {
@@ -1161,7 +1161,7 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        31840,
+        32384,
         9616
       ]
     },
@@ -1231,7 +1231,7 @@
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4,
       "position": [
-        32352,
+        32896,
         9616
       ],
       "alwaysOutputData": true,
@@ -1251,7 +1251,7 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        32608,
+        33152,
         9616
       ]
     },
@@ -1272,7 +1272,7 @@
       "type": "@aotoki/n8n-nodes-line-messaging.lineMessaging",
       "typeVersion": 1,
       "position": [
-        32864,
+        33408,
         9616
       ],
       "credentials": {
@@ -1305,7 +1305,7 @@
       "type": "n8n-nodes-base.googleDrive",
       "typeVersion": 3,
       "position": [
-        31584,
+        32128,
         9616
       ],
       "credentials": {
@@ -1490,7 +1490,7 @@
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4,
       "position": [
-        33120,
+        33664,
         9616
       ],
       "parameters": {
@@ -1523,11 +1523,11 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        33376,
+        33920,
         9616
       ],
       "parameters": {
-        "jsCode": "function norm(value) { return String(value || '').trim().toLowerCase(); }\nfunction asBool(value) {\n  if (typeof value === 'boolean') return value;\n  return ['true', '1', 'yes', 'y'].includes(norm(value));\n}\nfunction money(value) {\n  return Number(value || 0).toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });\n}\nfunction parseJson(value, fallback) {\n  try { return value ? JSON.parse(value) : fallback; } catch { return fallback; }\n}\nconst payload = $node['Aggregate Delivery Note PDFs'].json;\nconst approval = $node['Build Approval Row'].json;\nconst details = parseJson(approval.Order_Details, {});\nconst items = Array.isArray(details.orderItems) ? details.orderItems : [];\nconst adjusted = items.filter(item => Number(item.originalQuantity ?? item.quantity ?? 0) !== Number(item.quantity || 0));\nconst adjustedLines = adjusted.slice(0, 10).map(item => {\n  const name = item.productName || item.Product_Name || item.productId || item.Product_ID || '-';\n  return '- ' + name + ': ' + Number(item.originalQuantity || 0) + ' → ' + Number(item.quantity || 0);\n});\nif (adjusted.length > 10) adjustedLines.push('- และอีก ' + (adjusted.length - 10) + ' รายการ');\nconst admins = $input.all().map(item => item.json);\nconst recipients = admins.filter(admin => {\n  const uid = String(admin.LINE_UID || admin.lineUid || '').trim();\n  return uid && norm(admin.Status) === 'active' && asBool(admin.Notify_Order);\n});\nif (recipients.length === 0) throw new Error('No ACTIVE admin with Notify_Order=TRUE for approval notification');\nconst approvedBy = approval.Approved_By || approval.Approved_By_UID || '-';\nconst lines = [\n  'คำสั่งซื้อได้รับการอนุมัติแล้ว',\n  'เลขที่: ' + payload.orderId,\n  'สาขา: ' + payload.branchName,\n  'ผู้อนุมัติ: ' + approvedBy,\n  adjustedLines.length ? 'รายการที่ปรับลด:\n' + adjustedLines.join('\n') : 'รายการที่ปรับลด: ไม่มี',\n  approval.Adjustment_Reason ? 'เหตุผล: ' + approval.Adjustment_Reason : '',\n  'ค่าวัตถุดิบ: ฿' + money(payload.subtotal),\n  'ส่วนลด: ฿' + money(payload.discount),\n  'VAT 7%: ฿' + money(payload.vatAmount),\n  'ค่าขนส่ง: ฿' + money(payload.shippingCost) + ' (ไม่คิด VAT)',\n  Number(payload.otherFee || 0) ? 'ค่าใช้จ่ายอื่น: ฿' + money(payload.otherFee) + ' (ไม่คิด VAT)' : '',\n  'ยอดรวมทั้งสิ้น: ฿' + money(payload.totalAmount),\n  'ใบส่งของ PDF (' + payload.pageCount + ' หน้า):\\n' + payload.pdfUrls.map((url,index) => 'หน้าที่ ' + (index+1) + ': ' + url).join('\\n'),\n].filter(Boolean);\nreturn recipients.map(admin => ({ json: {\n  adminId: admin.Admin_ID || '',\n  adminName: admin.Display_Name || '',\n  to: String(admin.LINE_UID || admin.lineUid || '').trim(),\n  text: lines.join('\n'),\n} }));"
+        "jsCode": "function norm(value) { return String(value || '').trim().toLowerCase(); }\nfunction asBool(value) {\n  if (typeof value === 'boolean') return value;\n  return ['true', '1', 'yes', 'y'].includes(norm(value));\n}\nfunction money(value) {\n  return Number(value || 0).toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });\n}\nfunction parseJson(value, fallback) {\n  try { return value ? JSON.parse(value) : fallback; } catch { return fallback; }\n}\nconst newline = String.fromCharCode(10);\nconst payload = $node['Aggregate Delivery Note PDFs'].json;\nconst approval = $node['Build Approval Row'].json;\nconst details = parseJson(approval.Order_Details, {});\nconst items = Array.isArray(details.orderItems) ? details.orderItems : [];\nconst adjusted = items.filter(item => Number(item.originalQuantity ?? item.quantity ?? 0) !== Number(item.quantity || 0));\nconst adjustedLines = adjusted.slice(0, 10).map(item => {\n  const name = item.productName || item.Product_Name || item.productId || item.Product_ID || '-';\n  return '- ' + name + ': ' + Number(item.originalQuantity || 0) + ' → ' + Number(item.quantity || 0);\n});\nif (adjusted.length > 10) adjustedLines.push('- และอีก ' + (adjusted.length - 10) + ' รายการ');\nconst admins = $input.all().map(item => item.json);\nconst recipients = admins.filter(admin => {\n  const uid = String(admin.LINE_UID || admin.lineUid || '').trim();\n  return uid && norm(admin.Status) === 'active' && asBool(admin.Notify_Order);\n});\nif (recipients.length === 0) throw new Error('No ACTIVE admin with Notify_Order=TRUE for approval notification');\nconst approvedBy = approval.Approved_By || approval.Approved_By_UID || '-';\nconst pageLinks = payload.pdfUrls.map((url, index) => 'หน้าที่ ' + (index + 1) + ': ' + url).join(newline);\nconst lines = [\n  'คำสั่งซื้อได้รับการอนุมัติแล้ว',\n  'เลขที่: ' + payload.orderId,\n  'สาขา: ' + payload.branchName,\n  'ผู้อนุมัติ: ' + approvedBy,\n  adjustedLines.length ? 'รายการที่ปรับลด:' + newline + adjustedLines.join(newline) : 'รายการที่ปรับลด: ไม่มี',\n  approval.Adjustment_Reason ? 'เหตุผล: ' + approval.Adjustment_Reason : '',\n  'ค่าวัตถุดิบ: ฿' + money(payload.subtotal),\n  'ส่วนลด: ฿' + money(payload.discount),\n  'VAT 7%: ฿' + money(payload.vatAmount),\n  'ค่าขนส่ง: ฿' + money(payload.shippingCost) + ' (ไม่คิด VAT)',\n  Number(payload.otherFee || 0) ? 'ค่าใช้จ่ายอื่น: ฿' + money(payload.otherFee) + ' (ไม่คิด VAT)' : '',\n  'ยอดรวมทั้งสิ้น: ฿' + money(payload.totalAmount),\n  'ใบส่งของ PDF (' + payload.pageCount + ' หน้า):' + newline + pageLinks,\n].filter(Boolean);\nreturn recipients.map(admin => ({ json: {\n  adminId: admin.Admin_ID || '',\n  adminName: admin.Display_Name || '',\n  to: String(admin.LINE_UID || admin.lineUid || '').trim(),\n  text: lines.join(newline),\n} }));"
       }
     },
     {
@@ -1545,7 +1545,7 @@
       "type": "@aotoki/n8n-nodes-line-messaging.lineMessaging",
       "typeVersion": 1,
       "position": [
-        33632,
+        34176,
         9616
       ],
       "id": "9b108b16-8d63-499e-aba9-63dbe56d7f2c",
@@ -1564,7 +1564,7 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        33888,
+        34432,
         9616
       ],
       "parameters": {
@@ -1577,11 +1577,51 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        32096,
+        32640,
         9616
       ],
       "parameters": {
         "jsCode": "const pages = $input.all().map(item => item.json).sort((a,b) => Number(a.pageNumber)-Number(b.pageNumber));\nif (!pages.length) throw new Error('No Delivery Note PDF was generated');\nconst first = pages[0];\nreturn [{ json: { ...first, pageCount: pages.length, pdfFileIds: pages.map(page => page.pdfFileId), pdfUrls: pages.map(page => page.pdfUrl), pdfFileId: pages[0].pdfFileId, pdfUrl: pages[0].pdfUrl } }];"
+      }
+    },
+    {
+      "id": "032f8aa5-60c4-4bbd-a321-6fa78526442b",
+      "name": "Compact Delivery Note Layout",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        30848,
+        9616
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ 'https://sheets.googleapis.com/v4/spreadsheets/' + $json.spreadsheetId + ':batchUpdate' }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleOAuth2Api",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ requests: [{ updateDimensionProperties: { range: { sheetId: 360034478, dimension: 'ROWS', startIndex: 10, endIndex: 13 }, properties: { pixelSize: 3 }, fields: 'pixelSize' } }, { updateDimensionProperties: { range: { sheetId: 360034478, dimension: 'ROWS', startIndex: 20, endIndex: 21 }, properties: { pixelSize: 3 }, fields: 'pixelSize' } }] }) }}",
+        "options": {}
+      },
+      "credentials": {
+        "googleOAuth2Api": {
+          "id": "QFxTIh9zRRzFm0DM",
+          "name": "Google account DevCharphranakhon"
+        }
+      }
+    },
+    {
+      "id": "5e0395cd-b7c0-4e22-825d-38df737123d0",
+      "name": "Restore Payload After Layout",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        31104,
+        9616
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const payload = $('Merge Delivery Note Template').item.json;\nreturn { json: payload };"
       }
     }
   ],
@@ -1778,7 +1818,7 @@
       "main": [
         [
           {
-            "node": "Fill Delivery Note Template",
+            "node": "Compact Delivery Note Layout",
             "type": "main",
             "index": 0
           }
@@ -1993,6 +2033,28 @@
           }
         ]
       ]
+    },
+    "Compact Delivery Note Layout": {
+      "main": [
+        [
+          {
+            "node": "Restore Payload After Layout",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Restore Payload After Layout": {
+      "main": [
+        [
+          {
+            "node": "Fill Delivery Note Template",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
   "active": false,
@@ -2010,7 +2072,9 @@
     "deliveryNoteFolderId": "1FHNyImK-lq254V6frA6XtguAyth9b0kv",
     "approvalAdminNotification": "Status=ACTIVE and Notify_Order=TRUE; includes approving admin; per-recipient send uses continueOnFail",
     "deliveryNotePagination": "24 items per PDF; orders over 24 generate multiple PDF links",
-    "templateFileId": "1Iveod-7q7TpIZAkfHGARHgkJdvq96NxxL64i3ubMIr4"
+    "templateFileId": "1Iveod-7q7TpIZAkfHGARHgkJdvq96NxxL64i3ubMIr4",
+    "pdfExport": "Google Sheets A4 portrait scale=4 with compact buyer gap",
+    "buyerGapRows": "Rows 11-13 set to 3px; row 21 set to 3px"
   },
   "nodeGroups": [],
   "id": "J3xwohRu7uOfR0O3",
