@@ -343,9 +343,9 @@ Template ต้องเป็น Google Sheets แบบ Native ไม่ใช
 ### 7.3 แบ่งหน้า Export และจัดเก็บ
 
 1. แบ่งสินค้าเป็นชุดละ 24 รายการ; ถ้าเกินให้สร้างสำเนา Template และ PDF เพิ่มตามจำนวนหน้า
-3. Export เป็น PDF
-4. อัปโหลด PDF ไป Google Drive
-5. รวม File ID/URL ทุกหน้าแล้วบันทึก `PO_PDF_File_ID` และ `PO_PDF_URL` กลับลง `Orders`
+3. ยุบแถวว่าง 11–13 และแถวคั่น 21 ในสำเนา Template
+5. อัปโหลด PDF ไป Google Drive
+6. รวม File ID/URL ทุกหน้าแล้วบันทึก `PO_PDF_File_ID` และ `PO_PDF_URL` กลับลง `Orders`
 
 ---
 
