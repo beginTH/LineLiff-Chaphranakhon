@@ -485,3 +485,31 @@ PO_PDF_File_ID, PO_PDF_URL
 - `outputs/n8n_workflow_chaphranakhon_delivery_note_24_items.json` — workflow ใบส่งของ 24 รายการต่อ PDF พร้อมแบ่งหน้าต่อเนื่อง สูตร VAT ไม่รวมค่าขนส่ง และรวม Admin Adjustment/Approval History
 
 สำหรับ Production ควรรวมความสามารถทั้งสองส่วนไว้ใน workflow เดียว และเปิดใช้งานเพียง workflow เดียวเท่านั้น
+
+## Delivery Note V4 FONT10 (2026-07-19)
+
+The active import candidate is `outputs/n8n_workflow_chaphranakhon_delivery_note_v4_font10_clean_import.json`. The approval flow compacts the Google Sheet layout before filling data, uses 10pt item text with 17px item rows, exports A4 portrait at scale 2, and supports 24 items per PDF page. Import this as a new n8n workflow and keep earlier workflows inactive to avoid duplicate webhook paths.
+
+## Delivery Note V5 NEW TEMPLATE (2026-07-19)
+
+Import candidate: `outputs/n8n_workflow_chaphranakhon_delivery_note_v5_new_template_clean_import.json`. Google Template File ID is `16hyVHs6HfqyZpj8zriDl_cMbq3f0bnFMLjLjuc4sZxg` and Sheet ID is `906132224`. The Google OAuth account used by n8n must have Editor access to both the template and destination folder. The document keeps 10pt item text, 17px item rows, 24 items per page, and A4 portrait scale 2.
+
+## Delivery Note V6 ACTUAL SIZE (2026-07-19)
+
+Import candidate: `outputs/n8n_workflow_chaphranakhon_delivery_note_v6_actual_size_zero_margins_clean_import.json`. PDF export uses A4 portrait at `scale=1` with top, bottom, left, and right margins set to `0`. Item text remains 10pt and each document page supports up to 24 items. Physical printers may still impose their own non-printable margin.
+
+## Delivery Note V7 20 ITEMS FIT A4 (2026-07-19)
+
+Import candidate: `outputs/n8n_workflow_chaphranakhon_delivery_note_v7_20_items_fit_a4_clean_import.json`. The PDF diagnosis showed horizontal overflow at scale 1: the right-side document number, amount column, and totals moved to page 2. V7 sets explicit A:J column widths totaling 717px, limits each document page to 20 product rows (B22:J41), hides unused template rows 42:45, and retains A4 portrait, scale 1, zero margins, and 10pt item text.
+
+## Delivery Note V8 SIGNATURE SPACE (2026-07-19)
+
+Import candidate: `outputs/n8n_workflow_chaphranakhon_delivery_note_v8_20_items_signature_space_clean_import.json`. V7 compacted all footer rows to 18px, clipping the multi-line receiver and deliverer blocks. V8 keeps 20 item rows but sets row 53 to 24px, row 54 to 4px, rows 55-57 to 25px each, row 58 to 4px, and row 59 to 18px.
+
+## Delivery Note V9 HIDE ZERO QUANTITY (2026-07-19)
+
+Import candidate: `outputs/n8n_workflow_chaphranakhon_delivery_note_v9_hide_zero_quantity_clean_import.json`. Before pagination and template fill, the Delivery Note filters its order-item list to approved quantities greater than zero. Items reduced to zero by an admin are not printed. The pricing summary still uses the approved order totals. If every item is reduced to zero, one Delivery Note is still generated with an empty product section.
+
+## Payment proof and branch history V10 (2026-07-20)
+
+The existing Branch LIFF routes ?screen=history to the order-history screen and ?screen=payment-proof to the proof-upload screen. GET /get-order-history returns only the caller's orders by LINE UID. POST /submit-payment-proof accepts JPG/PNG/WEBP proof images up to 5MB, checks ownership plus approved order status, uploads to the configured Drive folder, and updates payment columns in Orders. PO order IDs remain unchanged.

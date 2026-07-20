@@ -1,0 +1,43 @@
+{
+  "size": {
+    "width": 2500,
+    "height": 1686
+  },
+  "selected": true,
+  "name": "ชาพระนคร | เมนูสั่งซื้อและส่งหลักฐานการโอนเงิน",
+  "chatBarText": "เมนูหลัก",
+  "areas": [
+    {
+      "bounds": { "x": 0, "y": 0, "width": 1250, "height": 843 },
+      "action": {
+        "type": "uri",
+        "label": "สั่งซื้อวัตถุดิบ",
+        "uri": "https://liff.line.me/2010570929-oEaIS3oQ"
+      }
+    },
+    {
+      "bounds": { "x": 1250, "y": 0, "width": 1250, "height": 843 },
+      "action": {
+        "type": "uri",
+        "label": "ประวัติออเดอร์",
+        "uri": "https://liff.line.me/2010570929-oEaIS3oQ?screen=history"
+      }
+    },
+    {
+      "bounds": { "x": 0, "y": 843, "width": 1250, "height": 843 },
+      "action": {
+        "type": "uri",
+        "label": "ติดต่อเรา",
+        "uri": "tel:+66887896282"
+      }
+    },
+    {
+      "bounds": { "x": 1250, "y": 843, "width": 1250, "height": 843 },
+      "action": {
+        "type": "uri",
+        "label": "ส่งหลักฐานการโอนเงิน",
+        "uri": "https://liff.line.me/2010570929-oEaIS3oQ?screen=payment-proof"
+      }
+    }
+  ]
+}
