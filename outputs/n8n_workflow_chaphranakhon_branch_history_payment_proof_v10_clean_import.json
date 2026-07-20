@@ -159,7 +159,7 @@
         },
         "folderId": {
           "__rl": true,
-          "value": "https://drive.google.com/drive/folders/REPLACE_WITH_PAYMENT_PROOF_FOLDER_ID",
+          "value": "https://drive.google.com/drive/folders/1a5ILurYSpmlbIud7sF8rMSVeHvNDUrPQ",
           "mode": "url"
         },
         "options": {}
@@ -444,7 +444,7 @@
   "meta": {
     "version": "V10",
     "purpose": "Branch order history and payment proof upload",
-    "paymentProofFolderId": "REPLACE_WITH_PAYMENT_PROOF_FOLDER_ID",
+    "paymentProofFolderId": "1a5ILurYSpmlbIud7sF8rMSVeHvNDUrPQ",
     "requiredOrderColumns": [
       "Payment_Status",
       "Payment_Proof_URL",

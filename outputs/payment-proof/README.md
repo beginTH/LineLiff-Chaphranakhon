@@ -16,9 +16,9 @@ Add these headers to the `Orders` sheet exactly as written. Existing rows may be
 | `Payment_Transfer_At` | Transfer date/time entered by the branch |
 | `Payment_Note` | Optional branch note |
 
-## Required n8n change
+## Google Drive folder
 
-Open node **Upload Payment Proof** and replace `REPLACE_WITH_PAYMENT_PROOF_FOLDER_ID` with the ID from the Google Drive folder URL for `หลักฐานการโอน`.
+The workflow is preconfigured to store payment proofs in the Google Drive folder `หลักฐานการโอนเงิน` (`1a5ILurYSpmlbIud7sF8rMSVeHvNDUrPQ`).
 
 The Google Drive and Google Sheets credentials used by the workflow must have Editor access to that folder and the database spreadsheet.
 
