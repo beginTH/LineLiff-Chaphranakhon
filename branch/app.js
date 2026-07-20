@@ -27,6 +27,14 @@ const CONFIG = {
 };
 
 /** ตรวจสอบว่าอยู่ใน LINE environment หรือเปล่า */
+const liffUrlParams = new URLSearchParams(window.location.search);
+const liffState = liffUrlParams.get('liff.state') || '';
+const liffStateParams = new URLSearchParams(liffState.replace(/^\?/, ''));
+const requestedScreen = liffUrlParams.get('screen') || liffStateParams.get('screen');
+if (requestedScreen === 'history' || requestedScreen === 'payment-proof') {
+    const target = requestedScreen === 'history' ? 'history.html' : 'payment-proof.html';
+    window.location.replace(`${target}${window.location.search}`);
+}
 const isLiffAvailable = () => typeof liff !== 'undefined';
 
 /**
@@ -909,5 +917,5 @@ document.addEventListener('DOMContentLoaded', () => {
     // ─────────────────────────────────────────────
     // START
     // ─────────────────────────────────────────────
-    initApp();
+    if (!requestedScreen) initApp();
 });
