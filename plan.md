@@ -77,24 +77,24 @@
 
 ### P0 — Duplicate approval protection
 
-  [ ] อ่าน Status ล่าสุดก่อน update
-  [ ] อนุญาต approve เฉพาะ `Pending`
+  [x] อ่าน Status ล่าสุดก่อน update
+  [x] อนุญาต approve เฉพาะ `Pending`
   [ ] เปลี่ยนเป็น `Approving` ก่อนเริ่ม document pipeline
   [ ] ทำ lock ต่อ `orderId` ด้วย n8n Data Store, database หรือ queue
   [ ] ตอบ `409 Already Approved` พร้อมชื่อและเวลาให้ Admin คนถัดไป
 
 ### P0 — Server side trust
 
-  [ ] อ่านราคาสินค้าและ subtotal จาก server/Sheets ไม่เชื่อค่าจาก browser
+  [x] อ่านราคาสินค้าและ subtotal จาก server/Sheets ไม่เชื่อค่าจาก browser
   [ ] ใช้ชื่อ/Role Admin จากชีต ไม่ใช้ `adminName` จาก request
-  [ ] ตรวจ `adjustedQuantity <= originalQuantity` ใน n8n
-  [ ] ปฏิเสธ quantity ติดลบหรือไม่เป็นจำนวนเต็ม
+  [x] ตรวจ `adjustedQuantity <= originalQuantity` ใน n8n
+  [x] ปฏิเสธ quantity ติดลบหรือไม่เป็นจำนวนเต็ม
 
 ### P1 — Authorization
 
   [ ] เพิ่ม `adminUid` ใน GET get order
   [ ] ตรวจ Admin Active/Role ก่อนส่งรายละเอียด Order
-  [ ] เปลี่ยน Role check เป็น exact match
+  [x] เปลี่ยน Role check เป็น exact match
   [ ] แยก Role ที่ดูได้กับ Role ที่อนุมัติได้
 
 ### P1 — Error handling

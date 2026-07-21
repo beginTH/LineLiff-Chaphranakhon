@@ -1,0 +1,75 @@
+{
+  "name": "Chaphranakhon Credit Overdue Daily 09:00",
+  "active": false,
+  "settings": {"timezone": "Asia/Bangkok"},
+  "nodes": [
+    {
+      "parameters": {"rule": {"interval": [{"field": "cronExpression", "expression": "0 9 * * *"}]}},
+      "id": "credit-overdue-schedule",
+      "name": "Every day 09:00 Asia/Bangkok",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [260, 300]
+    },
+    {
+      "parameters": {
+        "operation": "read",
+        "documentId": {"__rl": true, "value": "1aKwY4KOo8uGCRrHASD539Habt5Obam8meacRO-ir0Ks", "mode": "list"},
+        "sheetName": {"__rl": true, "value": "gid=0", "mode": "list"},
+        "options": {}
+      },
+      "id": "credit-overdue-read-orders",
+      "name": "Read Orders",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [520, 300],
+      "credentials": {"googleSheetsOAuth2Api": {"id": "ZPODlcDmX45WFVuM", "name": "Google Sheets account 2"}}
+    },
+    {
+      "parameters": {"jsCode": "const now = Date.now();\nconst due = $input.all().map(i => i.json).filter(o => {\n  const status = String(o.Status || '').toLowerCase();\n  const payment = String(o.Payment_Status || o.PaymentStatus || '').toLowerCase();\n  const date = Date.parse(o.Credit_Due_Date || '');\n  return ['approved','completed'].includes(status) && !['paid','verified'].includes(payment) && Number.isFinite(date) && date < now;\n});\nconst total = due.reduce((s,o) => s + Number(o.Total_Amount || 0), 0);\nconst lines = due.map(o => `- ${o.Order_ID}: ฿${Number(o.Total_Amount || 0).toLocaleString('th-TH',{minimumFractionDigits:2})} ครบกำหนด ${o.Credit_Due_Date}`);\nreturn [{json:{overdueCount:due.length,total,summary:due.length ? `แจ้งเตือนเครดิตค้างชำระ (${due.length} รายการ)\n${lines.join('\\n')}\nรวม ฿${total.toLocaleString('th-TH',{minimumFractionDigits:2})}` : 'วันนี้ไม่มีเครดิตค้างชำระ'}}];"},
+      "id": "credit-overdue-build-report",
+      "name": "Build Credit Overdue Report",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [780, 300]
+    },
+    {
+      "parameters": {
+        "operation": "read",
+        "documentId": {"__rl": true, "value": "1aKwY4KOo8uGCRrHASD539Habt5Obam8meacRO-ir0Ks", "mode": "list"},
+        "sheetName": {"__rl": true, "value": 152266287, "mode": "list"},
+        "options": {}
+      },
+      "id": "credit-overdue-read-admins",
+      "name": "Read Admins For Credit Overdue",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [520, 520],
+      "credentials": {"googleSheetsOAuth2Api": {"id": "ZPODlcDmX45WFVuM", "name": "Google Sheets account 2"}}
+    },
+    {
+      "parameters": {"mode": "runOnceForAllItems", "jsCode": "const report = $node['Build Credit Overdue Report'].json.summary;\nconst admins = $input.all().map(i => i.json).filter(a => String(a.Status||'').toLowerCase()==='active' && String(a.Notify_Credit_Overdue ?? a.Notify_Order ?? '').toLowerCase() !== 'false' && String(a.LINE_UID||a.lineUid||'').trim());\nreturn admins.map(a => ({json:{to:String(a.LINE_UID||a.lineUid).trim(),text:report}}));"},
+      "id": "credit-overdue-recipient-build",
+      "name": "Build Credit Overdue Recipients",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1040, 420]
+    },
+    {
+      "parameters": {"operation": "send", "to": "={{ $json.to }}", "messages": {"values": [{"text": "={{ $json.text }}"}]}},
+      "id": "credit-overdue-line-send",
+      "name": "Notify Admins Credit Overdue",
+      "type": "@aotoki/n8n-nodes-line-messaging.lineMessaging",
+      "typeVersion": 1,
+      "position": [1300, 420],
+      "credentials": {"lineMessagingApi": {"id": "4YlidIdv3s5ML4GE", "name": "Line Messaging rkitja2523"}}
+    }
+  ],
+  "connections": {
+    "Every day 09:00 Asia/Bangkok": {"main": [[{"node":"Read Orders","type":"main","index":0},{"node":"Read Admins For Credit Overdue","type":"main","index":0}]]},
+    "Read Orders": {"main": [[{"node":"Build Credit Overdue Report","type":"main","index":0}]]},
+    "Build Credit Overdue Report": {"main": [[{"node":"Build Credit Overdue Recipients","type":"main","index":0}]]},
+    "Read Admins For Credit Overdue": {"main": [[{"node":"Build Credit Overdue Recipients","type":"main","index":0}]]},
+    "Build Credit Overdue Recipients": {"main": [[{"node":"Notify Admins Credit Overdue","type":"main","index":0}]]}
+  }
+}
