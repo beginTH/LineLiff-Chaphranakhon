@@ -1,5 +1,5 @@
 {
-  "name": "ระบบสั่งซื้อวัตถุดิบ ชาพระนคร - Delivery Note 24 Items",
+  "name": "Chaphranakhon Delivery Note V7 20 ITEMS FIT A4 CLEAN IMPORT",
   "nodes": [
     {
       "parameters": {
@@ -7,7 +7,7 @@
         "responseMode": "lastNode",
         "options": {}
       },
-      "id": "aab3a380-7994-4256-8f49-0887a719d462",
+      "id": "1d647f9b-a8fa-4edc-a74f-38d127354c87",
       "name": "GET /get-user-profile",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 1,
@@ -15,7 +15,6 @@
         28976,
         8832
       ],
-      "webhookId": "2cc68d37-dad0-4dcd-93f7-b9fc2c29c3de",
       "notesInFlow": true,
       "notes": "GET ?uid=LINE_UID แล้วคืนข้อมูลสาขาและ addresses ให้ LIFF"
     },
@@ -37,7 +36,7 @@
         },
         "options": {}
       },
-      "id": "4f1e97ba-d5e5-4ff5-8bc3-54bd76f71252",
+      "id": "e8152144-9217-4fae-92f1-b977cfa6be9f",
       "name": "Read Users_Addresses",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4,
@@ -56,7 +55,7 @@
       "parameters": {
         "jsCode": "const uid = String($node['GET /get-user-profile'].json.query?.uid || '').trim();\nconst rows = $input.all().map(item => item.json);\nconst row = rows.find(item => String(item.LINE_UID || '').trim() === uid);\nif (!row) return [{ json: { uid, displayName: '', addresses: [] } }];\nconst addresses = [1,2,3,4,5].map(num => ({\n  id: 'addr-' + num,\n  label: row['Address_Label_' + num] || row.Branch_Name || ('ที่อยู่ ' + num),\n  text: row['Address_' + num] || '',\n  contactName: row['Contact_Name_' + num] || row.Contact_Name || row.Display_Name || '',\n  tel: row.Tel || '',\n})).filter(item => item.text);\nreturn [{ json: { uid, displayName: row.Display_Name || row.Branch_Name || '', branchName: row.Branch_Name || '', addresses } }];"
       },
-      "id": "056e6e8e-cac8-4f41-9818-7f82fcbbc39d",
+      "id": "3bab7bbd-f31f-4a6f-a0ea-540db30b317d",
       "name": "Format Profile Response",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -72,7 +71,7 @@
         "responseMode": "lastNode",
         "options": {}
       },
-      "id": "c6e4e86f-2feb-4be2-89c5-2c3ace4456e2",
+      "id": "23143bc8-89e3-4d81-9d5b-d36c635e004b",
       "name": "POST /submit-order",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 1,
@@ -80,7 +79,6 @@
         28976,
         9104
       ],
-      "webhookId": "ddebc1fe-7a15-413f-98ca-a5e1cac9a01b",
       "notesInFlow": true,
       "notes": "รับ payload จาก LIFF สาขา แล้วบันทึกลง Orders"
     },
@@ -88,7 +86,7 @@
       "parameters": {
         "jsCode": "const body = $json.body || $json;\nconst now = new Date();\nconst yyyy = now.getFullYear();\nconst mm = String(now.getMonth() + 1).padStart(2, '0');\nconst dd = String(now.getDate()).padStart(2, '0');\nconst rand = String(Math.floor(Math.random() * 1000)).padStart(3, '0');\nconst orderId = body.orderId || `PO-${yyyy}${mm}${dd}-${rand}`;\nconst deliveryAddress = body.deliveryAddress || {};\nconst orderItems = Array.isArray(body.orderItems) ? body.orderItems : [];\nconst subtotal = Number(body.subtotal || 0);\n\nreturn [{\n  json: {\n    Order_ID: orderId,\n    Timestamp: body.timestamp || now.toISOString(),\n    LINE_UID: body.lineUid || body.uid || '',\n    Delivery_Address: JSON.stringify(deliveryAddress),\n    Order_Details: JSON.stringify({\n      displayName: body.displayName || '',\n      orderItems,\n      note: body.note || '',\n      isNewAddress: Boolean(body.isNewAddress),\n    }),\n    Subtotal: subtotal,\n    Shipping_Cost: 0,\n    Discount: 0,\n    Other_Fee: 0,\n    VAT_Amount: 0,\n    Total_Amount: subtotal,\n    Status: 'Pending',\n    response: {\n      success: true,\n      orderId,\n      status: 'Pending',\n    },\n  },\n}];"
       },
-      "id": "df3414ea-1db5-4d46-a8ef-ab184f1cdd03",
+      "id": "4d961322-1e03-4527-aca6-adf63f3e8b4a",
       "name": "Build Order Row",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -115,7 +113,7 @@
         },
         "options": {}
       },
-      "id": "afed00bd-b2f1-4dae-9554-3a58ca34610f",
+      "id": "20fcd1c6-97f4-41cb-8825-1abc631b1314",
       "name": "Read Users For Submit",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4,
@@ -134,7 +132,7 @@
       "parameters": {
         "jsCode": "function parseJson(v,f){try{return v?JSON.parse(v):f}catch{return f}}\nconst order=$node['Build Order Row'].json;\nconst details=parseJson(order.Order_Details,{});\nconst address=parseJson(order.Delivery_Address,{});\nconst rows=$input.all().map(item=>item.json);\nconst row=rows.find(r=>String(r.LINE_UID||'').trim()===String(order.LINE_UID||'').trim())||{};\nconst update={LINE_UID:order.LINE_UID,Display_Name:row.Display_Name||details.displayName||'',Branch_Name:row.Branch_Name||address.label||details.displayName||'',Opening:row.Opening||'',Tel:String(address.tel||row.Tel||'').trim(),Contact_Name:row.Contact_Name||address.contactName||details.displayName||''};\nfor(const num of [1,2,3,4,5]){update['Address_'+num]=row['Address_'+num]||'';update['Address_Label_'+num]=row['Address_Label_'+num]||'';update['Contact_Name_'+num]=row['Contact_Name_'+num]||'';}\nconst newText=String(address.text||'').trim();\nif(details.isNewAddress&&newText){let num=[1,2,3,4,5].find(n=>String(update['Address_'+n]||'').trim()===newText);if(!num)num=[1,2,3,4,5].find(n=>!String(update['Address_'+n]||'').trim());if(num){update['Address_'+num]=newText;update['Address_Label_'+num]=address.label||update.Branch_Name||('ที่อยู่ '+num);update['Contact_Name_'+num]=address.contactName||details.displayName||'';}}\nreturn [{json:update}];"
       },
-      "id": "a81ee954-da12-4943-b716-0facd230ecc5",
+      "id": "ac614bfb-0621-48b1-b7fe-9772093d2172",
       "name": "Build Address Update Row",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -384,7 +382,7 @@
         },
         "options": {}
       },
-      "id": "fcda0e9d-7d34-4134-bd27-6c8401f912d0",
+      "id": "2d653d81-86c2-4334-bcdb-568065b9eef9",
       "name": "Update User Address",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4,
@@ -630,7 +628,7 @@
         },
         "options": {}
       },
-      "id": "90c9e832-b56e-407b-bbf3-8ad24983e173",
+      "id": "415f4543-c004-413e-b090-bac17c344406",
       "name": "Save New Order",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4,
@@ -649,7 +647,7 @@
       "parameters": {
         "jsCode": "const order = $node['Build Order Row'].json;\nreturn [{ json: order.response || { success: true, orderId: order.Order_ID } }];"
       },
-      "id": "add6b3f3-e28a-4fb8-8147-fe0881329dfd",
+      "id": "595b829b-ebbc-4462-869a-fe67a9ad4c59",
       "name": "Submit Order Response",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -664,7 +662,7 @@
         "responseMode": "lastNode",
         "options": {}
       },
-      "id": "aa189d69-11d0-4cb7-9391-dfd2b691efd1",
+      "id": "53bcecd0-4e40-4990-b4cb-f1505de63eeb",
       "name": "GET /get-order",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 1,
@@ -672,7 +670,6 @@
         28976,
         9360
       ],
-      "webhookId": "get-order-chaphranakhon",
       "notesInFlow": true,
       "notes": "GET ?orderId=PO-... แล้วคืนข้อมูลสำหรับหน้า admin"
     },
@@ -694,7 +691,7 @@
         },
         "options": {}
       },
-      "id": "1cf41b0b-0605-4e3e-8305-eae63688acd5",
+      "id": "b3291e13-e3a3-4b00-867e-becb542e9b8f",
       "name": "Read Orders",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4,
@@ -713,7 +710,7 @@
       "parameters": {
         "jsCode": "function parseJson(v,f){try{return v?JSON.parse(v):f}catch{return f}}\nconst orderId=String($node['GET /get-order'].json.query?.orderId||'').trim();\nconst row=$input.all().map(i=>i.json).find(r=>String(r.Order_ID||'').trim()===orderId);\nif(!row)return[{json:{success:false,message:'Order not found',orderId}}];\nconst deliveryAddress=parseJson(row.Delivery_Address,{}),details=parseJson(row.Order_Details,{});\nreturn[{json:{orderId:row.Order_ID,timestamp:row.Timestamp,status:row.Status||'Pending',branchInfo:{uid:row.LINE_UID||'',displayName:details.displayName||row.LINE_UID||''},deliveryAddress,orderItems:details.orderItems||[],subtotal:Number(row.Subtotal||0),shippingCost:Number(row.Shipping_Cost||0),discount:Number(row.Discount||0),otherFee:Number(row.Other_Fee||0),vatAmount:Number(row.VAT_Amount||0),totalAmount:Number(row.Total_Amount||0),note:details.note||'',adjustmentReason:row.Adjustment_Reason||'',approvalHistory:parseJson(row.Approval_History,[]),approvedBy:row.Approved_By||'',approvedAt:row.Approved_At||''}}];"
       },
-      "id": "7890d7fa-37ce-4dbc-8ac8-efe4f178e59b",
+      "id": "88daaa8e-66db-4929-b67f-e95e1fd64cb8",
       "name": "Format Order Response",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -729,7 +726,7 @@
         "responseMode": "lastNode",
         "options": {}
       },
-      "id": "c3d59247-b226-4ffe-840b-d12903efbf3d",
+      "id": "ccae9df5-56aa-429a-9d29-a66b977f247e",
       "name": "POST /admin-approve",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 1,
@@ -737,7 +734,6 @@
         28976,
         9616
       ],
-      "webhookId": "e259ba51-f5e9-47ac-8ebf-590f4086d827",
       "notesInFlow": true,
       "notes": "รับค่าขนส่งจาก admin แล้ว update Orders"
     },
@@ -745,7 +741,7 @@
       "parameters": {
         "jsCode": "const body=$json.body||$json;\nconst sourceItems=Array.isArray(body.adjustedOrderItems)?body.adjustedOrderItems:[];\nconst adjustedItems=sourceItems.map(item=>{const originalQuantity=Number(item.originalQuantity??item.quantity??0);const quantity=Math.min(originalQuantity,Math.max(0,Math.floor(Number(item.quantity)||0)));const pricePerUnit=Number(item.pricePerUnit||0);return{...item,originalQuantity,quantity,pricePerUnit,lineTotal:Number((quantity*pricePerUnit).toFixed(2))};});\nif(adjustedItems.length>24)throw new Error('Delivery Note supports a maximum of 24 items');\nconst subtotal=Number(adjustedItems.reduce((sum,item)=>sum+item.lineTotal,0).toFixed(2));\nconst shippingCost=Number(body.shippingCost||0),discount=Number(body.discount||0),otherFee=Number(body.otherFee||0);\nconst amountBeforeVat=Math.max(0,subtotal-discount),vatAmount=Number((amountBeforeVat*0.07).toFixed(2)),totalAmount=Number((amountBeforeVat+vatAmount+shippingCost+otherFee).toFixed(2));\nconst authorizedAdmin=body.authorizedAdmin||{},approvedAt=body.approvedAt||new Date().toISOString();\nconst adminUid=body.adminUid||'',adminName=authorizedAdmin.Display_Name||authorizedAdmin.Admin_ID||adminUid,adminRole=authorizedAdmin.Role||'';\nconst previous=Array.isArray(body.approvalHistory)?body.approvalHistory:[];\nconst history=[...previous,{action:'APPROVED',adminUid,adminName,adminRole,approvedAt,adjustmentReason:body.adjustmentReason||'',adminNote:body.adminNote||'',items:adjustedItems.map(i=>({productId:i.productId,originalQuantity:i.originalQuantity,approvedQuantity:i.quantity}))}];\nconst originalDetails=body.orderDetails&&typeof body.orderDetails==='object'?body.orderDetails:{};\nreturn[{json:{Order_ID:body.orderId,Branch_UID:body.branchUid||'',Order_Details:JSON.stringify({...originalDetails,displayName:body.branchDisplayName||'',orderItems:adjustedItems,note:body.orderNote||''}),Subtotal:subtotal,Shipping_Cost:shippingCost,Discount:discount,Other_Fee:otherFee,VAT_Amount:vatAmount,Total_Amount:totalAmount,Status:'Approved',Admin_Note:body.adminNote||'',Adjustment_Reason:body.adjustmentReason||'',Approved_By_UID:adminUid,Approved_By:adminName,Approved_At:approvedAt,Approval_History:JSON.stringify(history)}}];"
       },
-      "id": "d1a93d0e-c95c-4c05-a075-c045cd1c2fe3",
+      "id": "e18467b7-fc53-470c-af42-95a08060ad8c",
       "name": "Build Approval Row",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -962,7 +958,7 @@
         },
         "options": {}
       },
-      "id": "73917c73-a452-4981-8af0-4b629e14357d",
+      "id": "f875cad3-77fd-44ee-a6af-01fce1294c71",
       "name": "Update Shipping & Status",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4,
@@ -981,7 +977,7 @@
       "parameters": {
         "jsCode": "const a=$node['Build Approval Row'].json,p=$node['Aggregate Delivery Note PDFs'].json,n=$node['Summarize Admin Approval Notify'].json;return[{json:{success:true,orderId:a.Order_ID,status:a.Status,subtotal:a.Subtotal,shippingCost:a.Shipping_Cost,discount:a.Discount,otherFee:a.Other_Fee,vatAmount:a.VAT_Amount,totalAmount:a.Total_Amount,adjustmentReason:a.Adjustment_Reason,approvalHistory:JSON.parse(a.Approval_History||'[]'),pdfUrl:p.pdfUrl,pdfUrls:p.pdfUrls,pageCount:p.pageCount,adminNotification:n}}];"
       },
-      "id": "3a853552-97f0-434d-8dce-2a641c94e8ac",
+      "id": "d9c647a4-467b-4e45-af09-bf9e2464e4c7",
       "name": "Approve Response",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -994,7 +990,7 @@
       "parameters": {
         "jsCode": "function parseJson(value, fallback) {\n  try { return value ? JSON.parse(value) : fallback; } catch { return fallback; }\n}\n\nfunction norm(value) {\n  return String(value || '').trim().toLowerCase();\n}\n\nfunction asBool(value) {\n  if (typeof value === 'boolean') return value;\n  return ['true', '1', 'yes', 'y'].includes(norm(value));\n}\n\nfunction canApprove(role) {\n  const value = norm(role);\n  return value === 'owner' || value === 'approve' || value.includes('owner') || value.includes('approve');\n}\n\nconst order = $node['Build Order Row'].json;\nconst details = parseJson(order.Order_Details, {});\nconst delivery = parseJson(order.Delivery_Address, {});\nconst admins = $input.all().map(item => item.json);\nconst activeAdmins = admins.filter(admin => {\n  const uid = String(admin.LINE_UID || admin.lineUid || '').trim();\n  return uid && norm(admin.Status) === 'active' && asBool(admin.Notify_Order) && canApprove(admin.Role);\n});\n\nif (activeAdmins.length === 0) {\n  throw new Error('No active admin found in Admins sheet for order notification');\n}\n\nconst adminBaseUrl = 'https://liff.line.me/2010570929-BJxo68XQ';\nconst url = adminBaseUrl + (adminBaseUrl.includes('?') ? '&' : '?') + 'orderId=' + encodeURIComponent(order.Order_ID);\nconst branchName = delivery.label || details.displayName || order.LINE_UID;\nconst subtotal = Number(order.Subtotal || 0).toLocaleString('th-TH');\n\nreturn activeAdmins.map(admin => ({\n  json: {\n    adminId: admin.Admin_ID || '',\n    adminName: admin.Display_Name || '',\n    to: String(admin.LINE_UID || admin.lineUid || '').trim(),\n    text: [\n      'มีออเดอร์ใหม่',\n      'เลขที่: ' + order.Order_ID,\n      'สาขา: ' + branchName,\n      'ยอดวัตถุดิบ: ฿' + subtotal,\n      'กดอนุมัติ: ' + url,\n    ].join('\\n'),\n  },\n}));"
       },
-      "id": "227de478-d676-4364-9ce0-51587ca0430c",
+      "id": "9f036280-d0c3-48b4-a56f-ef51d2ed0754",
       "name": "Build Admin LINE Message",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -1021,7 +1017,7 @@
         },
         "options": {}
       },
-      "id": "e4741832-e66f-4da1-839e-88d655e0b18f",
+      "id": "c23bd5cf-3aa0-4126-8a4a-6570cea4a9be",
       "name": "Read Orders For Delivery Note",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4,
@@ -1038,9 +1034,9 @@
     },
     {
       "parameters": {
-        "jsCode": "function parseJson(value, fallback) {\n  try { return value ? JSON.parse(value) : fallback; } catch { return fallback; }\n}\nfunction pickFirst(source, keys, fallback = '') {\n  for (const key of keys) {\n    const value = source?.[key];\n    if (value !== undefined && value !== null && String(value).trim() !== '') return value;\n  }\n  return fallback;\n}\nfunction formatThaiDate(value) {\n  const date = value ? new Date(value) : new Date();\n  const validDate = Number.isNaN(date.getTime()) ? new Date() : date;\n  const parts = new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Bangkok', day: '2-digit', month: '2-digit', year: 'numeric' })\n    .formatToParts(validDate).reduce((result, part) => { result[part.type] = part.value; return result; }, {});\n  return parts.day + '/' + parts.month + '/' + parts.year;\n}\nconst approval = $node['Build Approval Row'].json;\nconst rows = $input.all().map(item => item.json);\nconst row = rows.find(item => String(item.Order_ID || '').trim() === String(approval.Order_ID || '').trim());\nif (!row) throw new Error('Order not found for Delivery Note: ' + approval.Order_ID);\nconst delivery = parseJson(row.Delivery_Address, {});\nconst details = parseJson(row.Order_Details, {});\nconst items = Array.isArray(details.orderItems) ? details.orderItems : [];\nconst buyerName = pickFirst(details, ['buyerName', 'displayName', 'contactName'], pickFirst(row, ['Display_Name'], ''));\nconst branchName = pickFirst(delivery, ['label', 'Address_Label', 'branchName'], pickFirst(details, ['branchName'], ''));\nconst addressText = pickFirst(delivery, ['text', 'address', 'Address'], '');\nconst contactName = pickFirst(delivery, ['contactName', 'contact', 'Contact_Name'], pickFirst(details, ['contactName'], buyerName));\nconst contactTel = String(pickFirst(delivery, ['tel', 'Tel', 'TEL', 'phone', 'Phone', 'mobile'], pickFirst(row, ['Tel', 'Phone'], ''))).trim();\nconst approvedDate = formatThaiDate(approval.Approved_At || row.Approved_At || row.Timestamp);\nconst subtotal = Number(approval.Subtotal ?? row.Subtotal ?? items.reduce((sum,item)=>sum+Number(item.lineTotal||0),0));\nconst shippingCost = Number(approval.Shipping_Cost || 0);\nconst discount = Number(approval.Discount || 0);\nconst otherFee = Number(approval.Other_Fee || 0);\nconst amountBeforeVat = Math.max(0, subtotal - discount);\nconst vatAmount = Number((amountBeforeVat * 0.07).toFixed(2));\nconst totalAmount = Number((amountBeforeVat + vatAmount + shippingCost + otherFee).toFixed(2));\nconst noteParts = [details.note || '', approval.Adjustment_Reason ? ('เหตุผลการปรับจำนวน: ' + approval.Adjustment_Reason) : '', approval.Admin_Note ? ('หมายเหตุ Admin: ' + approval.Admin_Note) : ''].filter(Boolean);\nconst pageSize = 24;\nconst pageCount = Math.max(1, Math.ceil(items.length / pageSize));\nreturn Array.from({ length: pageCount }, (_, pageIndex) => {\n  const pageNumber = pageIndex + 1;\n  const pageItems = items.slice(pageIndex * pageSize, pageNumber * pageSize);\n  const paddedItems = Array.from({ length: pageSize }, (_, index) => pageItems[index] || null);\n  const documentNumber = pageCount > 1 ? (approval.Order_ID + ' (' + pageNumber + '/' + pageCount + ')') : approval.Order_ID;\n  const values = [\n    { range: 'Delivery Note!D14', values: [[buyerName]] },\n    { range: 'Delivery Note!D15', values: [[branchName]] },\n    { range: 'Delivery Note!D16', values: [[addressText]] },\n    { range: 'Delivery Note!D17', values: [[contactName]] },\n    { range: 'Delivery Note!G17', values: [[contactTel ? ('Tel. ' + contactTel) : 'Tel.']] },\n    { range: 'Delivery Note!J14', values: [[documentNumber]] },\n    { range: 'Delivery Note!J15', values: [[approvedDate]] },\n    { range: 'Delivery Note!D18', values: [[noteParts.join(' | ')]] },\n    { range: 'Delivery Note!B22:B45', values: paddedItems.map((item, index) => [item ? pageIndex * pageSize + index + 1 : '']) },\n    { range: 'Delivery Note!C22:C45', values: paddedItems.map(item => [item ? pickFirst(item, ['productId', 'Product_ID', 'id']) : '']) },\n    { range: 'Delivery Note!E22:E45', values: paddedItems.map(item => [item ? pickFirst(item, ['productName', 'Product_Name', 'name']) : '']) },\n    { range: 'Delivery Note!G22:G45', values: paddedItems.map(item => [item ? Number(pickFirst(item, ['quantity', 'Quantity', 'qty'], 0)) : '']) },\n    { range: 'Delivery Note!H22:H45', values: paddedItems.map(item => [item ? pickFirst(item, ['unit', 'Unit', 'UOM']) : '']) },\n    { range: 'Delivery Note!I22:I45', values: paddedItems.map(item => [item ? Number(pickFirst(item, ['pricePerUnit', 'Price', 'price'], 0)) : '']) },\n    { range: 'Delivery Note!J22:J45', values: paddedItems.map(item => {\n      if (!item) return [''];\n      const quantity = Number(pickFirst(item, ['quantity', 'Quantity', 'qty'], 0));\n      const price = Number(pickFirst(item, ['pricePerUnit', 'Price', 'price'], 0));\n      return [Number(pickFirst(item, ['lineTotal', 'Line_Total', 'total'], quantity * price))];\n    }) },\n    { range: 'Delivery Note!J46', values: [[subtotal]] },\n    { range: 'Delivery Note!J47', values: [[discount]] },\n    { range: 'Delivery Note!J48', values: [[amountBeforeVat]] },\n    { range: 'Delivery Note!J49', values: [[vatAmount]] },\n    { range: 'Delivery Note!J50', values: [[shippingCost + otherFee]] },\n    { range: 'Delivery Note!J52', values: [[totalAmount]] },\n  ];\n  const pageSuffix = pageCount > 1 ? ('-P' + String(pageNumber).padStart(2, '0') + '-of-' + String(pageCount).padStart(2, '0')) : '';\n  return { json: {\n    orderId: approval.Order_ID, branchUid: approval.Branch_UID || row.LINE_UID || '', branchName: branchName || buyerName || row.LINE_UID || '',\n    subtotal, shippingCost, discount, otherFee, vatAmount, totalAmount, pageNumber, pageCount,\n    fileName: 'DN-' + approval.Order_ID + pageSuffix + '.pdf', copiedSheetName: 'DN_' + approval.Order_ID + pageSuffix,\n    templateFileId: '1Iveod-7q7TpIZAkfHGARHgkJdvq96NxxL64i3ubMIr4', folderId: '1FHNyImK-lq254V6frA6XtguAyth9b0kv',\n    valuesBatchUpdate: { valueInputOption: 'USER_ENTERED', data: values },\n  } };\n});"
+        "jsCode": "function parseJson(value, fallback) {\n  try { return value ? JSON.parse(value) : fallback; } catch { return fallback; }\n}\nfunction pickFirst(source, keys, fallback = '') {\n  for (const key of keys) {\n    const value = source?.[key];\n    if (value !== undefined && value !== null && String(value).trim() !== '') return value;\n  }\n  return fallback;\n}\nfunction formatThaiDate(value) {\n  const date = value ? new Date(value) : new Date();\n  const validDate = Number.isNaN(date.getTime()) ? new Date() : date;\n  const parts = new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Bangkok', day: '2-digit', month: '2-digit', year: 'numeric' })\n    .formatToParts(validDate).reduce((result, part) => { result[part.type] = part.value; return result; }, {});\n  return parts.day + '/' + parts.month + '/' + parts.year;\n}\nconst approval = $node['Build Approval Row'].json;\nconst rows = $input.all().map(item => item.json);\nconst row = rows.find(item => String(item.Order_ID || '').trim() === String(approval.Order_ID || '').trim());\nif (!row) throw new Error('Order not found for Delivery Note: ' + approval.Order_ID);\nconst delivery = parseJson(row.Delivery_Address, {});\nconst details = parseJson(row.Order_Details, {});\nconst items = Array.isArray(details.orderItems) ? details.orderItems : [];\nconst buyerName = pickFirst(details, ['buyerName', 'displayName', 'contactName'], pickFirst(row, ['Display_Name'], ''));\nconst branchName = pickFirst(delivery, ['label', 'Address_Label', 'branchName'], pickFirst(details, ['branchName'], ''));\nconst addressText = pickFirst(delivery, ['text', 'address', 'Address'], '');\nconst contactName = pickFirst(delivery, ['contactName', 'contact', 'Contact_Name'], pickFirst(details, ['contactName'], buyerName));\nconst contactTel = String(pickFirst(delivery, ['tel', 'Tel', 'TEL', 'phone', 'Phone', 'mobile'], pickFirst(row, ['Tel', 'Phone'], ''))).trim();\nconst approvedDate = formatThaiDate(approval.Approved_At || row.Approved_At || row.Timestamp);\nconst subtotal = Number(approval.Subtotal ?? row.Subtotal ?? items.reduce((sum,item)=>sum+Number(item.lineTotal||0),0));\nconst shippingCost = Number(approval.Shipping_Cost || 0);\nconst discount = Number(approval.Discount || 0);\nconst otherFee = Number(approval.Other_Fee || 0);\nconst amountBeforeVat = Math.max(0, subtotal - discount);\nconst vatAmount = Number((amountBeforeVat * 0.07).toFixed(2));\nconst totalAmount = Number((amountBeforeVat + vatAmount + shippingCost + otherFee).toFixed(2));\nconst noteParts = [details.note || '', approval.Adjustment_Reason ? ('เหตุผลการปรับจำนวน: ' + approval.Adjustment_Reason) : '', approval.Admin_Note ? ('หมายเหตุ Admin: ' + approval.Admin_Note) : ''].filter(Boolean);\nconst pageSize = 20;\nconst pageCount = Math.max(1, Math.ceil(items.length / pageSize));\nreturn Array.from({ length: pageCount }, (_, pageIndex) => {\n  const pageNumber = pageIndex + 1;\n  const pageItems = items.slice(pageIndex * pageSize, pageNumber * pageSize);\n  const paddedItems = Array.from({ length: pageSize }, (_, index) => pageItems[index] || null);\n  const documentNumber = pageCount > 1 ? (approval.Order_ID + ' (' + pageNumber + '/' + pageCount + ')') : approval.Order_ID;\n  const values = [\n    { range: 'Delivery Note!D14', values: [[buyerName]] },\n    { range: 'Delivery Note!D15', values: [[branchName]] },\n    { range: 'Delivery Note!D16', values: [[addressText]] },\n    { range: 'Delivery Note!D17', values: [[contactName]] },\n    { range: 'Delivery Note!G17', values: [[contactTel ? ('Tel. ' + contactTel) : 'Tel.']] },\n    { range: 'Delivery Note!J14', values: [[documentNumber]] },\n    { range: 'Delivery Note!J15', values: [[approvedDate]] },\n    { range: 'Delivery Note!D18', values: [[noteParts.join(' | ')]] },\n    { range: 'Delivery Note!B22:B41', values: paddedItems.map((item, index) => [item ? pageIndex * pageSize + index + 1 : '']) },\n    { range: 'Delivery Note!C22:C41', values: paddedItems.map(item => [item ? pickFirst(item, ['productId', 'Product_ID', 'id']) : '']) },\n    { range: 'Delivery Note!E22:E41', values: paddedItems.map(item => [item ? pickFirst(item, ['productName', 'Product_Name', 'name']) : '']) },\n    { range: 'Delivery Note!G22:G41', values: paddedItems.map(item => [item ? Number(pickFirst(item, ['quantity', 'Quantity', 'qty'], 0)) : '']) },\n    { range: 'Delivery Note!H22:H41', values: paddedItems.map(item => [item ? pickFirst(item, ['unit', 'Unit', 'UOM']) : '']) },\n    { range: 'Delivery Note!I22:I41', values: paddedItems.map(item => [item ? Number(pickFirst(item, ['pricePerUnit', 'Price', 'price'], 0)) : '']) },\n    { range: 'Delivery Note!J22:J41', values: paddedItems.map(item => {\n      if (!item) return [''];\n      const quantity = Number(pickFirst(item, ['quantity', 'Quantity', 'qty'], 0));\n      const price = Number(pickFirst(item, ['pricePerUnit', 'Price', 'price'], 0));\n      return [Number(pickFirst(item, ['lineTotal', 'Line_Total', 'total'], quantity * price))];\n    }) },\n    { range: 'Delivery Note!J46', values: [[subtotal]] },\n    { range: 'Delivery Note!J47', values: [[discount]] },\n    { range: 'Delivery Note!J48', values: [[amountBeforeVat]] },\n    { range: 'Delivery Note!J49', values: [[vatAmount]] },\n    { range: 'Delivery Note!J50', values: [[shippingCost + otherFee]] },\n    { range: 'Delivery Note!J52', values: [[totalAmount]] },\n  ];\n  const pageSuffix = pageCount > 1 ? ('-P' + String(pageNumber).padStart(2, '0') + '-of-' + String(pageCount).padStart(2, '0')) : '';\n  return { json: {\n    orderId: approval.Order_ID, branchUid: approval.Branch_UID || row.LINE_UID || '', branchName: branchName || buyerName || row.LINE_UID || '',\n    subtotal, shippingCost, discount, otherFee, vatAmount, totalAmount, pageNumber, pageCount,\n    fileName: 'DN-' + approval.Order_ID + pageSuffix + '.pdf', copiedSheetName: 'DN_' + approval.Order_ID + pageSuffix,\n    templateFileId: '16hyVHs6HfqyZpj8zriDl_cMbq3f0bnFMLjLjuc4sZxg', folderId: '1FHNyImK-lq254V6frA6XtguAyth9b0kv',\n    valuesBatchUpdate: { valueInputOption: 'USER_ENTERED', data: values },\n  } };\n});"
       },
-      "id": "27e1749d-2597-40f9-9c74-580394bd9f3e",
+      "id": "81611b5d-2c5f-459a-81b6-53a1140fe04c",
       "name": "Build Delivery Note Payload",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -1060,7 +1056,7 @@
         "jsonBody": "={{ JSON.stringify({ name: $json.copiedSheetName, parents: [$json.folderId], mimeType: 'application/vnd.google-apps.spreadsheet' }) }}",
         "options": {}
       },
-      "id": "12bb3642-a83e-4bfc-a3cf-49adb3f62eed",
+      "id": "de2d1ce3-fa4c-4591-bd0f-af013fcbc960",
       "name": "Copy Delivery Note Template",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -1080,7 +1076,7 @@
         "jsCode": "const payload = $('Build Delivery Note Payload').item.json;\nconst copied = $json;\nreturn { json: { ...payload, spreadsheetId: copied.id, copiedFileId: copied.id } };",
         "mode": "runOnceForEachItem"
       },
-      "id": "2639f12e-7d77-4802-ad14-c15c0dcbdc57",
+      "id": "7d4bdf07-8a17-4197-b545-8d4f4c29db57",
       "name": "Merge Delivery Note Template",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -1100,7 +1096,7 @@
         "jsonBody": "={{ JSON.stringify($json.valuesBatchUpdate) }}",
         "options": {}
       },
-      "id": "ca19e1ab-a4d4-446f-a1fe-eaa1c527e9f4",
+      "id": "859e5033-b793-4657-a8d1-c3b800c4da2f",
       "name": "Fill Delivery Note Template",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -1120,7 +1116,7 @@
         "jsCode": "const payload = $('Merge Delivery Note Template').item.json;\nreturn { json: payload, binary: $binary };",
         "mode": "runOnceForEachItem"
       },
-      "id": "1cb96e7d-ba07-4289-a9a7-7a57d4eaeb3c",
+      "id": "36b33379-3d22-4f84-9831-8aa79c83ce3d",
       "name": "Restore Delivery Note Payload",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -1131,12 +1127,12 @@
     },
     {
       "parameters": {
-        "url": "={{ 'https://docs.google.com/spreadsheets/d/' + $json.copiedFileId + '/export?format=pdf&size=A4&portrait=true&scale=2&sheetnames=false&printtitle=false&pagenumbers=false&gridlines=false&fzr=false&top_margin=0.15&bottom_margin=0.15&left_margin=0.20&right_margin=0.20&gid=360034478' }}",
+        "url": "={{ 'https://docs.google.com/spreadsheets/d/' + $json.copiedFileId + '/export?format=pdf&size=A4&portrait=true&scale=1&sheetnames=false&printtitle=false&pagenumbers=false&gridlines=false&fzr=false&top_margin=0&bottom_margin=0&left_margin=0&right_margin=0&gid=906132224' }}",
         "authentication": "predefinedCredentialType",
         "nodeCredentialType": "googleOAuth2Api",
         "options": {}
       },
-      "id": "5da689a6-df0a-4fa6-9487-91570a5ef579",
+      "id": "9b475230-71da-432e-9beb-daa41c63bdd4",
       "name": "Export Delivery Note PDF",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -1156,7 +1152,7 @@
         "jsCode": "const payload = $('Restore Delivery Note Payload').item.json;\nconst upload = $json;\nconst pdfFileId = upload.id || payload.copiedFileId;\nreturn { json: { ...payload, pdfFileId, pdfUrl: 'https://drive.google.com/file/d/' + pdfFileId + '/view?usp=drivesdk' }, binary: $binary };",
         "mode": "runOnceForEachItem"
       },
-      "id": "72156d07-9433-4e3c-a3fb-81884c7b1fcc",
+      "id": "d9a92bc4-99ff-48b9-93e1-9df3d9b1ef02",
       "name": "Build PDF URL",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -1226,7 +1222,7 @@
         },
         "options": {}
       },
-      "id": "892f7647-3e80-41cc-8821-f3422e660b46",
+      "id": "c8caf1a9-3515-4d17-ac0b-94d881d7bdab",
       "name": "Update PDF URL",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4,
@@ -1246,7 +1242,7 @@
       "parameters": {
         "jsCode": "const payload = $node['Aggregate Delivery Note PDFs'].json;\nconst links = payload.pdfUrls.map((url,index) => 'หน้าที่ ' + (index+1) + ': ' + url).join('\\n');\nreturn [{ json: { to: payload.branchUid, text: ['อนุมัติคำสั่งซื้อแล้ว','เลขที่: '+payload.orderId,'สาขา: '+payload.branchName,'ยอดรวมสุทธิ: ฿'+Number(payload.totalAmount||0).toLocaleString('th-TH',{minimumFractionDigits:2}),'ใบส่งของ PDF ('+payload.pageCount+' หน้า):',links].join('\\n') } }];"
       },
-      "id": "878678d0-9198-4092-b4f6-0e09caa4a830",
+      "id": "d1e2a6d7-6043-4963-81ea-1fe317958522",
       "name": "Build Branch LINE Message",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -1267,7 +1263,7 @@
           ]
         }
       },
-      "id": "2f8d33af-4293-4176-a972-0e20afe14251",
+      "id": "3e811f49-7bb4-4a08-819d-6c5527150ba8",
       "name": "Notify Branch LINE",
       "type": "@aotoki/n8n-nodes-line-messaging.lineMessaging",
       "typeVersion": 1,
@@ -1300,7 +1296,7 @@
         },
         "options": {}
       },
-      "id": "5d85105c-cc8c-4632-9dde-40c139b66d23",
+      "id": "59308c0c-4797-49a2-8b0d-6d123ae24664",
       "name": "Upload Delivery Note PDF",
       "type": "n8n-nodes-base.googleDrive",
       "typeVersion": 3,
@@ -1321,15 +1317,14 @@
         "responseMode": "lastNode",
         "options": {}
       },
-      "id": "5dff43a3-8178-4b98-b3a5-75f364e69bc5",
+      "id": "52e8f312-5902-4b3a-8e3d-8ab0a300edf1",
       "name": "GET /get-products",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
       "position": [
         28976,
         9872
-      ],
-      "webhookId": "chaphranakhon-get-products"
+      ]
     },
     {
       "parameters": {
@@ -1349,7 +1344,7 @@
         },
         "options": {}
       },
-      "id": "de81eb38-83fd-40e2-9697-812171e9aea6",
+      "id": "db15642c-91a0-4986-bec0-9fe929a7d1a2",
       "name": "Read Products",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4,
@@ -1368,7 +1363,7 @@
       "parameters": {
         "jsCode": "function normalizeStatus(status) {\n  return String(status || '').trim().toLowerCase();\n}\n\nfunction isHiddenStatus(status) {\n  return ['ยกเลิก', 'cancelled', 'canceled', 'inactive', 'disabled', 'ปิด'].includes(normalizeStatus(status));\n}\n\nconst rows = $input.all().map(item => item.json);\nconst products = rows.map((row, index) => {\n  const productId = row.Product_ID || row.productId || row.ID || row.id || ('P' + String(index + 1).padStart(3, '0'));\n  const productName = row.Product_Name || row.productName || row.Name || row.name || '';\n  const price = Number(row.Price || row.price || 0);\n  const unit = row.Unit || row.unit || '';\n  const imageUrl = row.Image_URL || row.imageUrl || row.Image || row.image || '';\n  const status = row.Status || row.status || '';\n  return { productId, productName, price, unit, imageUrl, status };\n}).filter(product => product.productName && product.price > 0 && !isHiddenStatus(product.status));\n\nreturn [{ json: { success: true, products } }];"
       },
-      "id": "4a965df4-ed58-468e-adbc-d041656aee8d",
+      "id": "169f39ab-c878-463a-bb35-3638667ca22f",
       "name": "Format Products Response",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -1395,7 +1390,7 @@
         31056,
         9104
       ],
-      "id": "b1024399-08f0-483e-9e32-2fa0b984bc6b",
+      "id": "35faace4-2dc5-4bc9-b047-6baeaefcbb7a",
       "name": "Send Line Admin02",
       "credentials": {
         "lineMessagingApi": {
@@ -1406,7 +1401,7 @@
       "continueOnFail": true
     },
     {
-      "id": "b74514b8-78dc-4aae-a260-5c7c49bef394",
+      "id": "12ad9edc-4b1d-4ee8-a5df-47a18f79b21c",
       "name": "Read Admins For Notify",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4,
@@ -1439,7 +1434,7 @@
       }
     },
     {
-      "id": "9d72d98f-1156-4839-abc4-f8ca5091d0bd",
+      "id": "0e47dc0b-fcf7-495a-9307-9ca1e775d2ce",
       "name": "Read Admins For Approve",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4,
@@ -1472,7 +1467,7 @@
       }
     },
     {
-      "id": "6a6598a5-eeef-48b4-9c5d-1c4818640b2d",
+      "id": "4f24b8e8-5d8d-4a59-a800-9087f610ac36",
       "name": "Authorize Admin Approval",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -1485,7 +1480,7 @@
       }
     },
     {
-      "id": "ce2df479-4e97-431c-89d0-eedb092f4451",
+      "id": "b4e39429-0b69-494c-8808-09b9f53b250e",
       "name": "Read Admins For Approval Notify",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4,
@@ -1518,7 +1513,7 @@
       }
     },
     {
-      "id": "855fd57a-4103-45cf-9dd8-87587d49445f",
+      "id": "cbd0acf1-e445-4eec-bfd8-2dd1ddd46db0",
       "name": "Build Admin Approval LINE Message",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -1548,7 +1543,7 @@
         34176,
         9616
       ],
-      "id": "9b108b16-8d63-499e-aba9-63dbe56d7f2c",
+      "id": "defb4b57-d075-4780-a9e9-c4b524cde0ef",
       "name": "Notify Admin Approval LINE",
       "credentials": {
         "lineMessagingApi": {
@@ -1559,7 +1554,7 @@
       "continueOnFail": true
     },
     {
-      "id": "221deb4c-28f6-480d-a7ec-ebe6412e6c12",
+      "id": "3bdd8209-8c17-457d-ab0c-a363aa60a9e5",
       "name": "Summarize Admin Approval Notify",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -1572,7 +1567,7 @@
       }
     },
     {
-      "id": "b9746eb4-7ecd-4d54-9818-8972600f52db",
+      "id": "4f137b9f-2aa0-49a7-b036-a1891d55b618",
       "name": "Aggregate Delivery Note PDFs",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -1585,7 +1580,7 @@
       }
     },
     {
-      "id": "032f8aa5-60c4-4bbd-a321-6fa78526442b",
+      "id": "23226a0b-ce32-415f-95c3-9ea2ab35896e",
       "name": "Compact Delivery Note Layout",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -1600,7 +1595,7 @@
         "nodeCredentialType": "googleOAuth2Api",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ requests: [\n  { updateDimensionProperties: { range: { sheetId: 360034478, dimension: 'ROWS', startIndex: 10, endIndex: 13 }, properties: { pixelSize: 3 }, fields: 'pixelSize' } },\n  { updateDimensionProperties: { range: { sheetId: 360034478, dimension: 'ROWS', startIndex: 13, endIndex: 15 }, properties: { pixelSize: 17 }, fields: 'pixelSize' } },\n  { updateDimensionProperties: { range: { sheetId: 360034478, dimension: 'ROWS', startIndex: 15, endIndex: 16 }, properties: { pixelSize: 21 }, fields: 'pixelSize' } },\n  { updateDimensionProperties: { range: { sheetId: 360034478, dimension: 'ROWS', startIndex: 16, endIndex: 18 }, properties: { pixelSize: 18 }, fields: 'pixelSize' } },\n  { updateDimensionProperties: { range: { sheetId: 360034478, dimension: 'ROWS', startIndex: 19, endIndex: 20 }, properties: { pixelSize: 19 }, fields: 'pixelSize' } },\n  { updateDimensionProperties: { range: { sheetId: 360034478, dimension: 'ROWS', startIndex: 20, endIndex: 21 }, properties: { pixelSize: 2 }, fields: 'pixelSize' } },\n  { updateDimensionProperties: { range: { sheetId: 360034478, dimension: 'ROWS', startIndex: 21, endIndex: 45 }, properties: { pixelSize: 17 }, fields: 'pixelSize' } },\n  { updateDimensionProperties: { range: { sheetId: 360034478, dimension: 'ROWS', startIndex: 45, endIndex: 53 }, properties: { pixelSize: 17 }, fields: 'pixelSize' } },\n  { updateDimensionProperties: { range: { sheetId: 360034478, dimension: 'ROWS', startIndex: 53, endIndex: 59 }, properties: { pixelSize: 18 }, fields: 'pixelSize' } },\n  { repeatCell: { range: { sheetId: 360034478, startRowIndex: 21, endRowIndex: 45, startColumnIndex: 1, endColumnIndex: 10 }, cell: { userEnteredFormat: { textFormat: { fontSize: 10 } } }, fields: 'userEnteredFormat.textFormat.fontSize' } },\n  { repeatCell: { range: { sheetId: 360034478, startRowIndex: 13, endRowIndex: 18, startColumnIndex: 1, endColumnIndex: 10 }, cell: { userEnteredFormat: { textFormat: { fontSize: 10 } } }, fields: 'userEnteredFormat.textFormat.fontSize' } },\n  { repeatCell: { range: { sheetId: 360034478, startRowIndex: 45, endRowIndex: 53, startColumnIndex: 7, endColumnIndex: 10 }, cell: { userEnteredFormat: { textFormat: { fontSize: 10 } } }, fields: 'userEnteredFormat.textFormat.fontSize' } }\n] }) }}",
+        "jsonBody": "={{ JSON.stringify({ requests: [\n  { updateDimensionProperties: { range: { sheetId: 906132224, dimension: 'COLUMNS', startIndex: 0, endIndex: 1 }, properties: { pixelSize: 18 }, fields: 'pixelSize' } },\n  { updateDimensionProperties: { range: { sheetId: 906132224, dimension: 'COLUMNS', startIndex: 1, endIndex: 2 }, properties: { pixelSize: 42 }, fields: 'pixelSize' } },\n  { updateDimensionProperties: { range: { sheetId: 906132224, dimension: 'COLUMNS', startIndex: 2, endIndex: 3 }, properties: { pixelSize: 58 }, fields: 'pixelSize' } },\n  { updateDimensionProperties: { range: { sheetId: 906132224, dimension: 'COLUMNS', startIndex: 3, endIndex: 4 }, properties: { pixelSize: 58 }, fields: 'pixelSize' } },\n  { updateDimensionProperties: { range: { sheetId: 906132224, dimension: 'COLUMNS', startIndex: 4, endIndex: 5 }, properties: { pixelSize: 118 }, fields: 'pixelSize' } },\n  { updateDimensionProperties: { range: { sheetId: 906132224, dimension: 'COLUMNS', startIndex: 5, endIndex: 6 }, properties: { pixelSize: 118 }, fields: 'pixelSize' } },\n  { updateDimensionProperties: { range: { sheetId: 906132224, dimension: 'COLUMNS', startIndex: 6, endIndex: 7 }, properties: { pixelSize: 66 }, fields: 'pixelSize' } },\n  { updateDimensionProperties: { range: { sheetId: 906132224, dimension: 'COLUMNS', startIndex: 7, endIndex: 8 }, properties: { pixelSize: 58 }, fields: 'pixelSize' } },\n  { updateDimensionProperties: { range: { sheetId: 906132224, dimension: 'COLUMNS', startIndex: 8, endIndex: 9 }, properties: { pixelSize: 88 }, fields: 'pixelSize' } },\n  { updateDimensionProperties: { range: { sheetId: 906132224, dimension: 'COLUMNS', startIndex: 9, endIndex: 10 }, properties: { pixelSize: 96 }, fields: 'pixelSize' } },\n  { updateDimensionProperties: { range: { sheetId: 906132224, dimension: 'ROWS', startIndex: 10, endIndex: 13 }, properties: { pixelSize: 3 }, fields: 'pixelSize' } },\n  { updateDimensionProperties: { range: { sheetId: 906132224, dimension: 'ROWS', startIndex: 13, endIndex: 15 }, properties: { pixelSize: 17 }, fields: 'pixelSize' } },\n  { updateDimensionProperties: { range: { sheetId: 906132224, dimension: 'ROWS', startIndex: 15, endIndex: 16 }, properties: { pixelSize: 21 }, fields: 'pixelSize' } },\n  { updateDimensionProperties: { range: { sheetId: 906132224, dimension: 'ROWS', startIndex: 16, endIndex: 18 }, properties: { pixelSize: 18 }, fields: 'pixelSize' } },\n  { updateDimensionProperties: { range: { sheetId: 906132224, dimension: 'ROWS', startIndex: 19, endIndex: 20 }, properties: { pixelSize: 19 }, fields: 'pixelSize' } },\n  { updateDimensionProperties: { range: { sheetId: 906132224, dimension: 'ROWS', startIndex: 20, endIndex: 21 }, properties: { pixelSize: 2 }, fields: 'pixelSize' } },\n  { updateDimensionProperties: { range: { sheetId: 906132224, dimension: 'ROWS', startIndex: 21, endIndex: 41 }, properties: { pixelSize: 17 }, fields: 'pixelSize' } },\n  { updateDimensionProperties: { range: { sheetId: 906132224, dimension: 'ROWS', startIndex: 41, endIndex: 45 }, properties: { hiddenByUser: true }, fields: 'hiddenByUser' } },\n  { updateDimensionProperties: { range: { sheetId: 906132224, dimension: 'ROWS', startIndex: 45, endIndex: 53 }, properties: { pixelSize: 17 }, fields: 'pixelSize' } },\n  { updateDimensionProperties: { range: { sheetId: 906132224, dimension: 'ROWS', startIndex: 53, endIndex: 59 }, properties: { pixelSize: 18 }, fields: 'pixelSize' } },\n  { repeatCell: { range: { sheetId: 906132224, startRowIndex: 21, endRowIndex: 41, startColumnIndex: 1, endColumnIndex: 10 }, cell: { userEnteredFormat: { textFormat: { fontSize: 10 } } }, fields: 'userEnteredFormat.textFormat.fontSize' } },\n  { repeatCell: { range: { sheetId: 906132224, startRowIndex: 13, endRowIndex: 18, startColumnIndex: 1, endColumnIndex: 10 }, cell: { userEnteredFormat: { textFormat: { fontSize: 10 } } }, fields: 'userEnteredFormat.textFormat.fontSize' } },\n  { repeatCell: { range: { sheetId: 906132224, startRowIndex: 45, endRowIndex: 53, startColumnIndex: 7, endColumnIndex: 10 }, cell: { userEnteredFormat: { textFormat: { fontSize: 10 } } }, fields: 'userEnteredFormat.textFormat.fontSize' } }\n] }) }}",
         "options": {}
       },
       "credentials": {
@@ -1611,7 +1606,7 @@
       }
     },
     {
-      "id": "5e0395cd-b7c0-4e22-825d-38df737123d0",
+      "id": "c54509cc-81fc-4bd3-b472-d36083630563",
       "name": "Restore Payload After Layout",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -1625,7 +1620,6 @@
       }
     }
   ],
-  "pinData": {},
   "connections": {
     "GET /get-user-profile": {
       "main": [
@@ -2063,22 +2057,28 @@
     "binaryMode": "separate",
     "availableInMCP": false
   },
-  "versionId": "62535525-efd2-46c9-8112-00de4444797d",
   "meta": {
-    "templateCredsSetupCompleted": true,
-    "instanceId": "c20a6dd4079f66152f6eb0e4f4430ccd14d2f96a74552098f94caca40dd51250",
-    "deliveryNoteTemplate": "Upload outputs/delivery-note-template/Chaphranakhon_Delivery_Note_Template_A4.xlsx as native Google Sheets and replace templateFileId",
-    "vatRule": "VAT = 7% of max(0, subtotal - discount); shipping and other fees are added after VAT",
-    "deliveryNoteFolderId": "1FHNyImK-lq254V6frA6XtguAyth9b0kv",
-    "approvalAdminNotification": "Status=ACTIVE and Notify_Order=TRUE; includes approving admin; per-recipient send uses continueOnFail",
-    "deliveryNotePagination": "24 items per PDF; orders over 24 generate multiple PDF links",
-    "templateFileId": "1Iveod-7q7TpIZAkfHGARHgkJdvq96NxxL64i3ubMIr4",
-    "pdfExport": "Google Sheets A4 portrait scale=2",
-    "buyerGapRows": "Rows 11-13 set to 3px; row 21 set to 3px",
-    "deliveryNoteFontVersion": "V4",
-    "itemFontSize": "10pt"
+    "deliveryNoteVersion": "V7 20 ITEMS FIT A4 CLEAN IMPORT",
+    "generatedAt": "2026-07-19T14:09:22.778Z",
+    "templateFileId": "16hyVHs6HfqyZpj8zriDl_cMbq3f0bnFMLjLjuc4sZxg",
+    "sheetId": 906132224,
+    "itemsPerPage": 20,
+    "itemFontSize": "10pt",
+    "itemRowHeight": "17px",
+    "pdfExport": "A4 portrait scale=1, margins=0",
+    "columnWidthsPx": [
+      18,
+      42,
+      58,
+      58,
+      118,
+      118,
+      66,
+      58,
+      88,
+      96
+    ]
   },
   "nodeGroups": [],
-  "id": "J3xwohRu7uOfR0O3",
   "tags": []
 }

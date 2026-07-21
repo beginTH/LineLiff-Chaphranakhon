@@ -1,3 +1,12 @@
+# Current delivery-note package (2026-07-19)
+
+- Workflow: `outputs/n8n_workflow_chaphranakhon_delivery_note_v9_hide_zero_quantity_clean_import.json`
+- Template: `outputs/delivery-note-template/Chaphranakhon_Delivery_Note_Template_A4.xlsx`
+- Template File ID: `16hyVHs6HfqyZpj8zriDl_cMbq3f0bnFMLjLjuc4sZxg`
+- Template Sheet ID: `906132224`
+- Layout: item rows 10pt, row height 17px, 20 items per page, columns fitted to A4 actual size
+- PDF export: A4 portrait, scale 1 (actual size), margins 0
+
 # 🍵 LineLiff Chaphranakhon
 
 ระบบสั่งซื้อวัตถุดิบผ่าน LINE LIFF สำหรับร้านชาพระนคร ครอบคลุมการเลือกที่อยู่และผู้ติดต่อ การสั่งสินค้า การแจ้งผู้อนุมัติ การปรับจำนวน การคำนวณ VAT การสร้างใบส่งของ PDF และการแจ้งผลกลับสาขา
@@ -190,3 +199,14 @@ GitHub: [@beginTH](https://github.com/beginTH)
 ## License
 
 Private — สงวนสิทธิ์สำหรับร้านชาพระนคร
+## Rich Menu
+
+- outputs/rich-menu/rich_menu_transfer_proof_2500x1686.png — Rich Menu ใหม่สำหรับสั่งซื้อ, ดูประวัติ, ติดต่อ และส่งหลักฐานการโอนเงิน
+- outputs/rich-menu/rich_menu_transfer_proof.json — พื้นที่กดสำหรับ LINE Messaging API; เปลี่ยน LIFF placeholder ของประวัติและส่งสลิปก่อนใช้
+
+## Branch order history and payment proof
+
+- ranch/history.html — Branch LIFF order history screen
+- ranch/payment-proof.html — Branch LIFF payment-proof form
+- outputs/n8n_workflow_chaphranakhon_branch_history_payment_proof_v10_clean_import.json — n8n webhooks get-order-history and submit-payment-proof`r
+- outputs/payment-proof/README.md — required Orders columns and Google Drive folder setup
