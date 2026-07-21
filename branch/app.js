@@ -1,32 +1,32 @@
 /* ===================================================
-   เธเธฒเธเธฃเธฐเธเธเธฃ โ€” LIFF Branch App (เธชเธฒเธเธฒ)
+   ชาพระนคร — LIFF Branch App (สาขา)
    Version: 1.0.0
 
-   ๐“ เธชเธดเนเธเธ—เธตเนเธ•เนเธญเธเธ—เธณเธเนเธญเธ Deploy เธเธฃเธดเธ:
-   1. เน€เธเธฅเธตเนเธขเธ CONFIG.LIFF_ID เน€เธเนเธ LIFF ID เธเธฃเธดเธเธเธฒเธ LINE Developers
-   2. เน€เธเธฅเธตเนเธขเธ CONFIG.N8N_BASE_URL เน€เธเนเธ URL เธเธญเธ n8n เธเธฃเธดเธ
-   3. เน€เธเธฅเธตเนเธขเธ CONFIG.IS_DEV_MODE เน€เธเนเธ false
-   4. (Optional) เธฅเธ MOCK_PRODUCTS เนเธฅเธฐเน€เธเธทเนเธญเธกเธ•เนเธญ API เธ”เธถเธเธชเธดเธเธเนเธฒเธเธฃเธดเธ
+   📋 สิ่งที่ต้องทำก่อน Deploy จริง:
+   1. เปลี่ยน CONFIG.LIFF_ID เป็น LIFF ID จริงจาก LINE Developers
+   2. เปลี่ยน CONFIG.N8N_BASE_URL เป็น URL ของ n8n จริง
+   3. เปลี่ยน CONFIG.IS_DEV_MODE เป็น false
+   4. (Optional) ลบ MOCK_PRODUCTS และเชื่อมต่อ API ดึงสินค้าจริง
 =================================================== */
 
 'use strict';
 
 // =====================================================
-// โ๏ธ CONFIGURATION
+// ⚙️ CONFIGURATION
 // =====================================================
 const CONFIG = {
-    LIFF_ID:      '2010570929-oEaIS3oQ',                    // โ… LIFF ID: เธชเธฑเนเธเธเธทเนเธญเธงเธฑเธ•เธ–เธธเธ”เธดเธ (เธชเธฒเธเธฒ)
-    N8N_BASE_URL: 'https://n8n.n8n-kokujapan.org',          // โ… n8n instance URL
+    LIFF_ID:      '2010570929-oEaIS3oQ',                    // ✅ LIFF ID: สั่งซื้อวัตถุดิบ (สาขา)
+    N8N_BASE_URL: 'https://n8n.n8n-kokujapan.org',          // ✅ n8n instance URL
     WEBHOOK: {
-        GET_PROFILE:  '/webhook/get-user-profile',     // GET  ?uid=xxx  โ’ Lookup Address sheet
-        GET_PRODUCTS: '/webhook/get-products',         // GET           โ’ Lookup Products sheet
-        SUBMIT_ORDER: '/webhook/submit-order',         // POST           โ’ Save New Order sheet
+        GET_PROFILE:  '/webhook/get-user-profile',     // GET  ?uid=xxx  → Lookup Address sheet
+        GET_PRODUCTS: '/webhook/get-products',         // GET           → Lookup Products sheet
+        SUBMIT_ORDER: '/webhook/submit-order',         // POST           → Save New Order sheet
     },
-    IS_DEV_MODE: false, // โ… Production mode
-    TEST_UID: 'id-001',                                     // UID เธชเธณเธซเธฃเธฑเธเธ—เธ”เธชเธญเธเธเธฒเธ browser (เธ•เนเธญเธเธ•เธฃเธเธเธฑเธ Users_Addresses)
+    IS_DEV_MODE: false, // ✅ Production mode
+    TEST_UID: 'id-001',                                     // UID สำหรับทดสอบจาก browser (ต้องตรงกับ Users_Addresses)
 };
 
-/** เธ•เธฃเธงเธเธชเธญเธเธงเนเธฒเธญเธขเธนเนเนเธ LINE environment เธซเธฃเธทเธญเน€เธเธฅเนเธฒ */
+/** ตรวจสอบว่าอยู่ใน LINE environment หรือเปล่า */
 const liffUrlParams = new URLSearchParams(window.location.search);
 const liffState = liffUrlParams.get('liff.state') || '';
 const liffStateParams = new URLSearchParams(liffState.replace(/^\?/, ''));
@@ -38,8 +38,8 @@ if (requestedScreen === 'history' || requestedScreen === 'payment-proof') {
 const isLiffAvailable = () => typeof liff !== 'undefined';
 
 /**
- * เธฃเธญ LIFF SDK เนเธซเธฅเธ”เธชเธนเธเธชเธธเธ” maxMs เธกเธดเธฅเธฅเธดเธงเธดเธเธฒเธ—เธต
- * เธเนเธญเธเธเธฑเธ race condition เนเธ LINE WebView เธ—เธตเน SDK เธญเธฒเธเนเธซเธฅเธ”เธเนเธฒเธเธงเนเธฒ app.js
+ * รอ LIFF SDK โหลดสูงสุด maxMs มิลลิวินาที
+ * ป้องกัน race condition ใน LINE WebView ที่ SDK อาจโหลดช้ากว่า app.js
  */
 async function waitForLiff(maxMs = 10000) {
     const interval = 100;
@@ -52,59 +52,59 @@ async function waitForLiff(maxMs = 10000) {
 }
 
 // =====================================================
-// ๐—๏ธ MOCK DATA (เนเธเนเธเธ“เธฐ Dev โ€” เธฅเธเธญเธญเธเน€เธกเธทเนเธญ API เธเธฃเนเธญเธก)
+// 🗄️ MOCK DATA (ใช้ขณะ Dev — ลบออกเมื่อ API พร้อม)
 // =====================================================
 
-/** TODO: เนเธ—เธเธ—เธตเนเธ”เนเธงเธขเธเธฒเธฃเธ”เธถเธเธเนเธญเธกเธนเธฅเธเธฒเธ Google Sheets เธเนเธฒเธ n8n */
+/** TODO: แทนที่ด้วยการดึงข้อมูลจาก Google Sheets ผ่าน n8n */
 const MOCK_PRODUCTS = [
-    { id: 'RM001', name: 'เธเธฒเธเธ CTC (เธชเธณเธซเธฃเธฑเธเธเธฒเธเธก)', unit: 'เธเธดเนเธฅเธเธฃเธฑเธก', price: 220, emoji: '๐', status: 'active' },
-    { id: 'RM002', name: 'เธเธกเธเนเธเธซเธงเธฒเธเธ•เธฃเธฒเธเธเธญเธดเธเธ—เธฃเธตเธขเน', unit: 'เธเธฃเธฐเธเนเธญเธ', price: 25,  emoji: '๐ฅ', status: 'active' },
-    { id: 'RM003', name: 'เธเนเธณเธ•เธฒเธฅเธ—เธฃเธฒเธข',              unit: 'เธเธดเนเธฅเธเธฃเธฑเธก', price: 22,  emoji: '๐ฌ', status: 'active' },
-    { id: 'RM004', name: 'เธเนเธณเน€เธเธทเนเธญเธกเธเนเธณเธ•เธฒเธฅเนเธซเธกเน',     unit: 'เธฅเธดเธ•เธฃ',      price: 85,  emoji: '๐ฏ', status: 'active' },
-    { id: 'RM005', name: 'เธเธกเธชเธ”เธเธฒเธชเน€เธเธญเธฃเนเนเธฃเธชเน',       unit: 'เธฅเธดเธ•เธฃ',      price: 45,  emoji: '๐', status: 'active' },
-    { id: 'RM006', name: 'เธ–เนเธงเธขเธเธฃเธฐเธ”เธฒเธฉ 16oz',        unit: 'เนเธเนเธ (50เนเธ)',price: 75,  emoji: 'โ•', status: 'active' },
-    { id: 'RM007', name: 'เธซเธฅเธญเธ”เธ”เธนเธ”เธเธฃเธฐเธ”เธฒเธฉ',           unit: 'เนเธเนเธ (100เธญเธฑเธ)', price: 35, emoji: '๐ฅค', status: 'active' },
-    { id: 'RM008', name: 'เธ–เธธเธเธซเธดเนเธงเธเธฃเธฐเธ”เธฒเธฉเธเธดเธกเธเนเนเธฅเนเธเน', unit: 'เนเธเนเธ (50เนเธ)',price: 65,  emoji: '๐๏ธ', status: 'active' },
+    { id: 'RM001', name: 'ชาผง CTC (สำหรับชานม)', unit: 'กิโลกรัม', price: 220, emoji: '🍂', status: 'active' },
+    { id: 'RM002', name: 'นมข้นหวานตรานกอินทรีย์', unit: 'กระป๋อง', price: 25,  emoji: '🥛', status: 'active' },
+    { id: 'RM003', name: 'น้ำตาลทราย',              unit: 'กิโลกรัม', price: 22,  emoji: '🍬', status: 'active' },
+    { id: 'RM004', name: 'น้ำเชื่อมน้ำตาลไหม้',     unit: 'ลิตร',      price: 85,  emoji: '🍯', status: 'active' },
+    { id: 'RM005', name: 'นมสดพาสเจอร์ไรส์',       unit: 'ลิตร',      price: 45,  emoji: '🐄', status: 'active' },
+    { id: 'RM006', name: 'ถ้วยกระดาษ 16oz',        unit: 'แพ็ค (50ใบ)',price: 75,  emoji: '☕', status: 'active' },
+    { id: 'RM007', name: 'หลอดดูดกระดาษ',           unit: 'แพ็ค (100อัน)', price: 35, emoji: '🥤', status: 'active' },
+    { id: 'RM008', name: 'ถุงหิ้วกระดาษพิมพ์โลโก้', unit: 'แพ็ค (50ใบ)',price: 65,  emoji: '🛍️', status: 'active' },
 ];
 
-/** TODO: เนเธ—เธเธ—เธตเนเธ”เนเธงเธขเธเนเธญเธกเธนเธฅเธเธฃเธดเธเธเธฒเธ n8n GET /webhook/get-user-profile */
+/** TODO: แทนที่ด้วยข้อมูลจริงจาก n8n GET /webhook/get-user-profile */
 const MOCK_USER = {
     uid:         'Ud1a2b3c4d5e6f7g8h9i0j',
-    displayName: 'เธชเธฒเธเธฒเธ—เธ”เธชเธญเธ',
+    displayName: 'สาขาทดสอบ',
     pictureUrl:  '',
     addresses: [
         {
             id:   'addr1',
-            label: 'เธชเธฒเธเธฒเธชเธตเธฅเธก (เธซเธฅเธฑเธ)',
-            text: '123/45 เธ–.เธชเธตเธฅเธก เนเธเธงเธเธชเธตเธฅเธก เน€เธเธ•เธเธฒเธเธฃเธฑเธ เธเธฃเธธเธเน€เธ—เธเธฏ 10500',
+            label: 'สาขาสีลม (หลัก)',
+            text: '123/45 ถ.สีลม แขวงสีลม เขตบางรัก กรุงเทพฯ 10500',
         },
         {
             id:   'addr2',
-            label: 'เธชเธฒเธเธฒเธชเธธเธเธธเธกเธงเธดเธ—',
-            text: '67/8 เธ–.เธชเธธเธเธธเธกเธงเธดเธ— 11 เนเธเธงเธเธเธฅเธญเธเน€เธ•เธขเน€เธซเธเธทเธญ เน€เธเธ•เธงเธฑเธ’เธเธฒ เธเธฃเธธเธเน€เธ—เธเธฏ 10110',
+            label: 'สาขาสุขุมวิท',
+            text: '67/8 ถ.สุขุมวิท 11 แขวงคลองเตยเหนือ เขตวัฒนา กรุงเทพฯ 10110',
         },
     ],
 };
 
 // =====================================================
-// ๐ช APP STATE
+// 🏪 APP STATE
 // =====================================================
 const state = {
     user:            null,   // { uid, displayName }
     addresses:       [],     // [{ id, label, text, isNew? }]
-    selectedAddress: null,   // address object เธ—เธตเนเน€เธฅเธทเธญเธ
-    products:        [],     // เธฃเธฒเธขเธเธฒเธฃเธชเธดเธเธเนเธฒเธ—เธฑเนเธเธซเธกเธ”
+    selectedAddress: null,   // address object ที่เลือก
+    products:        [],     // รายการสินค้าทั้งหมด
     cart:            {},     // { [productId]: qty }
-    orderId:         null,   // เธฃเธซเธฑเธชเธญเธญเน€เธ”เธญเธฃเนเธซเธฅเธฑเธ submit
+    orderId:         null,   // รหัสออเดอร์หลัง submit
 };
 
 // =====================================================
-// ๐”ง UTILITY
+// 🔧 UTILITY
 // =====================================================
 
 /**
- * เธชเธฅเธฑเธ screen เธเธฃเนเธญเธก animation
- * @param {string} nextId - element id เธเธญเธ screen เธ—เธตเนเธเธฐเนเธชเธ”เธ
+ * สลับ screen พร้อม animation
+ * @param {string} nextId - element id ของ screen ที่จะแสดง
  */
 function goTo(nextId) {
     const current = document.querySelector('.screen.is-active');
@@ -112,7 +112,7 @@ function goTo(nextId) {
 
     if (!next || current === next) return;
 
-    // เธญเธญเธ
+    // ออก
     if (current) {
         current.classList.add('is-leaving');
         setTimeout(() => {
@@ -121,7 +121,7 @@ function goTo(nextId) {
         }, 360);
     }
 
-    // เน€เธเนเธฒ
+    // เข้า
     setTimeout(() => {
         next.classList.add('is-visible');
         requestAnimationFrame(() => {
@@ -130,10 +130,10 @@ function goTo(nextId) {
     }, current ? 160 : 0);
 }
 
-/** Format เธฃเธฒเธเธฒ */
-const fmt = (n) => `เธฟ${Number(n).toLocaleString('th-TH', { minimumFractionDigits: 2 })}`;
+/** Format ราคา */
+const fmt = (n) => `฿${Number(n).toLocaleString('th-TH', { minimumFractionDigits: 2 })}`;
 
-/** เธชเธฃเนเธฒเธ Order ID */
+/** สร้าง Order ID */
 function genOrderId() {
     const d = new Date();
     const date  = d.toISOString().slice(0,10).replace(/-/g,'');
@@ -141,7 +141,7 @@ function genOrderId() {
     return `PO-${date}-${rand}`;
 }
 
-/** เธขเธญเธ”เธฃเธงเธกเธงเธฑเธ•เธ–เธธเธ”เธดเธ */
+/** ยอดรวมวัตถุดิบ */
 function calcSubtotal() {
     return Object.entries(state.cart).reduce((sum, [id, qty]) => {
         const p = state.products.find(p => p.id === id);
@@ -149,12 +149,12 @@ function calcSubtotal() {
     }, 0);
 }
 
-/** เธเธณเธเธงเธเธฃเธฒเธขเธเธฒเธฃเนเธเธ•เธฐเธเธฃเนเธฒ */
+/** จำนวนรายการในตะกร้า */
 function countItems() {
     return Object.values(state.cart).reduce((s, q) => s + q, 0);
 }
 
-/** Bump animation เธเธ badge */
+/** Bump animation บน badge */
 function bumpBadge() {
     const el = document.getElementById('cart-count');
     el.classList.remove('bump');
@@ -163,12 +163,12 @@ function bumpBadge() {
 }
 
 // =====================================================
-// ๐” API
+// 🔌 API
 // =====================================================
 
 /**
- * เธ”เธถเธเธเนเธญเธกเธนเธฅ User + เธ—เธตเนเธญเธขเธนเนเธเธฒเธ n8n
- * Dev mode: เธเธทเธ Mock Data
+ * ดึงข้อมูล User + ที่อยู่จาก n8n
+ * Dev mode: คืน Mock Data
  */
 async function apiGetProfile(uid) {
     if (CONFIG.IS_DEV_MODE) {
@@ -185,7 +185,7 @@ async function apiGetProfile(uid) {
     return res.json();
 }
 
-/** เธ”เธถเธเธฃเธฒเธขเธเธฒเธฃเธชเธดเธเธเนเธฒเธเธฒเธ n8n */
+/** ดึงรายการสินค้าจาก n8n */
 async function apiGetProducts() {
     if (CONFIG.IS_DEV_MODE) {
         console.log('[DEV] apiGetProducts');
@@ -194,7 +194,7 @@ async function apiGetProducts() {
     }
 
     const res = await fetch(
-        `${CONFIG.N8N_BASE_URL}${CONFIG.WEBHOOK.GET_PRODUCTS}?customerType=${state.user?.isBranch ? 'branch' : 'general'}`,
+        `${CONFIG.N8N_BASE_URL}${CONFIG.WEBHOOK.GET_PRODUCTS}`,
         { method: 'GET', headers: { 'Content-Type': 'application/json' } }
     );
     if (!res.ok) throw new Error(`GET Products failed: ${res.status}`);
@@ -202,8 +202,8 @@ async function apiGetProducts() {
 }
 
 /**
- * เธชเนเธเธเธณเธชเธฑเนเธเธเธทเนเธญเนเธเธขเธฑเธ n8n
- * Dev mode: log เนเธฅเธฐเธเธทเธ success
+ * ส่งคำสั่งซื้อไปยัง n8n
+ * Dev mode: log และคืน success
  */
 async function apiSubmitOrder(payload) {
     if (CONFIG.IS_DEV_MODE) {
@@ -270,14 +270,14 @@ function unwrapProductResponse(raw) {
 
 function pickProductEmoji(name, index) {
     const text = String(name || '');
-    if (text.includes('เธเธฒ')) return '๐';
-    if (text.includes('เธเธก')) return '๐ฅ';
-    if (text.includes('เธเนเธณเธ•เธฒเธฅ')) return '๐ฌ';
-    if (text.includes('เนเธเธฃเธฑเธ') || text.includes('เน€เธเธทเนเธญเธก')) return '๐ฏ';
-    if (text.includes('เนเธเนเธง') || text.includes('เธ–เนเธงเธข')) return 'โ•';
-    if (text.includes('เธซเธฅเธญเธ”')) return '๐ฅค';
-    if (text.includes('เธ–เธธเธ')) return '๐๏ธ';
-    return ['๐“ฆ', '๐งพ', '๐ฅ', '๐ซ'][index % 4];
+    if (text.includes('ชา')) return '🍂';
+    if (text.includes('นม')) return '🥛';
+    if (text.includes('น้ำตาล')) return '🍬';
+    if (text.includes('ไซรัป') || text.includes('เชื่อม')) return '🍯';
+    if (text.includes('แก้ว') || text.includes('ถ้วย')) return '☕';
+    if (text.includes('หลอด')) return '🥤';
+    if (text.includes('ถุง')) return '🛍️';
+    return ['📦', '🧾', '🥄', '🫙'][index % 4];
 }
 
 const PRODUCT_IMAGE_BY_INDEX = [
@@ -335,12 +335,12 @@ function normalizeStatus(status) {
 }
 
 function isProductHidden(status) {
-    return ['เธขเธเน€เธฅเธดเธ', 'cancelled', 'canceled', 'inactive', 'disabled', 'เธเธดเธ”'].includes(normalizeStatus(status));
+    return ['ยกเลิก', 'cancelled', 'canceled', 'inactive', 'disabled', 'ปิด'].includes(normalizeStatus(status));
 }
 
 function isProductAvailable(status) {
     const value = normalizeStatus(status);
-    return value === '' || ['เธเธฃเนเธญเธก', 'active', 'available', 'in stock'].includes(value);
+    return value === '' || ['พร้อม', 'active', 'available', 'in stock'].includes(value);
 }
 
 function normalizeProducts(raw) {
@@ -377,7 +377,7 @@ function normalizeProducts(raw) {
 function normalizeAddressRecord(item, index, fallbackLabel = '') {
     if (typeof item === 'string') {
         const text = item.trim();
-        return text ? { id: `addr-${index + 1}`, label: fallbackLabel || `เธ—เธตเนเธญเธขเธนเน ${index + 1}`, text } : null;
+        return text ? { id: `addr-${index + 1}`, label: fallbackLabel || `ที่อยู่ ${index + 1}`, text } : null;
     }
 
     if (!item || typeof item !== 'object') return null;
@@ -385,7 +385,7 @@ function normalizeAddressRecord(item, index, fallbackLabel = '') {
     const label = pickFirst(item, [
         'label', 'name', 'branchName', 'branch_name', 'Branch_Name',
         'branch', 'title', 'Address_Label', 'addressLabel',
-    ]) || fallbackLabel || `เธ—เธตเนเธญเธขเธนเน ${index + 1}`;
+    ]) || fallbackLabel || `ที่อยู่ ${index + 1}`;
 
     const text = pickFirst(item, [
         'text', 'address', 'fullAddress', 'full_address', 'Address',
@@ -430,7 +430,7 @@ function normalizeAddressSheetRow(row) {
 
             const label = pickFirst(row, [
                 `Address_Label_${num}`, `address_label_${num}`, `Label_${num}`, `label_${num}`,
-            ]) || (branchName ? (num === 1 ? branchName : `${branchName} (${num})`) : `เธ—เธตเนเธญเธขเธนเน ${num}`);
+            ]) || (branchName ? (num === 1 ? branchName : `${branchName} (${num})`) : `ที่อยู่ ${num}`);
 
             const contactName = pickFirst(row, [`Contact_Name_${num}`, `contact_name_${num}`]) || defaultContactName;
             return { id: `addr-${num}`, label, text, contactName, tel };
@@ -483,18 +483,18 @@ function normalizeProfile(raw) {
 }
 
 // =====================================================
-// ๐–ผ๏ธ RENDER
+// 🖼️ RENDER
 // =====================================================
 
-/** Render เธฃเธฒเธขเธเธฒเธฃเธ—เธตเนเธญเธขเธนเนเนเธเธซเธเนเธฒ Address */
+/** Render รายการที่อยู่ในหน้า Address */
 function renderAddressList() {
     const container = document.getElementById('address-list');
 
     if (state.addresses.length === 0) {
         container.innerHTML = `
             <div class="no-address-state">
-                <span class="no-address-icon">๐“</span>
-                <p>เธขเธฑเธเนเธกเนเธกเธตเธ—เธตเนเธญเธขเธนเนเธ—เธตเนเธเธฑเธเธ—เธถเธเนเธงเน<br>เธเธฃเธธเธ“เธฒเน€เธเธดเนเธกเธ—เธตเนเธญเธขเธนเนเนเธซเธกเนเธ”เนเธฒเธเธฅเนเธฒเธ</p>
+                <span class="no-address-icon">📍</span>
+                <p>ยังไม่มีที่อยู่ที่บันทึกไว้<br>กรุณาเพิ่มที่อยู่ใหม่ด้านล่าง</p>
             </div>`;
         document.getElementById('new-address-form').classList.remove('hidden');
         return;
@@ -511,7 +511,7 @@ function renderAddressList() {
             <div class="address-info">
                 <span class="address-tag">${escapeHtml(addr.label)}</span>
                 <p class="address-detail">${escapeHtml(addr.text)}</p>
-                ${addr.contactName ? `<p class="address-contact">เธเธนเนเธ•เธดเธ”เธ•เนเธญ: ${escapeHtml(addr.contactName)}${addr.tel ? ` ยท ${escapeHtml(addr.tel)}` : ""}</p>` : ""}
+                ${addr.contactName ? `<p class="address-contact">ผู้ติดต่อ: ${escapeHtml(addr.contactName)}${addr.tel ? ` · ${escapeHtml(addr.tel)}` : ""}</p>` : ""}
             </div>
         </div>
     `).join('');
@@ -523,7 +523,7 @@ function renderAddressList() {
     });
 }
 
-/** เน€เธฅเธทเธญเธเธ—เธตเนเธญเธขเธนเน */
+/** เลือกที่อยู่ */
 function selectAddress(id) {
     state.selectedAddress = state.addresses.find(a => a.id === id) || null;
 
@@ -543,7 +543,7 @@ function renderProducts() {
     grid.innerHTML = state.products.map(p => {
         const qty = state.cart[p.id] || 0;
         const available = isProductAvailable(p.status);
-        const statusBadge = available ? '' : '<span class="product-status-badge">เธซเธกเธ”</span>';
+        const statusBadge = available ? '' : '<span class="product-status-badge">หมด</span>';
         const visual = p.imageUrl
             ? `<img class="product-image" src="${escapeHtml(p.imageUrl)}" alt="${escapeHtml(p.name)}" loading="lazy" onerror="this.classList.add('is-hidden');this.nextElementSibling.classList.remove('is-hidden');"><span class="product-emoji is-hidden">${p.emoji}</span>`
             : `<span class="product-emoji">${p.emoji}</span>`;
@@ -556,9 +556,9 @@ function renderProducts() {
                 </div>
                 <p class="product-price">${fmt(p.price)}</p>
                 <div class="qty-control">
-                    <button class="qty-btn dec" data-pid="${p.id}" aria-label="เธฅเธ”" ${available ? '' : 'disabled'}>โ’</button>
+                    <button class="qty-btn dec" data-pid="${p.id}" aria-label="ลด" ${available ? '' : 'disabled'}>−</button>
                     <span class="qty-value" id="qty-${p.id}">${qty}</span>
-                    <button class="qty-btn inc" data-pid="${p.id}" aria-label="เน€เธเธดเนเธก" ${available ? '' : 'disabled'}>+</button>
+                    <button class="qty-btn inc" data-pid="${p.id}" aria-label="เพิ่ม" ${available ? '' : 'disabled'}>+</button>
                 </div>
             </div>`;
     }).join('');
@@ -568,7 +568,7 @@ function renderProducts() {
     });
 }
 
-/** เน€เธเธฅเธตเนเธขเธเธเธณเธเธงเธเธชเธดเธเธเนเธฒเนเธเธ•เธฐเธเธฃเนเธฒ */
+/** เปลี่ยนจำนวนสินค้าในตะกร้า */
 function changeQty(pid, delta) {
     const product = state.products.find(p => p.id === pid);
     if (!product || !isProductAvailable(product.status)) return;
@@ -590,13 +590,13 @@ function changeQty(pid, delta) {
     if (delta > 0) bumpBadge();
 }
 
-/** Sync เธเนเธญเธกเธนเธฅเธ•เธฐเธเธฃเนเธฒเธ—เธธเธ element */
+/** Sync ข้อมูลตะกร้าทุก element */
 function syncCartUI() {
     const total = countItems();
     const sub   = calcSubtotal();
 
     document.getElementById('cart-count').textContent      = total;
-    document.getElementById('cart-items-count').textContent = `${total} เธฃเธฒเธขเธเธฒเธฃ`;
+    document.getElementById('cart-items-count').textContent = `${total} รายการ`;
     document.getElementById('cart-total-price').textContent  = fmt(sub);
 
     const bar = document.getElementById('cart-action-bar');
@@ -609,7 +609,7 @@ function renderSummary() {
     const addrEl = document.getElementById('summary-address-text');
     if (state.selectedAddress) {
         const contactLine = state.selectedAddress.contactName || state.selectedAddress.tel
-            ? `<br><span>เธเธนเนเธ•เธดเธ”เธ•เนเธญ: ${escapeHtml(state.selectedAddress.contactName || '-')}${state.selectedAddress.tel ? ` ยท Tel. ${escapeHtml(state.selectedAddress.tel)}` : ''}</span>`
+            ? `<br><span>ผู้ติดต่อ: ${escapeHtml(state.selectedAddress.contactName || '-')}${state.selectedAddress.tel ? ` · Tel. ${escapeHtml(state.selectedAddress.tel)}` : ''}</span>`
             : '';
         addrEl.innerHTML = `<strong style="color:var(--text-primary)">${escapeHtml(state.selectedAddress.label)}</strong><br>${escapeHtml(state.selectedAddress.text)}${contactLine}`;
     }
@@ -622,7 +622,7 @@ function renderSummary() {
         return `
             <div class="summary-item">
                 <span class="summary-item-name">${p.emoji} ${escapeHtml(p.name)}</span>
-                <span class="summary-item-qty">ร—${qty} ${escapeHtml(p.unit)}</span>
+                <span class="summary-item-qty">×${qty} ${escapeHtml(p.unit)}</span>
                 <span class="summary-item-price">${fmt(p.price * qty)}</span>
             </div>`;
     }).join('');
@@ -643,50 +643,50 @@ function escapeHtml(s) {
 }
 
 // =====================================================
-// ๐€ INIT
+// 🚀 INIT
 // =====================================================
 
 async function initApp() {
     const loadingText = document.getElementById('loading-text');
 
-    // เนเธชเธ”เธ loading screen เธ—เธฑเธเธ—เธต
+    // แสดง loading screen ทันที
     const loadingScreen = document.getElementById('screen-loading');
     loadingScreen.classList.add('is-visible');
     requestAnimationFrame(() => requestAnimationFrame(() => loadingScreen.classList.add('is-active')));
 
     try {
-        // 1๏ธโฃ Init LIFF (เธซเธฃเธทเธญ fallback เน€เธกเธทเนเธญเน€เธเธดเธ”เธเธฒเธ browser)
-        loadingText.textContent = 'เธเธณเธฅเธฑเธเน€เธเธทเนเธญเธกเธ•เนเธญ LINE...';
+        // 1️⃣ Init LIFF (หรือ fallback เมื่อเปิดจาก browser)
+        loadingText.textContent = 'กำลังเชื่อมต่อ LINE...';
 
-        // ๐” Debug: เธฃเธญ LIFF SDK เนเธซเธฅเธ” (เธเนเธญเธเธเธฑเธ race condition เนเธ LINE WebView)
-        loadingText.textContent = 'เธเธณเธฅเธฑเธเนเธซเธฅเธ” LIFF SDK...';
+        // 🔍 Debug: รอ LIFF SDK โหลด (ป้องกัน race condition ใน LINE WebView)
+        loadingText.textContent = 'กำลังโหลด LIFF SDK...';
         const liffLoaded = await waitForLiff(10000);
         const isLineUA   = /Line\//i.test(navigator.userAgent);
         console.log(`[DEBUG] LIFF SDK loaded: ${liffLoaded} (after wait)`);
         console.log(`[DEBUG] Is LINE UA: ${isLineUA}`);
         console.log(`[DEBUG] User-Agent: ${navigator.userAgent}`);
-        loadingText.textContent = 'เธเธณเธฅเธฑเธเน€เธเธทเนเธญเธกเธ•เนเธญ LINE...';
+        loadingText.textContent = 'กำลังเชื่อมต่อ LINE...';
 
         if (CONFIG.IS_DEV_MODE) {
-            // ๐งช Dev mode: Mock user, Mock data
+            // 🧪 Dev mode: Mock user, Mock data
             console.log('[DEV] Skipping LIFF.init()');
             await delay(500);
             state.user = { uid: MOCK_USER.uid, displayName: MOCK_USER.displayName };
 
         } else if (!liffLoaded) {
-            // ๐ Browser mode: LIFF SDK เนเธซเธฅเธ”เนเธกเนเธชเธณเน€เธฃเนเธเธ เธฒเธขเนเธเน€เธงเธฅเธฒเธ—เธตเนเธเธณเธซเธเธ”
+            // 🌐 Browser mode: LIFF SDK โหลดไม่สำเร็จภายในเวลาที่กำหนด
             console.warn(`[BROWSER] LIFF SDK unavailable after wait. UA: ${navigator.userAgent}`);
             const testUid = new URLSearchParams(window.location.search).get('uid') || CONFIG.TEST_UID;
             state.user = { uid: testUid, displayName: `Browser Test (${testUid.slice(-6)})` };
             showBrowserTestBanner(testUid, isLineUA);
 
         } else {
-            // ๐“ฑ LINE mode: LIFF เธเธฃเธดเธ
-            loadingText.textContent = 'เธเธณเธฅเธฑเธ Init LIFF...';
+            // 📱 LINE mode: LIFF จริง
+            loadingText.textContent = 'กำลัง Init LIFF...';
             await liff.init({ liffId: CONFIG.LIFF_ID });
             console.log(`[LIFF] isInClient: ${liff.isInClient()}, isLoggedIn: ${liff.isLoggedIn()}`);
             if (!liff.isLoggedIn()) {
-                loadingText.textContent = 'เธเธณเธฅเธฑเธ Login LINE...';
+                loadingText.textContent = 'กำลัง Login LINE...';
                 liff.login();
                 return;
             }
@@ -694,17 +694,16 @@ async function initApp() {
             state.user = { uid: profile.userId, displayName: profile.displayName };
         }
 
-        // 2๏ธโฃ เธ”เธถเธเธเนเธญเธกเธนเธฅเธชเธฒเธเธฒ (เน€เธฃเธตเธขเธ webhook เธเธฃเธดเธเน€เธชเธกเธญ เธขเธเน€เธงเนเธ Dev mode)
-        loadingText.textContent = 'เธเธณเธฅเธฑเธเธ”เธถเธเธเนเธญเธกเธนเธฅเธชเธฒเธเธฒ...';
+        // 2️⃣ ดึงข้อมูลสาขา (เรียก webhook จริงเสมอ ยกเว้น Dev mode)
+        loadingText.textContent = 'กำลังดึงข้อมูลสาขา...';
         const userData = normalizeProfile(await apiGetProfile(state.user.uid));
 
-        // 3๏ธโฃ Set state
+        // 3️⃣ Set state
         if (userData.displayName) state.user.displayName = userData.displayName;
-        state.user.isBranch = Boolean(userData.branchName || userData.isBranch);
         state.addresses = userData.addresses;
         console.log('[PROFILE] normalized addresses:', state.addresses);
 
-        loadingText.textContent = 'เธเธณเธฅเธฑเธเธ”เธถเธเธฃเธฒเธขเธเธฒเธฃเธชเธดเธเธเนเธฒ...';
+        loadingText.textContent = 'กำลังดึงรายการสินค้า...';
         try {
             state.products = await apiGetProducts();
             if (state.products.length === 0) throw new Error('Products response is empty');
@@ -713,22 +712,22 @@ async function initApp() {
             state.products = MOCK_PRODUCTS;
         }
 
-        // 4๏ธโฃ เธญเธฑเธเน€เธ”เธ• greeting
+        // 4️⃣ อัปเดต greeting
         document.getElementById('user-greeting').textContent =
-            `เธชเธงเธฑเธชเธ”เธตเธเธฃเธฑเธ, ${state.user.displayName}! ๐‘`;
+            `สวัสดีครับ, ${state.user.displayName}! 👋`;
 
-        // 5๏ธโฃ Render เนเธฅเธฐเน€เธเธดเธ”เธซเธเนเธฒเน€เธฅเธทเธญเธเธ—เธตเนเธญเธขเธนเน
+        // 5️⃣ Render และเปิดหน้าเลือกที่อยู่
         renderAddressList();
         goTo('screen-address');
 
     } catch (err) {
         console.error('[LIFF Error]', err);
-        loadingText.textContent = `เน€เธเธดเธ”เธเนเธญเธเธดเธ”เธเธฅเธฒเธ”: ${err.message}`;
+        loadingText.textContent = `เกิดข้อผิดพลาด: ${err.message}`;
         loadingText.style.color = 'var(--red)';
     }
 }
 
-/** เนเธชเธ”เธ banner เนเธเนเธเธงเนเธฒเธเธณเธฅเธฑเธเธ—เธ”เธชเธญเธเธเธฒเธ browser เธซเธฃเธทเธญ LIFF SDK เนเธซเธฅเธ”เนเธกเนเธชเธณเน€เธฃเนเธ */
+/** แสดง banner แจ้งว่ากำลังทดสอบจาก browser หรือ LIFF SDK โหลดไม่สำเร็จ */
 function showBrowserTestBanner(uid, isLineUA = false) {
     const banner = document.createElement('div');
     banner.style.cssText = [
@@ -737,29 +736,29 @@ function showBrowserTestBanner(uid, isLineUA = false) {
         'font-weight:600', 'text-align:center', 'padding:4px 8px',
         'letter-spacing:0.3px', 'line-height:1.4',
     ].join(';');
-    const context = isLineUA ? '๐“ฑ LINE Browser (SDK fail)' : '๐ External Browser';
+    const context = isLineUA ? '📱 LINE Browser (SDK fail)' : '🌐 External Browser';
     banner.textContent = `BROWSER TEST MODE | ${context} | UID: ${uid}`;
     document.body.prepend(banner);
 }
 
 // =====================================================
-// ๐ฎ EVENT LISTENERS
+// 🎮 EVENT LISTENERS
 // =====================================================
 
 document.addEventListener('DOMContentLoaded', () => {
 
-    // โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€
+    // ─────────────────────────────────────────────
     // SCREEN 1: ADDRESS
-    // โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€
+    // ─────────────────────────────────────────────
 
-    /** เธเธธเนเธก "เน€เธเธดเนเธกเธ—เธตเนเธญเธขเธนเนเนเธซเธกเน" */
+    /** ปุ่ม "เพิ่มที่อยู่ใหม่" */
     document.getElementById('btn-add-address').addEventListener('click', () => {
         const form = document.getElementById('new-address-form');
         const isHidden = form.classList.toggle('hidden');
         if (!isHidden) document.getElementById('input-branch-name').focus();
     });
 
-    /** เธเธธเนเธก "เธเธฑเธเธ—เธถเธเธ—เธตเนเธญเธขเธนเนเธเธตเน" */
+    /** ปุ่ม "บันทึกที่อยู่นี้" */
     document.getElementById('btn-confirm-new-address').addEventListener('click', () => {
         const label = document.getElementById('input-branch-name').value.trim();
         const contactName = document.getElementById('input-contact-name').value.trim();
@@ -767,7 +766,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const text  = document.getElementById('input-address').value.trim();
 
         if (!label || !contactName || !tel || !text) {
-            alert('เธเธฃเธธเธ“เธฒเธเธฃเธญเธเธเธทเนเธญเธชเธฒเธเธฒ เธเธทเนเธญเธเธนเนเธ•เธดเธ”เธ•เนเธญ เน€เธเธญเธฃเนเธ•เธดเธ”เธ•เนเธญ เนเธฅเธฐเธ—เธตเนเธญเธขเธนเนเนเธซเนเธเธฃเธเธเนเธญเธเธเธฑเธเธ—เธถเธ');
+            alert('กรุณากรอกชื่อสาขา ชื่อผู้ติดต่อ เบอร์ติดต่อ และที่อยู่ให้ครบก่อนบันทึก');
             return;
         }
 
@@ -784,55 +783,55 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('input-address').value     = '';
     });
 
-    /** เธเธธเนเธก "เธ–เธฑเธ”เนเธ โ€” เน€เธฅเธทเธญเธเธชเธดเธเธเนเธฒ" */
+    /** ปุ่ม "ถัดไป — เลือกสินค้า" */
     document.getElementById('btn-next-to-products').addEventListener('click', () => {
         renderProducts();
         syncCartUI();
         goTo('screen-products');
     });
 
-    // โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€
+    // ─────────────────────────────────────────────
     // SCREEN 2: PRODUCTS
-    // โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€
+    // ─────────────────────────────────────────────
 
-    /** เธขเนเธญเธเธเธฅเธฑเธเนเธเธซเธเนเธฒเธ—เธตเนเธญเธขเธนเน */
+    /** ย้อนกลับไปหน้าที่อยู่ */
     document.getElementById('btn-back-to-address').addEventListener('click', () => {
         goTo('screen-address');
     });
 
-    /** เนเธเธซเธเนเธฒเธชเธฃเธธเธเธเธณเธชเธฑเนเธเธเธทเนเธญ */
+    /** ไปหน้าสรุปคำสั่งซื้อ */
     document.getElementById('btn-next-to-summary').addEventListener('click', () => {
         if (countItems() === 0) {
-            alert('เธเธฃเธธเธ“เธฒเน€เธฅเธทเธญเธเธชเธดเธเธเนเธฒเธญเธขเนเธฒเธเธเนเธญเธข 1 เธฃเธฒเธขเธเธฒเธฃ');
+            alert('กรุณาเลือกสินค้าอย่างน้อย 1 รายการ');
             return;
         }
         renderSummary();
         goTo('screen-summary');
     });
 
-    // โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€
+    // ─────────────────────────────────────────────
     // SCREEN 3: SUMMARY
-    // โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€
+    // ─────────────────────────────────────────────
 
-    /** เธขเนเธญเธเธเธฅเธฑเธเนเธเธซเธเนเธฒเธชเธดเธเธเนเธฒ */
+    /** ย้อนกลับไปหน้าสินค้า */
     document.getElementById('btn-back-to-products').addEventListener('click', () => {
         goTo('screen-products');
     });
 
-    /** เนเธเนเนเธเธ—เธตเนเธญเธขเธนเน (เธเธฒเธเธซเธเนเธฒเธชเธฃเธธเธ) */
+    /** แก้ไขที่อยู่ (จากหน้าสรุป) */
     document.getElementById('btn-edit-address').addEventListener('click', () => {
         goTo('screen-address');
     });
 
-    /** เนเธเนเนเธเธฃเธฒเธขเธเธฒเธฃเธชเธดเธเธเนเธฒ (เธเธฒเธเธซเธเนเธฒเธชเธฃเธธเธ) */
+    /** แก้ไขรายการสินค้า (จากหน้าสรุป) */
     document.getElementById('btn-edit-products').addEventListener('click', () => {
         goTo('screen-products');
     });
 
-    /** เธเธธเนเธก "เธขเธทเธเธขเธฑเธเธเธณเธชเธฑเนเธเธเธทเนเธญ" โ€” Submit */
+    /** ปุ่ม "ยืนยันคำสั่งซื้อ" — Submit */
     document.getElementById('btn-submit-order').addEventListener('click', async () => {
-        if (!state.selectedAddress) { alert('เธเธฃเธธเธ“เธฒเน€เธฅเธทเธญเธเธ—เธตเนเธญเธขเธนเนเธเธฑเธ”เธชเนเธ'); return; }
-        if (countItems() === 0)     { alert('เธเธฃเธธเธ“เธฒเน€เธฅเธทเธญเธเธชเธดเธเธเนเธฒเธญเธขเนเธฒเธเธเนเธญเธข 1 เธฃเธฒเธขเธเธฒเธฃ'); return; }
+        if (!state.selectedAddress) { alert('กรุณาเลือกที่อยู่จัดส่ง'); return; }
+        if (countItems() === 0)     { alert('กรุณาเลือกสินค้าอย่างน้อย 1 รายการ'); return; }
 
         const btn     = document.getElementById('btn-submit-order');
         const btnText = document.getElementById('submit-btn-text');
@@ -861,7 +860,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     };
                 });
 
-            // Build payload เธ•เธฒเธก spec เธเธญเธ n8n webhook POST /webhook/submit-order
+            // Build payload ตาม spec ของ n8n webhook POST /webhook/submit-order
             const payload = {
                 lineUid:         state.user.uid,
                 displayName:     state.user.displayName,
@@ -888,7 +887,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         } catch (err) {
             console.error('[Submit Error]', err);
-            alert(`เธชเนเธเธเธณเธชเธฑเนเธเธเธทเนเธญเนเธกเนเธชเธณเน€เธฃเนเธ\n${err.message}\n\nเธเธฃเธธเธ“เธฒเธฅเธญเธเนเธซเธกเนเธญเธตเธเธเธฃเธฑเนเธ`);
+            alert(`ส่งคำสั่งซื้อไม่สำเร็จ\n${err.message}\n\nกรุณาลองใหม่อีกครั้ง`);
 
             // Reset button
             btn.disabled = false;
@@ -897,14 +896,14 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€
+    // ─────────────────────────────────────────────
     // SCREEN 4: SUCCESS
-    // โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€
+    // ─────────────────────────────────────────────
 
-    /** เธเธดเธ”เธซเธเนเธฒเธ•เนเธฒเธ LIFF */
+    /** ปิดหน้าต่าง LIFF */
     document.getElementById('btn-close-liff').addEventListener('click', () => {
         if (CONFIG.IS_DEV_MODE) {
-            // Dev: reload เนเธ—เธ close
+            // Dev: reload แทน close
             window.location.reload();
             return;
         }
@@ -915,8 +914,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€
+    // ─────────────────────────────────────────────
     // START
-    // โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€
+    // ─────────────────────────────────────────────
     if (!requestedScreen) initApp();
 });
