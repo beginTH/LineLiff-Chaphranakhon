@@ -2,7 +2,7 @@ const fs = require('fs');
 const path = require('path');
 
 const input = path.resolve('outputs/n8n_workflow_chaphranakhon_production_credit_bundle_v14_dynamic_sheet_id.json');
-const output = path.resolve('outputs/n8n_workflow_chaphranakhon_production_credit_bundle_v15_document_flow.json');
+const output = path.resolve('outputs/archive/v15-monolith/n8n_workflow_chaphranakhon_production_credit_bundle_v15_document_flow.json');
 const workflow = JSON.parse(fs.readFileSync(input, 'utf8').replace(/^\uFEFF/, ''));
 
 const uid = (() => { let value = 0; return () => `v15-${++value}`; })();
@@ -143,5 +143,6 @@ link('POST /admin-verify-payment', 'Read Admins For Payment Verify'); link('Read
 
 workflow.name = 'Chaphranakhon Production Credit Bundle V15 Document Flow';
 workflow.active = false;
+fs.mkdirSync(path.dirname(output), { recursive: true });
 fs.writeFileSync(output, JSON.stringify(workflow, null, 2) + '\n', 'utf8');
 console.log(`Created ${output} with ${workflow.nodes.length} nodes`);
