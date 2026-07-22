@@ -1,0 +1,881 @@
+{
+  "name": "Chaphranakhon - 04_payment_verification_receipt",
+  "nodes": [
+    {
+      "name": "POST /admin-verify-payment",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        28736,
+        10624
+      ],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "admin-verify-payment",
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "https://beginth.github.io"
+        }
+      },
+      "id": "v15-13"
+    },
+    {
+      "id": "v15-14",
+      "name": "Read Admins For Payment Verify",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        28992,
+        10624
+      ],
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1aKwY4KOo8uGCRrHASD539Habt5Obam8meacRO-ir0Ks",
+          "mode": "list",
+          "cachedResultName": "Chaphranakhon_DB",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1aKwY4KOo8uGCRrHASD539Habt5Obam8meacRO-ir0Ks/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Admins",
+          "mode": "name",
+          "cachedResultName": "Admins",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1aKwY4KOo8uGCRrHASD539Habt5Obam8meacRO-ir0Ks/edit"
+        },
+        "options": {}
+      },
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "ZPODlcDmX45WFVuM",
+          "name": "Google Sheets account 2"
+        }
+      }
+    },
+    {
+      "id": "v15-15",
+      "name": "Authorize Payment Verification",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        29248,
+        10624
+      ],
+      "parameters": {
+        "jsCode": "const body = $node['POST /admin-verify-payment'].json.body || $node['POST /admin-verify-payment'].json; const admins = $input.all().map(i=>i.json); const admin = admins.find(i => String(i.LINE_UID || i.Line_UID || '').trim() === String(body.adminUid || body.lineUid || '').trim() && String(i.Status || '').trim().toLowerCase() === 'active'); if (!admin) throw new Error('Only an active admin may verify payment'); return [{json:{...body,adminUid:body.adminUid || body.lineUid,adminName:body.adminName || admin.Display_Name || admin.Admin_ID || '',verifiedAt:new Date().toISOString()}}];"
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1aKwY4KOo8uGCRrHASD539Habt5Obam8meacRO-ir0Ks",
+          "mode": "list",
+          "cachedResultName": "Chaphranakhon_DB",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1aKwY4KOo8uGCRrHASD539Habt5Obam8meacRO-ir0Ks/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Orders",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1aKwY4KOo8uGCRrHASD539Habt5Obam8meacRO-ir0Ks/edit#gid=0"
+        },
+        "options": {}
+      },
+      "id": "v15-16",
+      "name": "Read Orders For Payment Verify",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        29504,
+        10624
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "ZPODlcDmX45WFVuM",
+          "name": "Google Sheets account 2"
+        }
+      }
+    },
+    {
+      "name": "Validate Payment Verification",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        29760,
+        10624
+      ],
+      "parameters": {
+        "jsCode": "const request = $node['Authorize Payment Verification'].json; const order = $input.all().map(i=>i.json).find(i=>String(i.Order_ID||'')===String(request.orderId||'')); if (!order) throw new Error('Order not found'); if (String(order.Payment_Status||'').toLowerCase() !== 'submitted') throw new Error('Payment proof has not been submitted'); return [{json:{...request,orderId:order.Order_ID,branchUid:order.LINE_UID,totalAmount:Number(order.Total_Amount||0),subtotal:Number(order.Subtotal||0),shippingCost:Number(order.Shipping_Cost||0),discount:Number(order.Discount||0),otherFee:Number(order.Other_Fee||0),vatAmount:Number(order.VAT_Amount||0)}}];"
+      },
+      "id": "v15-17"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "1aKwY4KOo8uGCRrHASD539Habt5Obam8meacRO-ir0Ks",
+          "mode": "list",
+          "cachedResultName": "Chaphranakhon_DB",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1aKwY4KOo8uGCRrHASD539Habt5Obam8meacRO-ir0Ks/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Orders",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1aKwY4KOo8uGCRrHASD539Habt5Obam8meacRO-ir0Ks/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Order_ID": "={{ $json.orderId }}",
+            "Payment_Status": "Verified",
+            "Payment_Verified_At": "={{ $json.verifiedAt }}",
+            "Payment_Verified_By": "={{ $json.adminName }}",
+            "Payment_Verified_By_UID": "={{ $json.adminUid }}"
+          },
+          "matchingColumns": [
+            "Order_ID"
+          ],
+          "schema": [
+            {
+              "id": "Order_ID",
+              "displayName": "Order_ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Payment_Status",
+              "displayName": "Payment_Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Payment_Proof_URL",
+              "displayName": "Payment_Proof_URL",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Payment_Proof_File_ID",
+              "displayName": "Payment_Proof_File_ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Payment_Submitted_At",
+              "displayName": "Payment_Submitted_At",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Payment_Amount",
+              "displayName": "Payment_Amount",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Payment_Transfer_At",
+              "displayName": "Payment_Transfer_At",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Payment_Note",
+              "displayName": "Payment_Note",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "id": "v15-18",
+      "name": "Update Payment Verification Status",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        30016,
+        10624
+      ],
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "ZPODlcDmX45WFVuM",
+          "name": "Google Sheets account 2"
+        }
+      }
+    },
+    {
+      "name": "Build Receipt Payload",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        29504,
+        10880
+      ],
+      "parameters": {
+        "jsCode": "function parse(v){ try { return v ? (typeof v === 'string' ? JSON.parse(v) : v) : {}; } catch { return {}; } }\nfunction val(o, keys, fallback=''){ for (const k of keys) if (o?.[k] !== undefined && o?.[k] !== null && String(o[k]).trim() !== '') return o[k]; return fallback; }\nfunction thaiDate(v){ const d = v ? new Date(v) : new Date(); const safe = Number.isNaN(d.getTime()) ? new Date() : d; return new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Bangkok',day:'2-digit',month:'2-digit',year:'numeric'}).format(safe); }\nconst rows = $input.all().map(i => i.json);\nconst base = $node['Validate Payment Verification'].json;\nconst row = rows.find(i => String(i.Order_ID || '') === String(base.orderId || base.Order_ID || ''));\nif (!row) throw new Error('Order not found while creating Receipt');\nconst delivery = parse(row.Delivery_Address), details = parse(row.Order_Details);\nconst rawItems = details.orderItems || details.items || details.products || details.lines || [];\nconst items = (Array.isArray(rawItems) ? rawItems : []).filter(i => Number(val(i,['quantity','Quantity','qty'],0)) > 0);\nconst buyer = val(details,['buyerName','displayName','contactName'], val(delivery,['contactName','contact'], ''));\nconst branch = val(delivery,['label','branchName','name'], buyer);\nconst address = val(delivery,['text','address','fullAddress'], '');\nconst contact = val(delivery,['contactName','contact'], buyer);\nconst tel = val(delivery,['tel','phone','mobile'], '');\nconst subtotal = Number(base.subtotal ?? row.Subtotal ?? items.reduce((s,i)=>s+Number(i.lineTotal ?? Number(val(i,['quantity','Quantity','qty'],0))*Number(val(i,['pricePerUnit','Price','price'],0))),0));\nconst discount = Number(base.discount ?? row.Discount ?? 0), shipping = Number(base.shippingCost ?? row.Shipping_Cost ?? 0), otherFee = Number(base.otherFee ?? row.Other_Fee ?? 0), vat = Number(base.vatAmount ?? row.VAT_Amount ?? 0), total = Number(base.totalAmount ?? row.Total_Amount ?? (subtotal - discount + shipping + otherFee + vat));\nconst orderId = base.orderId || base.Order_ID || row.Order_ID;\nconst receiptNo = 'RC-' + orderId;\nconst filled = Array.from({length:20}, (_,i) => items[i] || null);\nconst values = [\n  {range:'Receipt!D14',values:[[buyer]]},{range:'Receipt!D15',values:[[branch]]},{range:'Receipt!D16',values:[[address]]},{range:'Receipt!D17',values:[[contact]]},{range:'Receipt!G17',values:[[tel]]},{range:'Receipt!J15',values:[[receiptNo]]},{range:'Receipt!J17',values:[[thaiDate(base.verifiedAt || base.Payment_Verified_At || row.Payment_Verified_At || new Date())]]},{range:'Receipt!D18',values:[['??????????????????: LINE LIFF | ' + (details.note || '')]]},\n  {range:'Receipt!B22:B41',values:filled.map((i,n)=>[i?n+1:''])},{range:'Receipt!C22:C41',values:filled.map(i=>[i?val(i,['productId','Product_ID','id']):''])},{range:'Receipt!E22:E41',values:filled.map(i=>[i?val(i,['productName','Product_Name','name']):''])},{range:'Receipt!G22:G41',values:filled.map(i=>[i?Number(val(i,['quantity','Quantity','qty'],0)):''])},{range:'Receipt!H22:H41',values:filled.map(i=>[i?val(i,['unit','Unit','UOM']):''])},{range:'Receipt!I22:I41',values:filled.map(i=>[i?Number(val(i,['pricePerUnit','Price','price'],0)):''])},{range:'Receipt!J22:J41',values:filled.map(i=>[i?Number(i.lineTotal ?? Number(val(i,['quantity','Quantity','qty'],0))*Number(val(i,['pricePerUnit','Price','price'],0))):''])},\n  {range:'Receipt!J42',values:[[vat]]},{range:'Receipt!J43',values:[[shipping+otherFee]]},{range:'Receipt!J45',values:[[total]]}\n];\nreturn [{json:{orderId,branchUid:base.branchUid || row.LINE_UID || '',branchName:branch,fileName:receiptNo+'.pdf',copiedSheetName:'RC_'+orderId,templateFileId:'1d4w34axNs8QQhqaZQzSQTD7sZZgQxW-KHvvSVa_TEpU',folderId:'1Bd3_454lB4Exaerlps02h2RVRP8Qry6P',valuesBatchUpdate:{valueInputOption:'USER_ENTERED',data:values},documentType:'Receipt',documentId:'Receipt-'+orderId,createdAt:new Date().toISOString(),createdByUid:base.adminUid || '',createdByName:base.adminName || '',totalAmount:total,note:details.note || ''}}];"
+      },
+      "id": "v15-19"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ 'https://www.googleapis.com/drive/v3/files/' + $json.templateFileId + '/copy' }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleOAuth2Api",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ name: $json.copiedSheetName, parents: [$json.folderId], mimeType: 'application/vnd.google-apps.spreadsheet' }) }}",
+        "options": {}
+      },
+      "id": "v15-20",
+      "name": "Copy Receipt Template",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        29760,
+        10880
+      ],
+      "credentials": {
+        "googleOAuth2Api": {
+          "id": "QFxTIh9zRRzFm0DM",
+          "name": "Google account DevCharphranakhon"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const payload = $('Build Receipt Payload').item.json; return { json: { ...payload, spreadsheetId: $json.id, copiedFileId: $json.id } };",
+        "mode": "runOnceForEachItem"
+      },
+      "id": "v15-21",
+      "name": "Merge Receipt Template",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        30016,
+        10880
+      ]
+    },
+    {
+      "id": "v15-22",
+      "name": "Get Copied Receipt Metadata",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        30272,
+        10880
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "={{ 'https://sheets.googleapis.com/v4/spreadsheets/' + $json.spreadsheetId + '?fields=sheets.properties(sheetId,title)' }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleOAuth2Api",
+        "options": {}
+      },
+      "credentials": {
+        "googleOAuth2Api": {
+          "id": "QFxTIh9zRRzFm0DM",
+          "name": "Google account DevCharphranakhon"
+        }
+      }
+    },
+    {
+      "id": "v15-23",
+      "name": "Attach Receipt Sheet ID",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        30528,
+        10880
+      ],
+      "parameters": {
+        "jsCode": "const payload = $node['Merge Receipt Template'].json; const sheets = Array.isArray($json.sheets) ? $json.sheets : []; const sheet = sheets.find(i => i.properties?.title === 'Receipt') || sheets[0]; if (!Number.isInteger(sheet?.properties?.sheetId)) throw new Error('No usable sheetId for Receipt'); return [{json:{...payload, documentSheetId:sheet.properties.sheetId}}];"
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ 'https://sheets.googleapis.com/v4/spreadsheets/' + $json.spreadsheetId + '/values:batchUpdate' }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleOAuth2Api",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.valuesBatchUpdate) }}",
+        "options": {}
+      },
+      "id": "v15-24",
+      "name": "Fill Receipt Template",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        30784,
+        10880
+      ],
+      "credentials": {
+        "googleOAuth2Api": {
+          "id": "QFxTIh9zRRzFm0DM",
+          "name": "Google account DevCharphranakhon"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "return { json: $node['Attach Receipt Sheet ID'].json, binary: $binary };",
+        "mode": "runOnceForEachItem"
+      },
+      "id": "v15-25",
+      "name": "Restore Receipt Payload",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        31040,
+        10880
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{ 'https://docs.google.com/spreadsheets/d/' + $json.copiedFileId + '/export?format=pdf&size=A4&portrait=true&scale=4&fitw=true&sheetnames=false&printtitle=false&pagenumbers=false&gridlines=false&fzr=false&top_margin=0&bottom_margin=0&left_margin=0&right_margin=0&gid=' + $json.documentSheetId }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleOAuth2Api",
+        "options": {}
+      },
+      "id": "v15-26",
+      "name": "Export Receipt PDF",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        31296,
+        10880
+      ],
+      "credentials": {
+        "googleOAuth2Api": {
+          "id": "QFxTIh9zRRzFm0DM",
+          "name": "Google account DevCharphranakhon"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "name": "={{ $('Restore Receipt Payload').item.json.fileName }}",
+        "driveId": {
+          "__rl": true,
+          "value": "My Drive",
+          "mode": "list",
+          "cachedResultName": "My Drive",
+          "cachedResultUrl": "https://drive.google.com/drive/my-drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "value": "https://drive.google.com/drive/folders/1Bd3_454lB4Exaerlps02h2RVRP8Qry6P",
+          "mode": "url"
+        },
+        "options": {}
+      },
+      "id": "v15-27",
+      "name": "Upload Receipt PDF",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        31552,
+        10880
+      ],
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "cdmoEPoXq7Z84EIJ",
+          "name": "Google Drive account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const payload = $('Restore Receipt Payload').item.json; const fileId = $json.id || payload.copiedFileId; return {json:{...payload,pdfFileId:fileId,pdfUrl:'https://drive.google.com/file/d/'+fileId+'/view?usp=drivesdk'},binary:$binary};",
+        "mode": "runOnceForEachItem"
+      },
+      "id": "v15-28",
+      "name": "Build Receipt PDF URL",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        31808,
+        10880
+      ]
+    },
+    {
+      "name": "Log Receipt Document",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        32064,
+        10880
+      ],
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1aKwY4KOo8uGCRrHASD539Habt5Obam8meacRO-ir0Ks",
+          "mode": "list",
+          "cachedResultName": "Chaphranakhon_DB"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Documents",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Document_ID": "={{ $node['Build Receipt PDF URL'].json.documentId }}",
+            "Order_ID": "={{ $node['Build Receipt PDF URL'].json.orderId }}",
+            "Document_Type": "={{ $node['Build Receipt PDF URL'].json.documentType }}",
+            "File_ID": "={{ $node['Build Receipt PDF URL'].json.pdfFileId }}",
+            "File_URL": "={{ $node['Build Receipt PDF URL'].json.pdfUrl }}",
+            "Created_At": "={{ $node['Build Receipt PDF URL'].json.createdAt }}",
+            "Created_By_UID": "={{ $node['Build Receipt PDF URL'].json.createdByUid || '' }}",
+            "Created_By_Name": "={{ $node['Build Receipt PDF URL'].json.createdByName || '' }}",
+            "Status": "Created",
+            "Note": "={{ $node['Build Receipt PDF URL'].json.note || '' }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Document_ID",
+              "displayName": "Document_ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Order_ID",
+              "displayName": "Order_ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Document_Type",
+              "displayName": "Document_Type",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "File_ID",
+              "displayName": "File_ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "File_URL",
+              "displayName": "File_URL",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Created_At",
+              "displayName": "Created_At",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Created_By_UID",
+              "displayName": "Created_By_UID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Created_By_Name",
+              "displayName": "Created_By_Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Status",
+              "displayName": "Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Note",
+              "displayName": "Note",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "ZPODlcDmX45WFVuM",
+          "name": "Google Sheets account 2"
+        }
+      },
+      "id": "v15-29"
+    },
+    {
+      "name": "Build Receipt LINE Message",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        32320,
+        10880
+      ],
+      "parameters": {
+        "jsCode": "const doc=$node['Build Receipt PDF URL'].json; const money=Number(doc.totalAmount||0).toLocaleString('th-TH',{minimumFractionDigits:2,maximumFractionDigits:2}); return [{json:{to:doc.branchUid,text:['ยืนยันรับชำระเงินเรียบร้อย','เลขที่คำสั่งซื้อ: '+doc.orderId,'ยอดชำระ: ฿'+money,'ดาวน์โหลดใบเสร็จรับเงิน: '+doc.pdfUrl].join(String.fromCharCode(10))}}];"
+      },
+      "id": "v15-30"
+    },
+    {
+      "parameters": {
+        "operation": "send",
+        "to": "={{ $json.to }}",
+        "messages": {
+          "values": [
+            {
+              "text": "={{ $json.text }}"
+            }
+          ]
+        }
+      },
+      "id": "v15-31",
+      "name": "Notify Branch Receipt LINE",
+      "type": "@aotoki/n8n-nodes-line-messaging.lineMessaging",
+      "typeVersion": 1,
+      "position": [
+        32576,
+        10880
+      ],
+      "credentials": {
+        "lineMessagingApi": {
+          "id": "4YlidIdv3s5ML4GE",
+          "name": "Line Messaging rkitja2523"
+        }
+      },
+      "continueOnFail": true
+    },
+    {
+      "id": "v15-32",
+      "name": "Payment Verification Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        32832,
+        10880
+      ],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { success: true, message: \"Payment verified and receipt created\", orderId: $node[\"Build Receipt PDF URL\"].json.orderId, receiptUrl: $node[\"Build Receipt PDF URL\"].json.pdfUrl } }}",
+        "options": {}
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Update Payment Verification Status": {
+      "main": [
+        [
+          {
+            "node": "Build Receipt Payload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Receipt Payload": {
+      "main": [
+        [
+          {
+            "node": "Copy Receipt Template",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Copy Receipt Template": {
+      "main": [
+        [
+          {
+            "node": "Merge Receipt Template",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge Receipt Template": {
+      "main": [
+        [
+          {
+            "node": "Get Copied Receipt Metadata",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Copied Receipt Metadata": {
+      "main": [
+        [
+          {
+            "node": "Attach Receipt Sheet ID",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Attach Receipt Sheet ID": {
+      "main": [
+        [
+          {
+            "node": "Fill Receipt Template",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fill Receipt Template": {
+      "main": [
+        [
+          {
+            "node": "Restore Receipt Payload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Restore Receipt Payload": {
+      "main": [
+        [
+          {
+            "node": "Export Receipt PDF",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Export Receipt PDF": {
+      "main": [
+        [
+          {
+            "node": "Upload Receipt PDF",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload Receipt PDF": {
+      "main": [
+        [
+          {
+            "node": "Build Receipt PDF URL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Receipt PDF URL": {
+      "main": [
+        [
+          {
+            "node": "Log Receipt Document",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log Receipt Document": {
+      "main": [
+        [
+          {
+            "node": "Build Receipt LINE Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Receipt LINE Message": {
+      "main": [
+        [
+          {
+            "node": "Notify Branch Receipt LINE",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Notify Branch Receipt LINE": {
+      "main": [
+        [
+          {
+            "node": "Payment Verification Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "POST /admin-verify-payment": {
+      "main": [
+        [
+          {
+            "node": "Read Admins For Payment Verify",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Admins For Payment Verify": {
+      "main": [
+        [
+          {
+            "node": "Authorize Payment Verification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Authorize Payment Verification": {
+      "main": [
+        [
+          {
+            "node": "Read Orders For Payment Verify",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Orders For Payment Verify": {
+      "main": [
+        [
+          {
+            "node": "Validate Payment Verification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Payment Verification": {
+      "main": [
+        [
+          {
+            "node": "Update Payment Verification Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": null,
+  "meta": {
+    "deliveryNoteVersion": "V9 HIDE ZERO QUANTITY CLEAN IMPORT",
+    "generatedAt": "2026-07-19T14:09:22.778Z",
+    "templateFileId": "1FYHjC9DjMpYJmc4fLo_sr6mOE-kKfp6OVQnrAqer8KY",
+    "sheetId": 906132224,
+    "itemsPerPage": 20,
+    "itemFontSize": "10pt",
+    "itemRowHeight": "17px",
+    "pdfExport": "A4 portrait fit-to-page, margins=0",
+    "columnWidthsPx": [
+      18,
+      42,
+      58,
+      58,
+      118,
+      118,
+      66,
+      58,
+      88,
+      96
+    ],
+    "signatureRows": "Row 53=24px, Row 54=4px, Rows 55-57=25px each, Row 58=4px, Row 59=18px",
+    "zeroQuantityRule": "Items with approved quantity less than or equal to zero are excluded from the Delivery Note before pagination.",
+    "documentType": "Delivery Note / Tax Invoice",
+    "outputFolderId": "1IBbwvnGB157SfL-766gvHNQqIljH5sfa",
+    "creditTermsDays": 7
+  },
+  "tags": []
+}

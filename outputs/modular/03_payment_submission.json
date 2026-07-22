@@ -1,0 +1,467 @@
+{
+  "name": "Chaphranakhon - 03_payment_submission",
+  "nodes": [
+    {
+      "id": "8d41174c-1c22-4968-9eb8-bda0fac2cd50",
+      "name": "POST /submit-payment-proof",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -980,
+        180
+      ],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "submit-payment-proof",
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "https://beginth.github.io"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1aKwY4KOo8uGCRrHASD539Habt5Obam8meacRO-ir0Ks",
+          "mode": "list",
+          "cachedResultName": "Chaphranakhon_DB",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1aKwY4KOo8uGCRrHASD539Habt5Obam8meacRO-ir0Ks/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Orders",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1aKwY4KOo8uGCRrHASD539Habt5Obam8meacRO-ir0Ks/edit#gid=0"
+        },
+        "options": {}
+      },
+      "id": "25b784f3-8799-4e04-b625-00c35c3bc257",
+      "name": "Read Orders For Payment Proof",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        -760,
+        180
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "ZPODlcDmX45WFVuM",
+          "name": "Google Sheets account 2"
+        }
+      }
+    },
+    {
+      "id": "da58979c-5a59-41b7-a185-dfa5807c3fb0",
+      "name": "Build Payment Proof Binary",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -520,
+        180
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "language": "javaScript",
+        "jsCode": "\nconst rawBody = $node['POST /submit-payment-proof'].json.body || $node['POST /submit-payment-proof'].json;\nconst body = typeof rawBody === 'string' ? JSON.parse(rawBody) : rawBody;\nconst uid = String(body.lineUid || body.uid || '').trim();\nconst orderId = String(body.orderId || '').trim();\nconst amount = Number(body.amount || 0);\nconst transferAt = body.transferAt || '';\nconst note = String(body.note || '').trim();\nconst proofDataUrl = String(body.proofDataUrl || '');\nif (!uid || !orderId || !Number.isFinite(amount) || amount <= 0 || !transferAt || !proofDataUrl) throw new Error('Missing payment proof fields');\nconst order = $input.all().map(item => item.json).find(row => String(row.Order_ID || '').trim() === orderId && String(row.LINE_UID || '').trim() === uid);\nif (!order) throw new Error('Order not found or does not belong to this user');\nif (String(order.Status || '').toLowerCase() !== 'approved') throw new Error('Only approved orders can submit payment proof');\nconst currentPayment = String(order.Payment_Status || '').toLowerCase();\nif (['submitted', 'verified', 'paid'].includes(currentPayment)) throw new Error('Payment proof was already submitted for this order');\nconst match = proofDataUrl.match(/^data:(image\\/(?:jpeg|png|webp));base64,([A-Za-z0-9+/=]+)$/);\nif (!match) throw new Error('Only JPG, PNG, or WEBP proof images are accepted');\nconst bytes = Math.floor(match[2].length * 0.75);\nif (bytes > 5 * 1024 * 1024) throw new Error('Proof image must be 5 MB or smaller');\nconst ext = match[1] === 'image/png' ? 'png' : match[1] === 'image/webp' ? 'webp' : 'jpg';\nconst safeName = 'PAYMENT_' + orderId.replace(/[^A-Za-z0-9_-]/g, '_') + '_' + Date.now() + '.' + ext;\nreturn [{ json: { orderId, lineUid: uid, amount, transferAt, note, submittedAt: new Date().toISOString(), proofFileName: safeName }, binary: { data: { data: match[2], mimeType: match[1], fileName: safeName, fileExtension: ext } } }];"
+      }
+    },
+    {
+      "parameters": {
+        "operation": "upload",
+        "inputDataFieldName": "data",
+        "name": "={{ $node['Build Payment Proof Binary'].json.proofFileName }}",
+        "driveId": {
+          "__rl": true,
+          "value": "My Drive",
+          "mode": "list",
+          "cachedResultName": "My Drive",
+          "cachedResultUrl": "https://drive.google.com/drive/my-drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "value": "https://drive.google.com/drive/folders/1a5ILurYSpmlbIud7sF8rMSVeHvNDUrPQ",
+          "mode": "url"
+        },
+        "options": {}
+      },
+      "id": "e6a7600d-4549-4891-adc0-c16500b92db1",
+      "name": "Upload Payment Proof",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        -280,
+        180
+      ],
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "cdmoEPoXq7Z84EIJ",
+          "name": "Google Drive account 2"
+        }
+      }
+    },
+    {
+      "id": "8d25829b-fa35-46fa-9ddf-41391841650e",
+      "name": "Build Payment Proof Update",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -40,
+        180
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "language": "javaScript",
+        "jsCode": "\nconst source = $node['Build Payment Proof Binary'].json;\nconst fileId = String($json.id || $json.fileId || '');\nif (!fileId) throw new Error('Google Drive upload did not return a file id');\nreturn [{ json: { ...source, paymentStatus: 'Submitted', paymentProofFileId: fileId, paymentProofUrl: 'https://drive.google.com/file/d/' + fileId + '/view' } }];"
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "1aKwY4KOo8uGCRrHASD539Habt5Obam8meacRO-ir0Ks",
+          "mode": "list",
+          "cachedResultName": "Chaphranakhon_DB",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1aKwY4KOo8uGCRrHASD539Habt5Obam8meacRO-ir0Ks/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Orders",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1aKwY4KOo8uGCRrHASD539Habt5Obam8meacRO-ir0Ks/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Order_ID": "={{ $json.orderId }}",
+            "Payment_Status": "={{ $json.paymentStatus }}",
+            "Payment_Proof_URL": "={{ $json.paymentProofUrl }}",
+            "Payment_Proof_File_ID": "={{ $json.paymentProofFileId }}",
+            "Payment_Submitted_At": "={{ $json.submittedAt }}",
+            "Payment_Amount": "={{ $json.amount }}",
+            "Payment_Transfer_At": "={{ $json.transferAt }}",
+            "Payment_Note": "={{ $json.note }}"
+          },
+          "matchingColumns": [
+            "Order_ID"
+          ],
+          "schema": [
+            {
+              "id": "Order_ID",
+              "displayName": "Order_ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Payment_Status",
+              "displayName": "Payment_Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Payment_Proof_URL",
+              "displayName": "Payment_Proof_URL",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Payment_Proof_File_ID",
+              "displayName": "Payment_Proof_File_ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Payment_Submitted_At",
+              "displayName": "Payment_Submitted_At",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Payment_Amount",
+              "displayName": "Payment_Amount",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Payment_Transfer_At",
+              "displayName": "Payment_Transfer_At",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Payment_Note",
+              "displayName": "Payment_Note",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "id": "b69b5e5c-fec6-481d-aff6-fa53df07e5ef",
+      "name": "Update Payment Proof Status",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        200,
+        180
+      ],
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "ZPODlcDmX45WFVuM",
+          "name": "Google Sheets account 2"
+        }
+      }
+    },
+    {
+      "id": "3417be10-0732-4f43-b174-b785b681413f",
+      "name": "Respond Payment Proof",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        440,
+        180
+      ],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { success: true, paymentStatus: \"Submitted\", message: \"ส่งหลักฐานการชำระเงินเรียบร้อยแล้ว กรุณารอ Admin ตรวจสอบ\", orderId: $node[\"Build Payment Proof Update\"].json.orderId, paymentProofUrl: $node[\"Build Payment Proof Update\"].json.paymentProofUrl } }}",
+        "options": {}
+      }
+    },
+    {
+      "id": "c0fadfe0-4119-4e00-9023-f364b8da7600",
+      "name": "Read Admins For Payment Submitted",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        900,
+        1180
+      ],
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1aKwY4KOo8uGCRrHASD539Habt5Obam8meacRO-ir0Ks",
+          "mode": "list",
+          "cachedResultName": "Chaphranakhon_DB",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1aKwY4KOo8uGCRrHASD539Habt5Obam8meacRO-ir0Ks/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Admins",
+          "mode": "name",
+          "cachedResultName": "Admins",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1aKwY4KOo8uGCRrHASD539Habt5Obam8meacRO-ir0Ks/edit"
+        },
+        "options": {}
+      },
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "ZPODlcDmX45WFVuM",
+          "name": "Google Sheets account 2"
+        }
+      }
+    },
+    {
+      "id": "94442d98-e411-4d06-a497-88e4fa07a884",
+      "name": "Build Admin Payment Proof LINE Message",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1120,
+        1180
+      ],
+      "parameters": {
+        "jsCode": "function norm(value){return String(value||'').trim().toLowerCase();}\nfunction asBool(value){if(typeof value==='boolean')return value;return ['true','1','yes','y'].includes(norm(value));}\nfunction clean(value){return String(value??'').replace(/[\\u0000-\\u0008\\u000B\\u000C\\u000E-\\u001F]/g,'').trim();}\nfunction parseJson(value){try{return value?JSON.parse(value):{};}catch{return {};}}\nconst source=$node['Build Payment Proof Update'].json;\nconst rows=$items('Read Orders For Payment Proof').map(i=>i.json);\nconst order=rows.find(r=>String(r.Order_ID||'')===String(source.orderId||''));\nconst delivery=parseJson(order?.Delivery_Address);\nconst branch=clean(delivery.label||delivery.branchName||order?.LINE_UID||'-');\nconst expected=Number(order?.Total_Amount||0), submitted=Number(source.amount||0), diff=submitted-expected;\nconst money=v=>Number(v||0).toLocaleString('th-TH',{minimumFractionDigits:2,maximumFractionDigits:2});\nconst proof=clean(source.paymentProofUrl||'');\nconst orderId=clean(source.orderId||'');\nconst reviewUrl='https://liff.line.me/2010570929-BJxo68XQ?mode=payment&orderId='+encodeURIComponent(orderId);\nconst admins=$input.all().map(i=>i.json).filter(a=>String(a.LINE_UID||a.lineUid||'').trim()&&norm(a.Status)==='active'&&(asBool(a.Notify_Payment_Verification)||asBool(a.Notify_Payment_Submitted)));\nif(!admins.length) throw new Error('No active admin enabled for payment notification');\nconst text=['มีหลักฐานการชำระเงินใหม่รอตรวจสอบ','เลขที่: '+orderId,'สาขา: '+branch,'ยอดที่ต้องชำระ: ฿'+money(expected),'ยอดที่แจ้งโอน: ฿'+money(submitted),'ส่วนต่าง: ฿'+money(diff),'วันเวลาที่โอน: '+clean(source.transferAt||'-'),'หลักฐานการโอน: '+proof,'เปิดหน้าตรวจสอบ: '+reviewUrl].join(String.fromCharCode(10)).slice(0,1800);\nreturn admins.map(a=>({json:{to:String(a.LINE_UID||a.lineUid).trim(),adminId:a.Admin_ID||'',adminName:a.Display_Name||'',text}}));"
+      }
+    },
+    {
+      "parameters": {
+        "operation": "send",
+        "to": "={{ $json.to }}",
+        "messages": {
+          "values": [
+            {
+              "text": "={{ $json.text }}"
+            }
+          ]
+        }
+      },
+      "type": "@aotoki/n8n-nodes-line-messaging.lineMessaging",
+      "typeVersion": 1,
+      "position": [
+        1360,
+        1180
+      ],
+      "id": "bf095de4-2284-4f0e-8df9-45541dc32334",
+      "name": "Notify Admin Payment Proof LINE",
+      "credentials": {
+        "lineMessagingApi": {
+          "id": "4YlidIdv3s5ML4GE",
+          "name": "Line Messaging rkitja2523"
+        }
+      },
+      "continueOnFail": true
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "POST /submit-payment-proof": {
+      "main": [
+        [
+          {
+            "node": "Read Orders For Payment Proof",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Orders For Payment Proof": {
+      "main": [
+        [
+          {
+            "node": "Build Payment Proof Binary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Payment Proof Binary": {
+      "main": [
+        [
+          {
+            "node": "Upload Payment Proof",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload Payment Proof": {
+      "main": [
+        [
+          {
+            "node": "Build Payment Proof Update",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Payment Proof Update": {
+      "main": [
+        [
+          {
+            "node": "Update Payment Proof Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Payment Proof Status": {
+      "main": [
+        [
+          {
+            "node": "Respond Payment Proof",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Read Admins For Payment Submitted",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Admins For Payment Submitted": {
+      "main": [
+        [
+          {
+            "node": "Build Admin Payment Proof LINE Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Admin Payment Proof LINE Message": {
+      "main": [
+        [
+          {
+            "node": "Notify Admin Payment Proof LINE",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": null,
+  "meta": {
+    "deliveryNoteVersion": "V9 HIDE ZERO QUANTITY CLEAN IMPORT",
+    "generatedAt": "2026-07-19T14:09:22.778Z",
+    "templateFileId": "1FYHjC9DjMpYJmc4fLo_sr6mOE-kKfp6OVQnrAqer8KY",
+    "sheetId": 906132224,
+    "itemsPerPage": 20,
+    "itemFontSize": "10pt",
+    "itemRowHeight": "17px",
+    "pdfExport": "A4 portrait fit-to-page, margins=0",
+    "columnWidthsPx": [
+      18,
+      42,
+      58,
+      58,
+      118,
+      118,
+      66,
+      58,
+      88,
+      96
+    ],
+    "signatureRows": "Row 53=24px, Row 54=4px, Rows 55-57=25px each, Row 58=4px, Row 59=18px",
+    "zeroQuantityRule": "Items with approved quantity less than or equal to zero are excluded from the Delivery Note before pagination.",
+    "documentType": "Delivery Note / Tax Invoice",
+    "outputFolderId": "1IBbwvnGB157SfL-766gvHNQqIljH5sfa",
+    "creditTermsDays": 7
+  },
+  "tags": []
+}

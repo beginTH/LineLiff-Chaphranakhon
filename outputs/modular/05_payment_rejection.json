@@ -1,0 +1,422 @@
+{
+  "name": "Chaphranakhon - 05_payment_rejection",
+  "nodes": [
+    {
+      "name": "POST /admin-reject-payment",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        760,
+        1680
+      ],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "admin-reject-payment",
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "https://beginth.github.io"
+        }
+      },
+      "id": "d1a83182-8234-4c7d-86fb-d23c3234bffd"
+    },
+    {
+      "id": "c2ede279-b12d-45fd-a69c-eaa8cfbe4391",
+      "name": "Read Admins For Payment Reject",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        900,
+        1680
+      ],
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1aKwY4KOo8uGCRrHASD539Habt5Obam8meacRO-ir0Ks",
+          "mode": "list",
+          "cachedResultName": "Chaphranakhon_DB",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1aKwY4KOo8uGCRrHASD539Habt5Obam8meacRO-ir0Ks/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Admins",
+          "mode": "name",
+          "cachedResultName": "Admins",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1aKwY4KOo8uGCRrHASD539Habt5Obam8meacRO-ir0Ks/edit"
+        },
+        "options": {}
+      },
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "ZPODlcDmX45WFVuM",
+          "name": "Google Sheets account 2"
+        }
+      }
+    },
+    {
+      "id": "9cae3abb-a00e-4a5a-8912-09558691cc74",
+      "name": "Authorize Payment Rejection",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1040,
+        1680
+      ],
+      "parameters": {
+        "jsCode": "function norm(v){return String(v||'').trim().toLowerCase();}\nconst req=$node['POST /admin-reject-payment'].json; const body=req.body||req; const reason=String(body.reason||body.rejectionReason||'').trim(); if(!reason) throw new Error('Rejection reason is required'); const uid=String(body.adminUid||body.lineUid||'').trim(); const admin=$input.all().map(i=>i.json).find(a=>String(a.LINE_UID||a.lineUid||'').trim()===uid&&norm(a.Status)==='active'&&['owner','approver','approve'].includes(norm(a.Role))); if(!admin) throw new Error('Only an active approver may reject payment'); return [{json:{...body,adminUid:uid,adminName:body.adminName||admin.Display_Name||admin.Admin_ID||'',rejectionReason:reason,rejectedAt:new Date().toISOString()}}];"
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1aKwY4KOo8uGCRrHASD539Habt5Obam8meacRO-ir0Ks",
+          "mode": "list",
+          "cachedResultName": "Chaphranakhon_DB",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1aKwY4KOo8uGCRrHASD539Habt5Obam8meacRO-ir0Ks/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Orders",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1aKwY4KOo8uGCRrHASD539Habt5Obam8meacRO-ir0Ks/edit#gid=0"
+        },
+        "options": {}
+      },
+      "id": "ea05d6ab-f23d-46f4-8aeb-646c916d7193",
+      "name": "Read Orders For Payment Reject",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        1180,
+        1680
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "ZPODlcDmX45WFVuM",
+          "name": "Google Sheets account 2"
+        }
+      }
+    },
+    {
+      "name": "Validate Payment Rejection",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1320,
+        1680
+      ],
+      "parameters": {
+        "jsCode": "const req=$node['Authorize Payment Rejection'].json; const order=$input.all().map(i=>i.json).find(r=>String(r.Order_ID||'')===String(req.orderId||'')); if(!order) throw new Error('Order not found'); if(String(order.Payment_Status||'').toLowerCase()!=='submitted') throw new Error('Payment proof is not awaiting review'); return [{json:{...req,orderId:order.Order_ID,branchUid:order.LINE_UID,branchName:order.Display_Name||order.LINE_UID,totalAmount:Number(order.Total_Amount||0)}}];"
+      },
+      "id": "6c11e976-4cb4-467d-b567-d0a26dd0b908"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "1aKwY4KOo8uGCRrHASD539Habt5Obam8meacRO-ir0Ks",
+          "mode": "list",
+          "cachedResultName": "Chaphranakhon_DB",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1aKwY4KOo8uGCRrHASD539Habt5Obam8meacRO-ir0Ks/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Orders",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1aKwY4KOo8uGCRrHASD539Habt5Obam8meacRO-ir0Ks/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Order_ID": "={{ $json.orderId }}",
+            "Payment_Status": "Rejected",
+            "Payment_Rejection_Reason": "={{ $json.rejectionReason }}",
+            "Payment_Rejected_At": "={{ $json.rejectedAt }}",
+            "Payment_Rejected_By": "={{ $json.adminName }}",
+            "Payment_Rejected_By_UID": "={{ $json.adminUid }}"
+          },
+          "matchingColumns": [
+            "Order_ID"
+          ],
+          "schema": [
+            {
+              "id": "Order_ID",
+              "displayName": "Order_ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Payment_Status",
+              "displayName": "Payment_Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Payment_Proof_URL",
+              "displayName": "Payment_Proof_URL",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Payment_Proof_File_ID",
+              "displayName": "Payment_Proof_File_ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Payment_Submitted_At",
+              "displayName": "Payment_Submitted_At",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Payment_Amount",
+              "displayName": "Payment_Amount",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Payment_Transfer_At",
+              "displayName": "Payment_Transfer_At",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Payment_Note",
+              "displayName": "Payment_Note",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "id": "d803b996-291a-4c79-a5df-a5e3e668a4f5",
+      "name": "Update Payment Rejection Status",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        1480,
+        1680
+      ],
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "ZPODlcDmX45WFVuM",
+          "name": "Google Sheets account 2"
+        }
+      }
+    },
+    {
+      "name": "Build Payment Rejection LINE Message",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1640,
+        1680
+      ],
+      "parameters": {
+        "jsCode": "const p=$node['Validate Payment Rejection'].json; const money=Number(p.totalAmount||0).toLocaleString('th-TH',{minimumFractionDigits:2,maximumFractionDigits:2}); return [{json:{to:p.branchUid,text:['ไม่สามารถยืนยันการชำระเงินได้','เลขที่คำสั่งซื้อ: '+p.orderId,'เหตุผล: '+p.rejectionReason,'ยอดตามคำสั่งซื้อ: ฿'+money,'กรุณาตรวจสอบและส่งหลักฐานการชำระเงินใหม่อีกครั้ง'].join(String.fromCharCode(10))}}];"
+      },
+      "id": "0f8c98fa-5cde-4bb8-ab07-16ec3f5751fd"
+    },
+    {
+      "parameters": {
+        "operation": "send",
+        "to": "={{ $json.to }}",
+        "messages": {
+          "values": [
+            {
+              "text": "={{ $json.text }}"
+            }
+          ]
+        }
+      },
+      "id": "2ec2b3af-48cb-4910-ab4a-c0b2fe50ebd8",
+      "name": "Notify Branch Payment Rejection LINE",
+      "type": "@aotoki/n8n-nodes-line-messaging.lineMessaging",
+      "typeVersion": 1,
+      "position": [
+        1800,
+        1680
+      ],
+      "credentials": {
+        "lineMessagingApi": {
+          "id": "4YlidIdv3s5ML4GE",
+          "name": "Line Messaging rkitja2523"
+        }
+      },
+      "continueOnFail": true
+    },
+    {
+      "id": "312d9997-f611-4ec4-998d-21c0d0d531b6",
+      "name": "Payment Rejection Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        1960,
+        1680
+      ],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { success: true, rejected: true, message: \"แจ้งผลการตรวจสอบไปยังสาขาแล้ว\", orderId: $node[\"Validate Payment Rejection\"].json.orderId } }}",
+        "options": {}
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "POST /admin-reject-payment": {
+      "main": [
+        [
+          {
+            "node": "Read Admins For Payment Reject",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Admins For Payment Reject": {
+      "main": [
+        [
+          {
+            "node": "Authorize Payment Rejection",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Authorize Payment Rejection": {
+      "main": [
+        [
+          {
+            "node": "Read Orders For Payment Reject",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Orders For Payment Reject": {
+      "main": [
+        [
+          {
+            "node": "Validate Payment Rejection",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Payment Rejection": {
+      "main": [
+        [
+          {
+            "node": "Update Payment Rejection Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Payment Rejection Status": {
+      "main": [
+        [
+          {
+            "node": "Build Payment Rejection LINE Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Payment Rejection LINE Message": {
+      "main": [
+        [
+          {
+            "node": "Notify Branch Payment Rejection LINE",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Notify Branch Payment Rejection LINE": {
+      "main": [
+        [
+          {
+            "node": "Payment Rejection Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": null,
+  "meta": {
+    "deliveryNoteVersion": "V9 HIDE ZERO QUANTITY CLEAN IMPORT",
+    "generatedAt": "2026-07-19T14:09:22.778Z",
+    "templateFileId": "1FYHjC9DjMpYJmc4fLo_sr6mOE-kKfp6OVQnrAqer8KY",
+    "sheetId": 906132224,
+    "itemsPerPage": 20,
+    "itemFontSize": "10pt",
+    "itemRowHeight": "17px",
+    "pdfExport": "A4 portrait fit-to-page, margins=0",
+    "columnWidthsPx": [
+      18,
+      42,
+      58,
+      58,
+      118,
+      118,
+      66,
+      58,
+      88,
+      96
+    ],
+    "signatureRows": "Row 53=24px, Row 54=4px, Rows 55-57=25px each, Row 58=4px, Row 59=18px",
+    "zeroQuantityRule": "Items with approved quantity less than or equal to zero are excluded from the Delivery Note before pagination.",
+    "documentType": "Delivery Note / Tax Invoice",
+    "outputFolderId": "1IBbwvnGB157SfL-766gvHNQqIljH5sfa",
+    "creditTermsDays": 7
+  },
+  "tags": []
+}

@@ -1,0 +1,1311 @@
+{
+  "name": "Chaphranakhon - 02_admin_approval_delivery",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "admin-approve",
+        "responseMode": "lastNode",
+        "options": {
+          "allowedOrigins": "https://beginth.github.io"
+        }
+      },
+      "id": "e85c28c0-10b3-4fb2-b67d-92775f39d1e6",
+      "name": "POST /admin-approve",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        28976,
+        9616
+      ],
+      "notesInFlow": true,
+      "notes": "เธฃเธฑเธเธเนเธฒเธเธเธชเนเธเธเธฒเธ admin เนเธฅเนเธง update Orders"
+    },
+    {
+      "id": "c881d8b4-ee01-46de-8fa3-0186f611cee4",
+      "name": "Read Admins For Approve",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        29248,
+        9616
+      ],
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1aKwY4KOo8uGCRrHASD539Habt5Obam8meacRO-ir0Ks",
+          "mode": "list",
+          "cachedResultName": "Chaphranakhon_DB",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1aKwY4KOo8uGCRrHASD539Habt5Obam8meacRO-ir0Ks/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Admins",
+          "mode": "name",
+          "cachedResultName": "Admins",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1aKwY4KOo8uGCRrHASD539Habt5Obam8meacRO-ir0Ks/edit"
+        },
+        "options": {}
+      },
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "ZPODlcDmX45WFVuM",
+          "name": "Google Sheets account 2"
+        }
+      }
+    },
+    {
+      "id": "f1f65d6d-b98d-4deb-8298-a888fb7cd2d0",
+      "name": "Authorize Admin Approval",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        29504,
+        9616
+      ],
+      "parameters": {
+        "jsCode": "function norm(value) {\n  return String(value || '').trim().toLowerCase();\n}\nfunction canApprove(role) {\n  return ['owner', 'approver', 'approve'].includes(norm(role));\n}\nconst request = $node['POST /admin-approve'].json;\nconst body = request.body || request;\nconst adminUid = String(body.adminUid || '').trim();\nif (!adminUid) throw new Error('Missing adminUid. Please open approve page in LINE LIFF and login as admin.');\nconst admin = $input.all().map(item => item.json)\n  .find(row => String(row.LINE_UID || row.lineUid || '').trim() === adminUid);\nif (!admin) throw new Error('This LINE user is not listed in Admins sheet: ' + adminUid);\nif (norm(admin.Status) !== 'active') throw new Error('This admin is inactive: ' + (admin.Display_Name || adminUid));\nif (!canApprove(admin.Role)) throw new Error('This admin role cannot approve orders: ' + (admin.Role || ''));\nreturn [{ json: { ...body, adminUid, authorizedAdmin: admin } }];"
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1aKwY4KOo8uGCRrHASD539Habt5Obam8meacRO-ir0Ks",
+          "mode": "list",
+          "cachedResultName": "Chaphranakhon_DB",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1aKwY4KOo8uGCRrHASD539Habt5Obam8meacRO-ir0Ks/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Orders",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1aKwY4KOo8uGCRrHASD539Habt5Obam8meacRO-ir0Ks/edit#gid=0"
+        },
+        "options": {}
+      },
+      "id": "b6f5a8ac-9d6f-4ebd-a929-64796a2d7e02",
+      "name": "Read Orders For Approval",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        29760,
+        9488
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "ZPODlcDmX45WFVuM",
+          "name": "Google Sheets account 2"
+        }
+      }
+    },
+    {
+      "id": "4df783a5-37b4-4589-a38e-25d362730e84",
+      "name": "Validate Pending Approval",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        30016,
+        9488
+      ],
+      "parameters": {
+        "jsCode": "function parseJson(value, fallback) {\n  try { return value ? JSON.parse(value) : fallback; } catch { return fallback; }\n}\nfunction text(value) { return String(value ?? '').trim(); }\nfunction number(value, label, { min = 0, integer = false } = {}) {\n  const result = Number(value);\n  if (!Number.isFinite(result) || result < min || (integer && !Number.isInteger(result))) {\n    throw new Error(label + ' is invalid');\n  }\n  return result;\n}\n\nconst authorized = $node['Authorize Admin Approval'].json;\nconst requestedOrderId = text(authorized.orderId);\nif (!requestedOrderId) throw new Error('Missing orderId');\n\nconst row = $input.all().map(item => item.json)\n  .find(item => text(item.Order_ID) === requestedOrderId);\nif (!row) throw new Error('Order not found: ' + requestedOrderId);\n\nconst status = text(row.Status || 'Pending').toLowerCase();\nif (status !== 'pending') {\n  const approvedBy = text(row.Approved_By);\n  const approvedAt = text(row.Approved_At);\n  throw new Error('Order is no longer pending (status: ' + (row.Status || '-') + ')' +\n    (approvedBy ? ', approved by ' + approvedBy : '') +\n    (approvedAt ? ' at ' + approvedAt : ''));\n}\n\nconst details = parseJson(row.Order_Details, {});\nconst storedItems = Array.isArray(details.orderItems) ? details.orderItems : [];\nif (!storedItems.length) throw new Error('The stored order has no items');\n\nconst sourceItems = Array.isArray(authorized.adjustedOrderItems) ? authorized.adjustedOrderItems : [];\nif (sourceItems.length !== storedItems.length) throw new Error('Adjusted item count does not match the stored order');\n\nconst submittedById = new Map();\nfor (const item of sourceItems) {\n  const id = text(item.productId || item.Product_ID);\n  if (!id || submittedById.has(id)) throw new Error('Adjusted items contain a missing or duplicate product ID');\n  submittedById.set(id, item);\n}\n\nconst adjustedOrderItems = storedItems.map((stored) => {\n  const productId = text(stored.productId || stored.Product_ID);\n  const submitted = submittedById.get(productId);\n  if (!submitted) throw new Error('Adjusted items do not match the stored order');\n  const originalQuantity = number(stored.originalQuantity ?? stored.quantity ?? stored.Quantity, 'Stored quantity for ' + productId, { integer: true });\n  const quantity = number(submitted.quantity, 'Approved quantity for ' + productId, { integer: true });\n  if (quantity > originalQuantity) throw new Error('Approved quantity exceeds ordered quantity for ' + productId);\n  const pricePerUnit = number(stored.pricePerUnit ?? stored.Price ?? stored.price, 'Stored price for ' + productId);\n  return {\n    productId,\n    productName: text(stored.productName || stored.Product_Name || stored.name),\n    unit: text(stored.unit || stored.Unit),\n    originalQuantity,\n    quantity,\n    pricePerUnit,\n    lineTotal: Number((quantity * pricePerUnit).toFixed(2)),\n  };\n});\n\nconst hasReduction = adjustedOrderItems.some(item => item.quantity < item.originalQuantity);\nconst adjustmentReason = text(authorized.adjustmentReason);\nif (hasReduction && !adjustmentReason) throw new Error('Adjustment reason is required when reducing quantities');\n\nconst subtotal = Number(adjustedOrderItems.reduce((sum, item) => sum + item.lineTotal, 0).toFixed(2));\nconst shippingCost = number(authorized.shippingCost || 0, 'Shipping cost');\nconst discount = number(authorized.discount || 0, 'Discount');\nconst otherFee = number(authorized.otherFee || 0, 'Other fee');\nif (discount > subtotal) throw new Error('Discount cannot exceed the adjusted subtotal');\n\nreturn [{ json: {\n  ...authorized,\n  orderId: row.Order_ID,\n  branchUid: text(row.LINE_UID),\n  branchDisplayName: text(details.displayName || row.LINE_UID),\n  orderDetails: details,\n  orderNote: text(details.note),\n  approvalHistory: parseJson(row.Approval_History, []),\n  adjustedOrderItems,\n  adjustmentReason,\n  shippingCost,\n  discount,\n  otherFee,\n  approvedAt: new Date().toISOString(),\n} }];"
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $json.body || $json;\nconst items = Array.isArray(body.adjustedOrderItems) ? body.adjustedOrderItems : [];\nif (!items.length) throw new Error('No validated order items to approve');\nconst subtotal = Number(items.reduce((sum, item) => sum + Number(item.lineTotal || 0), 0).toFixed(2));\nconst shippingCost = Number(body.shippingCost || 0);\nconst discount = Number(body.discount || 0);\nconst otherFee = Number(body.otherFee || 0);\nconst amountBeforeVat = Math.max(0, subtotal - discount);\nconst vatAmount = Number((amountBeforeVat * 0.07).toFixed(2));\nconst totalAmount = Number((amountBeforeVat + vatAmount + shippingCost + otherFee).toFixed(2));\nconst admin = body.authorizedAdmin || {};\nconst approvedAt = body.approvedAt || new Date().toISOString();\nconst adminUid = body.adminUid || '';\nconst adminName = admin.Display_Name || admin.Admin_ID || adminUid;\nconst previous = Array.isArray(body.approvalHistory) ? body.approvalHistory : [];\nconst history = [...previous, {\n  action: 'APPROVED', adminUid, adminName, adminRole: admin.Role || '', approvedAt,\n  adjustmentReason: body.adjustmentReason || '', adminNote: body.adminNote || '',\n  items: items.map(item => ({ productId: item.productId, originalQuantity: item.originalQuantity, approvedQuantity: item.quantity })),\n}];\nconst originalDetails = body.orderDetails && typeof body.orderDetails === 'object' ? body.orderDetails : {};\nreturn [{ json: {\n  Order_ID: body.orderId, Branch_UID: body.branchUid || '',\n  Order_Details: JSON.stringify({ ...originalDetails, orderItems: items, note: body.orderNote || '' }),\n  Subtotal: subtotal, Shipping_Cost: shippingCost, Discount: discount, Other_Fee: otherFee,\n  VAT_Amount: vatAmount, Total_Amount: totalAmount, Status: 'Approved', Credit_Terms_Days: 7,\n  Credit_Due_Date: new Date(new Date(approvedAt).getTime() + 7 * 86400000).toISOString(),\n  Payment_Status: 'Credit Pending', Admin_Note: body.adminNote || '', Adjustment_Reason: body.adjustmentReason || '',\n  Approved_By_UID: adminUid, Approved_By: adminName, Approved_At: approvedAt, Approval_History: JSON.stringify(history),\n} }];"
+      },
+      "id": "447da0e2-b9cc-4fd9-8c76-95dbeecd8967",
+      "name": "Build Approval Row",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        29760,
+        9616
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "1aKwY4KOo8uGCRrHASD539Habt5Obam8meacRO-ir0Ks",
+          "mode": "list",
+          "cachedResultName": "Chaphranakhon_DB",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1aKwY4KOo8uGCRrHASD539Habt5Obam8meacRO-ir0Ks/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Orders",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1aKwY4KOo8uGCRrHASD539Habt5Obam8meacRO-ir0Ks/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Order_ID": "={{ $json.Order_ID }}",
+            "Shipping_Cost": "={{ $json.Shipping_Cost }}",
+            "Total_Amount": "={{ $json.Total_Amount }}",
+            "Status": "={{ $json.Status }}",
+            "Discount": "={{ $json.Discount }}",
+            "Other_Fee": "={{ $json.Other_Fee }}",
+            "VAT_Amount": "={{ $json.VAT_Amount }}",
+            "Admin_Note": "={{ $json.Admin_Note }}",
+            "Approved_By": "={{ $json.Approved_By }}",
+            "Approved_At": "={{ $json.Approved_At }}",
+            "Order_Details": "={{ $json.Order_Details }}",
+            "Subtotal": "={{ $json.Subtotal }}",
+            "Adjustment_Reason": "={{ $json.Adjustment_Reason }}",
+            "Approved_By_UID": "={{ $json.Approved_By_UID }}",
+            "Approval_History": "={{ $json.Approval_History }}"
+          },
+          "matchingColumns": [
+            "Order_ID"
+          ],
+          "schema": [
+            {
+              "id": "Order_ID",
+              "displayName": "Order_ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Timestamp",
+              "displayName": "Timestamp",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "LINE_UID",
+              "displayName": "LINE_UID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Delivery_Address",
+              "displayName": "Delivery_Address",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Order_Details",
+              "displayName": "Order_Details",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Subtotal",
+              "displayName": "Subtotal",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Shipping_Cost",
+              "displayName": "Shipping_Cost",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Total_Amount",
+              "displayName": "Total_Amount",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Status",
+              "displayName": "Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Discount",
+              "displayName": "Discount",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Other_Fee",
+              "displayName": "Other_Fee",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "VAT_Amount",
+              "displayName": "VAT_Amount",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Admin_Note",
+              "displayName": "Admin_Note",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Approved_By",
+              "displayName": "Approved_By",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Approved_At",
+              "displayName": "Approved_At",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Adjustment_Reason",
+              "displayName": "Adjustment_Reason",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Approved_By_UID",
+              "displayName": "Approved_By_UID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Approval_History",
+              "displayName": "Approval_History",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "id": "15355222-6311-408c-a99e-7baa305069bd",
+      "name": "Update Shipping & Status",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        29504,
+        9616
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "ZPODlcDmX45WFVuM",
+          "name": "Google Sheets account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const a = $node['Build Approval Row'].json;\nconst p = $node['Aggregate Delivery Tax Invoice PDFs'].json;\nconst n = $node['Summarize Admin Approval Notify'].json;\nreturn [{ json: {\n  success: true, orderId: a.Order_ID, status: a.Status, subtotal: a.Subtotal,\n  shippingCost: a.Shipping_Cost, discount: a.Discount, otherFee: a.Other_Fee,\n  vatAmount: a.VAT_Amount, totalAmount: a.Total_Amount, adjustmentReason: a.Adjustment_Reason,\n  approvalHistory: JSON.parse(a.Approval_History || '[]'), pdfUrl: p.pdfUrl, pdfUrls: p.pdfUrls,\n  pageCount: p.pageCount, adminNotification: n,\n} }];"
+      },
+      "id": "34823dd2-f4ed-47af-a68d-5e545ccd3385",
+      "name": "Approve Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        34688,
+        9616
+      ]
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1aKwY4KOo8uGCRrHASD539Habt5Obam8meacRO-ir0Ks",
+          "mode": "list",
+          "cachedResultName": "Chaphranakhon_DB",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1aKwY4KOo8uGCRrHASD539Habt5Obam8meacRO-ir0Ks/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Orders",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1aKwY4KOo8uGCRrHASD539Habt5Obam8meacRO-ir0Ks/edit#gid=0"
+        },
+        "options": {}
+      },
+      "id": "671bad09-561b-4d23-abe6-96f98eb51930",
+      "name": "Read Orders For Delivery Tax Invoice",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        29760,
+        9616
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "ZPODlcDmX45WFVuM",
+          "name": "Google Sheets account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "function parseJson(value, fallback) {\n  try { return value ? JSON.parse(value) : fallback; } catch { return fallback; }\n}\nfunction pickFirst(source, keys, fallback = '') {\n  for (const key of keys) {\n    const value = source?.[key];\n    if (value !== undefined && value !== null && String(value).trim() !== '') return value;\n  }\n  return fallback;\n}\nfunction formatThaiDate(value) {\n  const date = value ? new Date(value) : new Date();\n  const validDate = Number.isNaN(date.getTime()) ? new Date() : date;\n  const parts = new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Bangkok', day: '2-digit', month: '2-digit', year: 'numeric' })\n    .formatToParts(validDate).reduce((result, part) => { result[part.type] = part.value; return result; }, {});\n  return parts.day + '/' + parts.month + '/' + parts.year;\n}\nconst approval = $node['Build Approval Row'].json;\nconst rows = $input.all().map(item => item.json);\nconst row = rows.find(item => String(item.Order_ID || '').trim() === String(approval.Order_ID || '').trim());\nif (!row) throw new Error('Order not found for Delivery Tax Invoice: ' + approval.Order_ID);\nconst delivery = parseJson(row.Delivery_Address, {});\nconst details = parseJson(row.Order_Details, {});\nconst allItems = Array.isArray(details.orderItems) ? details.orderItems : [];\nconst items = allItems.filter((item) => Number(pickFirst(item, ['quantity', 'Quantity', 'qty'], 0)) > 0);\nconst buyerName = pickFirst(details, ['buyerName', 'displayName', 'contactName'], pickFirst(row, ['Display_Name'], ''));\nconst branchName = pickFirst(delivery, ['label', 'Address_Label', 'branchName'], pickFirst(details, ['branchName'], ''));\nconst addressText = pickFirst(delivery, ['text', 'address', 'Address'], '');\nconst contactName = pickFirst(delivery, ['contactName', 'contact', 'Contact_Name'], pickFirst(details, ['contactName'], buyerName));\nconst contactTel = String(pickFirst(delivery, ['tel', 'Tel', 'TEL', 'phone', 'Phone', 'mobile'], pickFirst(row, ['Tel', 'Phone'], ''))).trim();\nconst approvedDate = formatThaiDate(approval.Approved_At || row.Approved_At || row.Timestamp);\nconst creditDueDate = formatThaiDate(approval.Credit_Due_Date || row.Credit_Due_Date || new Date(new Date(approval.Approved_At || row.Approved_At || row.Timestamp).getTime() + 7 * 86400000));\nconst subtotal = Number(approval.Subtotal ?? row.Subtotal ?? items.reduce((sum,item)=>sum+Number(item.lineTotal||0),0));\nconst shippingCost = Number(approval.Shipping_Cost || 0);\nconst discount = Number(approval.Discount || 0);\nconst otherFee = Number(approval.Other_Fee || 0);\nconst amountBeforeVat = Math.max(0, subtotal - discount);\nconst vatAmount = Number((amountBeforeVat * 0.07).toFixed(2));\nconst totalAmount = Number((amountBeforeVat + vatAmount + shippingCost + otherFee).toFixed(2));\nconst noteParts = [details.note || '', approval.Adjustment_Reason ? ('เน€เธซเธ•เธธเธเธฅเธเธฒเธฃเธเธฃเธฑเธเธเธณเธเธงเธ: ' + approval.Adjustment_Reason) : '', approval.Admin_Note ? ('เธซเธกเธฒเธขเน€เธซเธ•เธธ Admin: ' + approval.Admin_Note) : ''].filter(Boolean);\nconst pageSize = 20;\nconst pageCount = Math.max(1, Math.ceil(items.length / pageSize));\nreturn Array.from({ length: pageCount }, (_, pageIndex) => {\n  const pageNumber = pageIndex + 1;\n  const pageItems = items.slice(pageIndex * pageSize, pageNumber * pageSize);\n  const paddedItems = Array.from({ length: pageSize }, (_, index) => pageItems[index] || null);\n  const documentNumber = pageCount > 1 ? (approval.Order_ID + ' (' + pageNumber + '/' + pageCount + ')') : approval.Order_ID;\n  const values = [\n    { range: 'Delivery Tax Invoice!D14', values: [[buyerName]] },\n    { range: 'Delivery Tax Invoice!D15', values: [[branchName]] },\n    { range: 'Delivery Tax Invoice!D16', values: [[addressText]] },\n    { range: 'Delivery Tax Invoice!D17', values: [[contactName]] },\n    { range: 'Delivery Tax Invoice!G17', values: [[contactTel ? ('Tel. ' + contactTel) : 'Tel.']] },\n    { range: 'Delivery Tax Invoice!J14', values: [[documentNumber]] },\n    { range: 'Delivery Tax Invoice!J15', values: [[approvedDate]] },\n    { range: 'Delivery Tax Invoice!D18', values: [[noteParts.join(' | ')]] },\n    { range: 'Delivery Tax Invoice!B22:B41', values: paddedItems.map((item, index) => [item ? pageIndex * pageSize + index + 1 : '']) },\n    { range: 'Delivery Tax Invoice!C22:C41', values: paddedItems.map(item => [item ? pickFirst(item, ['productId', 'Product_ID', 'id']) : '']) },\n    { range: 'Delivery Tax Invoice!E22:E41', values: paddedItems.map(item => [item ? pickFirst(item, ['productName', 'Product_Name', 'name']) : '']) },\n    { range: 'Delivery Tax Invoice!G22:G41', values: paddedItems.map(item => [item ? Number(pickFirst(item, ['quantity', 'Quantity', 'qty'], 0)) : '']) },\n    { range: 'Delivery Tax Invoice!H22:H41', values: paddedItems.map(item => [item ? pickFirst(item, ['unit', 'Unit', 'UOM']) : '']) },\n    { range: 'Delivery Tax Invoice!I22:I41', values: paddedItems.map(item => [item ? Number(pickFirst(item, ['pricePerUnit', 'Price', 'price'], 0)) : '']) },\n    { range: 'Delivery Tax Invoice!J22:J41', values: paddedItems.map(item => {\n      if (!item) return [''];\n      const quantity = Number(pickFirst(item, ['quantity', 'Quantity', 'qty'], 0));\n      const price = Number(pickFirst(item, ['pricePerUnit', 'Price', 'price'], 0));\n      return [Number(pickFirst(item, ['lineTotal', 'Line_Total', 'total'], quantity * price))];\n    }) },\n    { range: 'Delivery Tax Invoice!J46', values: [[subtotal]] },\n    { range: 'Delivery Tax Invoice!J47', values: [[discount]] },\n    { range: 'Delivery Tax Invoice!J48', values: [[amountBeforeVat]] },\n    { range: 'Delivery Tax Invoice!J49', values: [[vatAmount]] },\n    { range: 'Delivery Tax Invoice!J50', values: [[shippingCost + otherFee]] },\n    { range: 'Delivery Tax Invoice!J52', values: [[totalAmount]] },\n  ];\n  const pageSuffix = pageCount > 1 ? ('-P' + String(pageNumber).padStart(2, '0') + '-of-' + String(pageCount).padStart(2, '0')) : '';\n  return { json: {\n    orderId: approval.Order_ID, branchUid: approval.Branch_UID || row.LINE_UID || '', branchName: branchName || buyerName || row.LINE_UID || '',\n    subtotal, shippingCost, discount, otherFee, vatAmount, totalAmount, pageNumber, pageCount,\n    fileName: 'DTI-' + approval.Order_ID + pageSuffix + '.pdf', copiedSheetName: 'DN_' + approval.Order_ID + pageSuffix,\n    templateFileId: '1FYHjC9DjMpYJmc4fLo_sr6mOE-kKfp6OVQnrAqer8KY', folderId: '1IBbwvnGB157SfL-766gvHNQqIljH5sfa',\n    valuesBatchUpdate: { valueInputOption: 'USER_ENTERED', data: values },\n  } };\n});"
+      },
+      "id": "f50d1b7e-aa04-407f-9a09-aa764547c05d",
+      "name": "Build Delivery Tax Invoice Payload",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        30016,
+        9616
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ 'https://www.googleapis.com/drive/v3/files/' + $json.templateFileId + '/copy' }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleOAuth2Api",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ name: $json.copiedSheetName, parents: [$json.folderId], mimeType: 'application/vnd.google-apps.spreadsheet' }) }}",
+        "options": {}
+      },
+      "id": "93db3893-03e8-42fb-beea-479f8a2dffd3",
+      "name": "Copy Delivery Tax Invoice Template",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        30288,
+        9616
+      ],
+      "credentials": {
+        "googleOAuth2Api": {
+          "id": "QFxTIh9zRRzFm0DM",
+          "name": "Google account DevCharphranakhon"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const payload = $('Build Delivery Tax Invoice Payload').item.json;\nconst copied = $json;\nreturn { json: { ...payload, spreadsheetId: copied.id, copiedFileId: copied.id } };",
+        "mode": "runOnceForEachItem"
+      },
+      "id": "4095b104-4536-4602-8491-13fa9c5e96d5",
+      "name": "Merge Delivery Tax Invoice Template",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        30544,
+        9616
+      ]
+    },
+    {
+      "id": "cce7e29b-fbec-4bb1-897e-3ca673cea041",
+      "name": "Get Copied Delivery Tax Invoice Metadata",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        30336,
+        9616
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "={{ 'https://sheets.googleapis.com/v4/spreadsheets/' + $json.spreadsheetId + '?fields=sheets.properties(sheetId,title)' }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleOAuth2Api",
+        "options": {}
+      },
+      "credentials": {
+        "googleOAuth2Api": {
+          "id": "QFxTIh9zRRzFm0DM",
+          "name": "Google account DevCharphranakhon"
+        }
+      }
+    },
+    {
+      "id": "0ee99cdd-6e3c-4732-a0c0-69e52f207bd9",
+      "name": "Attach Delivery Tax Invoice Sheet ID",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        30592,
+        9616
+      ],
+      "parameters": {
+        "jsCode": "const payload = $node['Merge Delivery Tax Invoice Template'].json;\nconst sheets = Array.isArray($json.sheets) ? $json.sheets : [];\nconst sheet = sheets.find(item => item.properties?.title === 'Delivery Tax Invoice') || sheets[0];\nconst sheetId = sheet?.properties?.sheetId;\nif (!Number.isInteger(sheetId)) {\n  throw new Error('Copied Delivery Tax Invoice spreadsheet does not contain a usable sheetId');\n}\nreturn [{ json: { ...payload, deliveryTaxInvoiceSheetId: sheetId } }];"
+      }
+    },
+    {
+      "id": "9c0b236a-4ea6-41ca-b4dd-d92051b15315",
+      "name": "Compact Delivery Tax Invoice Layout",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        30848,
+        9616
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ 'https://sheets.googleapis.com/v4/spreadsheets/' + $json.spreadsheetId + ':batchUpdate' }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleOAuth2Api",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ requests: [\n  { updateDimensionProperties: { range: { sheetId: $json.deliveryTaxInvoiceSheetId, dimension: 'COLUMNS', startIndex: 0, endIndex: 1 }, properties: { pixelSize: 18 }, fields: 'pixelSize' } },\n  { updateDimensionProperties: { range: { sheetId: $json.deliveryTaxInvoiceSheetId, dimension: 'COLUMNS', startIndex: 1, endIndex: 2 }, properties: { pixelSize: 42 }, fields: 'pixelSize' } },\n  { updateDimensionProperties: { range: { sheetId: $json.deliveryTaxInvoiceSheetId, dimension: 'COLUMNS', startIndex: 2, endIndex: 3 }, properties: { pixelSize: 58 }, fields: 'pixelSize' } },\n  { updateDimensionProperties: { range: { sheetId: $json.deliveryTaxInvoiceSheetId, dimension: 'COLUMNS', startIndex: 3, endIndex: 4 }, properties: { pixelSize: 58 }, fields: 'pixelSize' } },\n  { updateDimensionProperties: { range: { sheetId: $json.deliveryTaxInvoiceSheetId, dimension: 'COLUMNS', startIndex: 4, endIndex: 5 }, properties: { pixelSize: 118 }, fields: 'pixelSize' } },\n  { updateDimensionProperties: { range: { sheetId: $json.deliveryTaxInvoiceSheetId, dimension: 'COLUMNS', startIndex: 5, endIndex: 6 }, properties: { pixelSize: 118 }, fields: 'pixelSize' } },\n  { updateDimensionProperties: { range: { sheetId: $json.deliveryTaxInvoiceSheetId, dimension: 'COLUMNS', startIndex: 6, endIndex: 7 }, properties: { pixelSize: 66 }, fields: 'pixelSize' } },\n  { updateDimensionProperties: { range: { sheetId: $json.deliveryTaxInvoiceSheetId, dimension: 'COLUMNS', startIndex: 7, endIndex: 8 }, properties: { pixelSize: 58 }, fields: 'pixelSize' } },\n  { updateDimensionProperties: { range: { sheetId: $json.deliveryTaxInvoiceSheetId, dimension: 'COLUMNS', startIndex: 8, endIndex: 9 }, properties: { pixelSize: 88 }, fields: 'pixelSize' } },\n  { updateDimensionProperties: { range: { sheetId: $json.deliveryTaxInvoiceSheetId, dimension: 'COLUMNS', startIndex: 9, endIndex: 10 }, properties: { pixelSize: 96 }, fields: 'pixelSize' } },\n  { updateDimensionProperties: { range: { sheetId: $json.deliveryTaxInvoiceSheetId, dimension: 'ROWS', startIndex: 10, endIndex: 13 }, properties: { pixelSize: 3 }, fields: 'pixelSize' } },\n  { updateDimensionProperties: { range: { sheetId: $json.deliveryTaxInvoiceSheetId, dimension: 'ROWS', startIndex: 13, endIndex: 15 }, properties: { pixelSize: 17 }, fields: 'pixelSize' } },\n  { updateDimensionProperties: { range: { sheetId: $json.deliveryTaxInvoiceSheetId, dimension: 'ROWS', startIndex: 15, endIndex: 16 }, properties: { pixelSize: 21 }, fields: 'pixelSize' } },\n  { updateDimensionProperties: { range: { sheetId: $json.deliveryTaxInvoiceSheetId, dimension: 'ROWS', startIndex: 16, endIndex: 18 }, properties: { pixelSize: 18 }, fields: 'pixelSize' } },\n  { updateDimensionProperties: { range: { sheetId: $json.deliveryTaxInvoiceSheetId, dimension: 'ROWS', startIndex: 19, endIndex: 20 }, properties: { pixelSize: 19 }, fields: 'pixelSize' } },\n  { updateDimensionProperties: { range: { sheetId: $json.deliveryTaxInvoiceSheetId, dimension: 'ROWS', startIndex: 20, endIndex: 21 }, properties: { pixelSize: 2 }, fields: 'pixelSize' } },\n  { updateDimensionProperties: { range: { sheetId: $json.deliveryTaxInvoiceSheetId, dimension: 'ROWS', startIndex: 21, endIndex: 41 }, properties: { pixelSize: 17 }, fields: 'pixelSize' } },\n  { updateDimensionProperties: { range: { sheetId: $json.deliveryTaxInvoiceSheetId, dimension: 'ROWS', startIndex: 41, endIndex: 45 }, properties: { hiddenByUser: true }, fields: 'hiddenByUser' } },\n  { updateDimensionProperties: { range: { sheetId: $json.deliveryTaxInvoiceSheetId, dimension: 'ROWS', startIndex: 45, endIndex: 53 }, properties: { pixelSize: 17 }, fields: 'pixelSize' } },\n  { updateDimensionProperties: { range: { sheetId: $json.deliveryTaxInvoiceSheetId, dimension: 'ROWS', startIndex: 52, endIndex: 53 }, properties: { pixelSize: 24 }, fields: 'pixelSize' } },\n  { updateDimensionProperties: { range: { sheetId: $json.deliveryTaxInvoiceSheetId, dimension: 'ROWS', startIndex: 53, endIndex: 54 }, properties: { pixelSize: 4 }, fields: 'pixelSize' } },\n  { updateDimensionProperties: { range: { sheetId: $json.deliveryTaxInvoiceSheetId, dimension: 'ROWS', startIndex: 54, endIndex: 57 }, properties: { pixelSize: 25 }, fields: 'pixelSize' } },\n  { updateDimensionProperties: { range: { sheetId: $json.deliveryTaxInvoiceSheetId, dimension: 'ROWS', startIndex: 57, endIndex: 58 }, properties: { pixelSize: 4 }, fields: 'pixelSize' } },\n  { updateDimensionProperties: { range: { sheetId: $json.deliveryTaxInvoiceSheetId, dimension: 'ROWS', startIndex: 58, endIndex: 59 }, properties: { pixelSize: 18 }, fields: 'pixelSize' } },\n  { repeatCell: { range: { sheetId: $json.deliveryTaxInvoiceSheetId, startRowIndex: 21, endRowIndex: 41, startColumnIndex: 1, endColumnIndex: 10 }, cell: { userEnteredFormat: { textFormat: { fontSize: 10 } } }, fields: 'userEnteredFormat.textFormat.fontSize' } },\n  { repeatCell: { range: { sheetId: $json.deliveryTaxInvoiceSheetId, startRowIndex: 13, endRowIndex: 18, startColumnIndex: 1, endColumnIndex: 10 }, cell: { userEnteredFormat: { textFormat: { fontSize: 10 } } }, fields: 'userEnteredFormat.textFormat.fontSize' } },\n  { repeatCell: { range: { sheetId: $json.deliveryTaxInvoiceSheetId, startRowIndex: 45, endRowIndex: 53, startColumnIndex: 7, endColumnIndex: 10 }, cell: { userEnteredFormat: { textFormat: { fontSize: 10 } } }, fields: 'userEnteredFormat.textFormat.fontSize' } }\n] }) }}",
+        "options": {}
+      },
+      "credentials": {
+        "googleOAuth2Api": {
+          "id": "QFxTIh9zRRzFm0DM",
+          "name": "Google account DevCharphranakhon"
+        }
+      }
+    },
+    {
+      "id": "babc8360-23f5-4382-807b-122966772cb3",
+      "name": "Restore Payload After Layout",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        31104,
+        9616
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const payload = $('Merge Delivery Tax Invoice Template').item.json;\nreturn { json: payload };"
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ 'https://sheets.googleapis.com/v4/spreadsheets/' + $json.spreadsheetId + '/values:batchUpdate' }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleOAuth2Api",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.valuesBatchUpdate) }}",
+        "options": {}
+      },
+      "id": "5c4f2408-4c3a-4f27-a9fe-fa54071a9f23",
+      "name": "Fill Delivery Tax Invoice Template",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        31360,
+        9616
+      ],
+      "credentials": {
+        "googleOAuth2Api": {
+          "id": "QFxTIh9zRRzFm0DM",
+          "name": "Google account DevCharphranakhon"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "={{ 'https://docs.google.com/spreadsheets/d/' + $json.copiedFileId + '/export?format=pdf&size=A4&portrait=true&scale=4&fitw=true&sheetnames=false&printtitle=false&pagenumbers=false&gridlines=false&fzr=false&top_margin=0&bottom_margin=0&left_margin=0&right_margin=0&gid=' + $json.deliveryTaxInvoiceSheetId }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleOAuth2Api",
+        "options": {}
+      },
+      "id": "a8ff67b2-8af3-430e-8309-655a6f297f25",
+      "name": "Export Delivery Tax Invoice PDF",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        31872,
+        9616
+      ],
+      "credentials": {
+        "googleOAuth2Api": {
+          "id": "QFxTIh9zRRzFm0DM",
+          "name": "Google account DevCharphranakhon"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "name": "={{ $('Restore Delivery Tax Invoice Payload').item.json.fileName }}",
+        "driveId": {
+          "__rl": true,
+          "value": "My Drive",
+          "mode": "list",
+          "cachedResultName": "My Drive",
+          "cachedResultUrl": "https://drive.google.com/drive/my-drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "value": "https://drive.google.com/drive/folders/1IBbwvnGB157SfL-766gvHNQqIljH5sfa",
+          "mode": "url"
+        },
+        "options": {}
+      },
+      "id": "aba3197e-8b6d-47e6-922d-893a7df44bbc",
+      "name": "Upload Delivery Tax Invoice PDF",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        32128,
+        9616
+      ],
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "cdmoEPoXq7Z84EIJ",
+          "name": "Google Drive account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const payload = $('Restore Delivery Tax Invoice Payload').item.json;\nconst upload = $json;\nconst pdfFileId = upload.id || payload.copiedFileId;\nreturn { json: { ...payload, pdfFileId, pdfUrl: 'https://drive.google.com/file/d/' + pdfFileId + '/view?usp=drivesdk' }, binary: $binary };",
+        "mode": "runOnceForEachItem"
+      },
+      "id": "448f2752-8543-452a-bdd3-28f63e77b39e",
+      "name": "Build PDF URL",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        32384,
+        9616
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "1aKwY4KOo8uGCRrHASD539Habt5Obam8meacRO-ir0Ks",
+          "mode": "list",
+          "cachedResultName": "Chaphranakhon_DB",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1aKwY4KOo8uGCRrHASD539Habt5Obam8meacRO-ir0Ks/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Orders",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1aKwY4KOo8uGCRrHASD539Habt5Obam8meacRO-ir0Ks/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Order_ID": "={{ $node['Aggregate Delivery Tax Invoice PDFs'].json.orderId }}",
+            "PO_PDF_File_ID": "={{ $node['Aggregate Delivery Tax Invoice PDFs'].json.poPdfFileId || '' }}",
+            "PO_PDF_URL": "={{ $node['Aggregate Delivery Tax Invoice PDFs'].json.poPdfUrl || '' }}"
+          },
+          "matchingColumns": [
+            "Order_ID"
+          ],
+          "schema": [
+            {
+              "id": "Order_ID",
+              "displayName": "Order_ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "PO_PDF_File_ID",
+              "displayName": "PO_PDF_File_ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "PO_PDF_URL",
+              "displayName": "PO_PDF_URL",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "id": "66e437fc-9373-4f98-a6ec-8c34e722636d",
+      "name": "Update PDF URL",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        32896,
+        9616
+      ],
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "ZPODlcDmX45WFVuM",
+          "name": "Google Sheets account 2"
+        }
+      }
+    },
+    {
+      "name": "Log Delivery Tax Invoice Document",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        32640,
+        9616
+      ],
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1aKwY4KOo8uGCRrHASD539Habt5Obam8meacRO-ir0Ks",
+          "mode": "list",
+          "cachedResultName": "Chaphranakhon_DB"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Documents",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Document_ID": "={{ \"DTI-\" + $node[\"Build PDF URL\"].json.orderId + \"-\" + ($node[\"Build PDF URL\"].json.pageNumber || 1) }}",
+            "Order_ID": "={{ $node[\"Build PDF URL\"].json.orderId }}",
+            "Document_Type": "Delivery Tax Invoice",
+            "File_ID": "={{ $node[\"Build PDF URL\"].json.pdfFileId }}",
+            "File_URL": "={{ $node[\"Build PDF URL\"].json.pdfUrl }}",
+            "Created_At": "={{ $node[\"Build PDF URL\"].json.approvedAt || $now.toISO() }}",
+            "Created_By_UID": "={{ $node[\"Build PDF URL\"].json.adminUid || \"\" }}",
+            "Created_By_Name": "={{ $node[\"Build PDF URL\"].json.adminName || \"\" }}",
+            "Status": "Created",
+            "Note": "={{ $node[\"Build PDF URL\"].json.adjustmentReason || \"\" }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Document_ID",
+              "displayName": "Document_ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Order_ID",
+              "displayName": "Order_ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Document_Type",
+              "displayName": "Document_Type",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "File_ID",
+              "displayName": "File_ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "File_URL",
+              "displayName": "File_URL",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Created_At",
+              "displayName": "Created_At",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Created_By_UID",
+              "displayName": "Created_By_UID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Created_By_Name",
+              "displayName": "Created_By_Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Status",
+              "displayName": "Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Note",
+              "displayName": "Note",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "ZPODlcDmX45WFVuM",
+          "name": "Google Sheets account 2"
+        }
+      },
+      "id": "v15-repair-dti-log"
+    },
+    {
+      "id": "af127160-67dd-457b-96f3-3ffdd8bd6feb",
+      "name": "Aggregate Delivery Tax Invoice PDFs",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        32640,
+        9616
+      ],
+      "parameters": {
+        "jsCode": "const pages = $input.all().map(item => item.json).sort((a,b) => Number(a.pageNumber)-Number(b.pageNumber));\nif (!pages.length) throw new Error('No Delivery Tax Invoice PDF was generated');\nconst first = pages[0];\nreturn [{ json: { ...first, pageCount: pages.length, pdfFileIds: pages.map(page => page.pdfFileId), pdfUrls: pages.map(page => page.pdfUrl), pdfFileId: pages[0].pdfFileId, pdfUrl: pages[0].pdfUrl } }];"
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const payload = $node['Aggregate Delivery Tax Invoice PDFs'].json;\nconst money = (value) => Number(value || 0).toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });\nconst links = payload.pdfUrls.map((url, index) => 'เอกสารหน้า ' + (index + 1) + ': ' + url).join('\\n');\nreturn [{ json: { to: payload.branchUid, text: [\n  'คำสั่งซื้อได้รับการอนุมัติแล้ว',\n  'เลขที่: ' + payload.orderId,\n  'สาขา: ' + payload.branchName,\n  'ยอดรวมสุทธิ: ฿' + money(payload.totalAmount),\n  'ใบส่งของ/ใบกำกับภาษี PDF (' + payload.pageCount + ' หน้า):',\n  links\n].join('\\n') } }];"
+      },
+      "id": "fbeed447-7051-48b9-b7ce-52c9ca6b635d",
+      "name": "Build Branch LINE Message",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        33152,
+        9616
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "send",
+        "to": "={{ $json.to }}",
+        "messages": {
+          "values": [
+            {
+              "text": "={{ $json.text }}"
+            }
+          ]
+        }
+      },
+      "id": "eff8acd8-dcab-49fc-b01e-b0af0d09af04",
+      "name": "Notify Branch LINE",
+      "type": "@aotoki/n8n-nodes-line-messaging.lineMessaging",
+      "typeVersion": 1,
+      "position": [
+        33408,
+        9616
+      ],
+      "credentials": {
+        "lineMessagingApi": {
+          "id": "4YlidIdv3s5ML4GE",
+          "name": "Line Messaging rkitja2523"
+        }
+      },
+      "continueOnFail": true
+    },
+    {
+      "id": "443305ad-cae1-4ee2-8143-e280f17d41f5",
+      "name": "Read Admins For Approval Notify",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        33664,
+        9616
+      ],
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1aKwY4KOo8uGCRrHASD539Habt5Obam8meacRO-ir0Ks",
+          "mode": "list",
+          "cachedResultName": "Chaphranakhon_DB",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1aKwY4KOo8uGCRrHASD539Habt5Obam8meacRO-ir0Ks/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Admins",
+          "mode": "name",
+          "cachedResultName": "Admins",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1aKwY4KOo8uGCRrHASD539Habt5Obam8meacRO-ir0Ks/edit"
+        },
+        "options": {}
+      },
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "ZPODlcDmX45WFVuM",
+          "name": "Google Sheets account 2"
+        }
+      }
+    },
+    {
+      "id": "c26cc98c-0c25-441c-8837-06e3f576800b",
+      "name": "Build Admin Approval LINE Message",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        33920,
+        9616
+      ],
+      "parameters": {
+        "jsCode": "function norm(value) { return String(value || '').trim().toLowerCase(); }\nfunction asBool(value) { if (typeof value === 'boolean') return value; return ['true','1','yes','y'].includes(norm(value)); }\nfunction money(value) { return Number(value || 0).toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }\nfunction parseJson(value, fallback) { try { return value ? JSON.parse(value) : fallback; } catch { return fallback; } }\nconst newline = String.fromCharCode(10);\nconst payload = $node['Aggregate Delivery Tax Invoice PDFs'].json;\nconst approval = $node['Build Approval Row'].json;\nconst details = parseJson(approval.Order_Details, {});\nconst items = Array.isArray(details.orderItems) ? details.orderItems : [];\nconst adjusted = items.filter(item => Number(item.originalQuantity ?? item.quantity ?? 0) !== Number(item.quantity || 0));\nconst adjustedLines = adjusted.slice(0, 10).map(item => '- ' + (item.productName || item.Product_Name || item.productId || item.Product_ID || '-') + ': ' + Number(item.originalQuantity || 0) + ' → ' + Number(item.quantity || 0));\nconst admins = $input.all().map(item => item.json);\nconst recipients = admins.filter(admin => { const uid = String(admin.LINE_UID || admin.lineUid || '').trim(); return uid && norm(admin.Status) === 'active' && asBool(admin.Notify_Order); });\nif (recipients.length === 0) throw new Error('No ACTIVE admin with Notify_Order=TRUE for approval notification');\nconst approvedBy = approval.Approved_By || approval.Approved_By_UID || '-';\nconst pageLinks = payload.pdfUrls.map((url, index) => 'เอกสารหน้า ' + (index + 1) + ': ' + url).join(newline);\nconst lines = [\n  'คำสั่งซื้อได้รับการอนุมัติแล้ว',\n  'เลขที่: ' + payload.orderId,\n  'สาขา: ' + payload.branchName,\n  'ผู้อนุมัติ: ' + approvedBy,\n  adjustedLines.length ? 'รายการที่ปรับจำนวน:' + newline + adjustedLines.join(newline) : 'รายการที่ปรับจำนวน: ไม่มี',\n  approval.Adjustment_Reason ? 'เหตุผลการปรับ: ' + approval.Adjustment_Reason : '',\n  'ยอดก่อนส่วนลด: ฿' + money(payload.subtotal),\n  'ส่วนลด: ฿' + money(payload.discount),\n  'VAT 7%: ฿' + money(payload.vatAmount),\n  'ค่าขนส่ง: ฿' + money(payload.shippingCost),\n  Number(payload.otherFee || 0) ? 'ค่าใช้จ่ายอื่น: ฿' + money(payload.otherFee) : '',\n  'ยอดรวมสุทธิ: ฿' + money(payload.totalAmount),\n  'เอกสารใบส่งของ/ใบกำกับภาษี PDF (' + payload.pageCount + ' หน้า):' + newline + pageLinks,\n].filter(Boolean);\nreturn recipients.map(admin => ({ json: { adminId: admin.Admin_ID || '', adminName: admin.Display_Name || '', to: String(admin.LINE_UID || admin.lineUid || '').trim(), text: lines.join(newline) } }));"
+      }
+    },
+    {
+      "parameters": {
+        "operation": "send",
+        "to": "={{ $json.to }}",
+        "messages": {
+          "values": [
+            {
+              "text": "={{ $json.text }}"
+            }
+          ]
+        }
+      },
+      "type": "@aotoki/n8n-nodes-line-messaging.lineMessaging",
+      "typeVersion": 1,
+      "position": [
+        34176,
+        9616
+      ],
+      "id": "2f9cfdf1-f576-4100-bc97-35ffc21e1c14",
+      "name": "Notify Admin Approval LINE",
+      "credentials": {
+        "lineMessagingApi": {
+          "id": "4YlidIdv3s5ML4GE",
+          "name": "Line Messaging rkitja2523"
+        }
+      },
+      "continueOnFail": true
+    },
+    {
+      "id": "4a6242d5-beeb-494e-9763-3c5da15ca21b",
+      "name": "Summarize Admin Approval Notify",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        34432,
+        9616
+      ],
+      "parameters": {
+        "jsCode": "const recipients = $items('Build Admin Approval LINE Message').map(item => item.json);\nconst outputs = $input.all().map(item => item.json || {});\nconst results = recipients.map((recipient, index) => {\n  const output = outputs[index] || {};\n  const error = output.error || output.message || '';\n  return { adminId: recipient.adminId, adminName: recipient.adminName, to: recipient.to, success: !error && output.success !== false, error: error ? String(error) : '' };\n});\nreturn [{ json: { total: results.length, success: results.filter(item => item.success).length, failed: results.filter(item => !item.success).length, results } }];"
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "POST /admin-approve": {
+      "main": [
+        [
+          {
+            "node": "Read Admins For Approve",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Approval Row": {
+      "main": [
+        [
+          {
+            "node": "Update Shipping & Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Shipping & Status": {
+      "main": [
+        [
+          {
+            "node": "Read Orders For Delivery Tax Invoice",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Orders For Delivery Tax Invoice": {
+      "main": [
+        [
+          {
+            "node": "Build Delivery Tax Invoice Payload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Delivery Tax Invoice Payload": {
+      "main": [
+        [
+          {
+            "node": "Copy Delivery Tax Invoice Template",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Copy Delivery Tax Invoice Template": {
+      "main": [
+        [
+          {
+            "node": "Merge Delivery Tax Invoice Template",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge Delivery Tax Invoice Template": {
+      "main": [
+        [
+          {
+            "node": "Get Copied Delivery Tax Invoice Metadata",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Export Delivery Tax Invoice PDF": {
+      "main": [
+        [
+          {
+            "node": "Upload Delivery Tax Invoice PDF",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build PDF URL": {
+      "main": [
+        [
+          {
+            "node": "Aggregate Delivery Tax Invoice PDFs",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Log Delivery Tax Invoice Document",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update PDF URL": {
+      "main": [
+        [
+          {
+            "node": "Build Branch LINE Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Branch LINE Message": {
+      "main": [
+        [
+          {
+            "node": "Notify Branch LINE",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Notify Branch LINE": {
+      "main": [
+        [
+          {
+            "node": "Read Admins For Approval Notify",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload Delivery Tax Invoice PDF": {
+      "main": [
+        [
+          {
+            "node": "Build PDF URL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Admins For Approve": {
+      "main": [
+        [
+          {
+            "node": "Authorize Admin Approval",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Authorize Admin Approval": {
+      "main": [
+        [
+          {
+            "node": "Read Orders For Approval",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Admins For Approval Notify": {
+      "main": [
+        [
+          {
+            "node": "Build Admin Approval LINE Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Admin Approval LINE Message": {
+      "main": [
+        [
+          {
+            "node": "Notify Admin Approval LINE",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Notify Admin Approval LINE": {
+      "main": [
+        [
+          {
+            "node": "Summarize Admin Approval Notify",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Summarize Admin Approval Notify": {
+      "main": [
+        [
+          {
+            "node": "Approve Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aggregate Delivery Tax Invoice PDFs": {
+      "main": [
+        [
+          {
+            "node": "Build Branch LINE Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Compact Delivery Tax Invoice Layout": {
+      "main": [
+        [
+          {
+            "node": "Restore Payload After Layout",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Restore Payload After Layout": {
+      "main": [
+        [
+          {
+            "node": "Fill Delivery Tax Invoice Template",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Orders For Approval": {
+      "main": [
+        [
+          {
+            "node": "Validate Pending Approval",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Pending Approval": {
+      "main": [
+        [
+          {
+            "node": "Build Approval Row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Copied Delivery Tax Invoice Metadata": {
+      "main": [
+        [
+          {
+            "node": "Attach Delivery Tax Invoice Sheet ID",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Attach Delivery Tax Invoice Sheet ID": {
+      "main": [
+        [
+          {
+            "node": "Compact Delivery Tax Invoice Layout",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": null,
+  "meta": {
+    "deliveryNoteVersion": "V9 HIDE ZERO QUANTITY CLEAN IMPORT",
+    "generatedAt": "2026-07-19T14:09:22.778Z",
+    "templateFileId": "1FYHjC9DjMpYJmc4fLo_sr6mOE-kKfp6OVQnrAqer8KY",
+    "sheetId": 906132224,
+    "itemsPerPage": 20,
+    "itemFontSize": "10pt",
+    "itemRowHeight": "17px",
+    "pdfExport": "A4 portrait fit-to-page, margins=0",
+    "columnWidthsPx": [
+      18,
+      42,
+      58,
+      58,
+      118,
+      118,
+      66,
+      58,
+      88,
+      96
+    ],
+    "signatureRows": "Row 53=24px, Row 54=4px, Rows 55-57=25px each, Row 58=4px, Row 59=18px",
+    "zeroQuantityRule": "Items with approved quantity less than or equal to zero are excluded from the Delivery Note before pagination.",
+    "documentType": "Delivery Note / Tax Invoice",
+    "outputFolderId": "1IBbwvnGB157SfL-766gvHNQqIljH5sfa",
+    "creditTermsDays": 7
+  },
+  "tags": []
+}
