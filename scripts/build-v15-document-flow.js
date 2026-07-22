@@ -67,7 +67,7 @@ const docsAppend = (name, source, position) => add({
 
 function addDocumentPipeline(prefix, payloadFrom, templateFileId, folderId, sheetTitle, filePrefix, y, continuation) {
   const build = add({ name: `Build ${prefix} Payload`, type: 'n8n-nodes-base.code', typeVersion: 2, position: [29504, y], parameters: { jsCode: `
-function parse(v){ try { return v ? JSON.parse(v) : {}; } catch { return {}; } }
+function parse(v){ try { return v ? (typeof v === 'string' ? JSON.parse(v) : v) : {}; } catch { return {}; } }
 function val(o, keys, fallback=''){ for (const k of keys) if (o?.[k] !== undefined && o[k] !== null && String(o[k]).trim() !== '') return o[k]; return fallback; }
 function thaiDate(v){ const d = v ? new Date(v) : new Date(); return new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Bangkok',day:'2-digit',month:'2-digit',year:'numeric'}).format(Number.isNaN(d.getTime()) ? new Date() : d); }
 const rows = $input.all().map(i => i.json);
@@ -75,21 +75,23 @@ const base = ${payloadFrom};
 const row = rows.find(i => String(i.Order_ID || '') === String(base.orderId || base.Order_ID || ''));
 if (!row) throw new Error('Order not found while creating ${prefix}');
 const delivery = parse(row.Delivery_Address), details = parse(row.Order_Details);
-const items = (details.orderItems || []).filter(i => Number(val(i,['quantity','Quantity','qty'],0)) > 0);
+const rawItems = details.orderItems || details.items || details.products || details.lines || [];
+const items = (Array.isArray(rawItems) ? rawItems : []).filter(i => Number(val(i,['quantity','Quantity','qty'],0)) > 0);
 const buyer = val(details,['buyerName','displayName','contactName'], '');
 const branch = val(delivery,['label','branchName'], buyer);
 const address = val(delivery,['text','address'], '');
 const contact = val(delivery,['contactName','contact'], buyer);
 const tel = val(delivery,['tel','phone','mobile'], '');
-const subtotal = Number(base.subtotal ?? row.Subtotal ?? items.reduce((s,i)=>s+Number(i.lineTotal||0),0));
-const discount = Number(base.discount ?? row.Discount ?? 0), shipping = Number(base.shippingCost ?? row.Shipping_Cost ?? 0), otherFee = Number(base.otherFee ?? row.Other_Fee ?? 0), vat = Number(base.vatAmount ?? row.VAT_Amount ?? 0), total = Number(base.totalAmount ?? row.Total_Amount ?? subtotal);
+const subtotal = Number(base.subtotal ?? row.Subtotal ?? items.reduce((s,i)=>s+Number(i.lineTotal ?? Number(val(i,['quantity','Quantity','qty'],0))*Number(val(i,['pricePerUnit','Price','price'],0))),0));
+const discount = Number(base.discount ?? row.Discount ?? 0), shipping = Number(base.shippingCost ?? row.Shipping_Cost ?? 0), otherFee = Number(base.otherFee ?? row.Other_Fee ?? 0), vat = Number(base.vatAmount ?? row.VAT_Amount ?? 0), total = Number(base.totalAmount ?? row.Total_Amount ?? (subtotal - discount + shipping + otherFee + vat));
+const documentNumber = '${filePrefix}' === 'RC' ? 'RC-' + (base.orderId || base.Order_ID) : (base.orderId || base.Order_ID);
 const filled = Array.from({length:20}, (_,i) => items[i] || null);
 const values = [
-  {range:'${sheetTitle}!D14',values:[[buyer]]},{range:'${sheetTitle}!D15',values:[[branch]]},{range:'${sheetTitle}!D16',values:[[address]]},{range:'${sheetTitle}!D17',values:[[contact]]},{range:'${sheetTitle}!G17',values:[[tel ? 'Tel. '+tel : 'Tel.']]},{range:'${sheetTitle}!J15',values:[[base.orderId || base.Order_ID]]},{range:'${sheetTitle}!J17',values:[[thaiDate(base.createdAt || base.approvedAt || row.Timestamp)]]},{range:'${sheetTitle}!D18',values:[['ช่องทางการสั่งซื้อ: LINE LIFF | ' + (details.note || '')]]},
+  {range:'${sheetTitle}!D14',values:[[buyer]]},{range:'${sheetTitle}!D15',values:[[branch]]},{range:'${sheetTitle}!D16',values:[[address]]},{range:'${sheetTitle}!D17',values:[[contact]]},{range:'${sheetTitle}!G17',values:[[tel ? 'Tel. '+tel : 'Tel.']]},{range:'${sheetTitle}!J15',values:[[documentNumber]]},{range:'${sheetTitle}!J17',values:[[thaiDate(base.createdAt || base.approvedAt || row.Timestamp)]]},{range:'${sheetTitle}!D18',values:[['ช่องทางการสั่งซื้อ: LINE LIFF | ' + (details.note || '')]]},
   {range:'${sheetTitle}!B22:B41',values:filled.map((i,n)=>[i?n+1:''])},{range:'${sheetTitle}!C22:C41',values:filled.map(i=>[i?val(i,['productId','Product_ID','id']):''])},{range:'${sheetTitle}!E22:E41',values:filled.map(i=>[i?val(i,['productName','Product_Name','name']):''])},{range:'${sheetTitle}!G22:G41',values:filled.map(i=>[i?Number(val(i,['quantity','Quantity','qty'],0)):''])},{range:'${sheetTitle}!H22:H41',values:filled.map(i=>[i?val(i,['unit','Unit','UOM']):''])},{range:'${sheetTitle}!I22:I41',values:filled.map(i=>[i?Number(val(i,['pricePerUnit','Price','price'],0)):''])},{range:'${sheetTitle}!J22:J41',values:filled.map(i=>[i?Number(i.lineTotal ?? Number(val(i,['quantity','Quantity','qty'],0))*Number(val(i,['pricePerUnit','Price','price'],0))):''])},
   {range:'${sheetTitle}!J42',values:[[vat]]},{range:'${sheetTitle}!J43',values:[[shipping+otherFee]]},{range:'${sheetTitle}!J45',values:[[total]]}
 ];
-return [{json:{ orderId: base.orderId || base.Order_ID, branchUid: base.branchUid || row.LINE_UID || '', branchName: branch, fileName:'${filePrefix}-'+(base.orderId || base.Order_ID)+'.pdf', copiedSheetName:'${filePrefix}_'+(base.orderId || base.Order_ID), templateFileId:'${templateFileId}', folderId:'${folderId}', valuesBatchUpdate:{valueInputOption:'USER_ENTERED',data:values}, documentType:'${prefix}', documentId:'${prefix}-'+(base.orderId || base.Order_ID), createdAt:new Date().toISOString(), createdByUid:base.adminUid || '', createdByName:base.adminName || '', note:details.note || ''}}];` } });
+return [{json:{ orderId: base.orderId || base.Order_ID, branchUid: base.branchUid || row.LINE_UID || '', branchName: branch, fileName:'${filePrefix}-'+(base.orderId || base.Order_ID)+'.pdf', copiedSheetName:'${filePrefix}_'+(base.orderId || base.Order_ID), templateFileId:'${templateFileId}', folderId:'${folderId}', valuesBatchUpdate:{valueInputOption:'USER_ENTERED',data:values}, documentType:'${prefix}', documentId:'${prefix}-'+(base.orderId || base.Order_ID), createdAt:new Date().toISOString(), createdByUid:base.adminUid || '', createdByName:base.adminName || '', totalAmount:total, note:details.note || ''}}];` } });
   const copy = clone('Copy Delivery Tax Invoice Template', `Copy ${prefix} Template`, [29760, y]);
   const merge = clone('Merge Delivery Tax Invoice Template', `Merge ${prefix} Template`, [30016, y]);
   merge.parameters.jsCode = `const payload = $('Build ${prefix} Payload').item.json; return { json: { ...payload, spreadsheetId: $json.id, copiedFileId: $json.id } };`;
