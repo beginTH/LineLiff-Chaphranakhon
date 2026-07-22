@@ -95,7 +95,7 @@ const state = {
     adjustedItems: [], // รายการหลัง Admin ปรับลดจำนวน
     liffReady: false,
     adminProfilePromise: null,
-    mode: getQueryParam('mode') || 'order',
+    mode: getQueryParam('mode') || getLiffStateParam('mode') || 'order',
 };
 
 // =====================================================
@@ -150,20 +150,20 @@ function getQueryParam(key) {
     return new URLSearchParams(window.location.search).get(key);
 }
 
-function getOrderIdFromUrl() {
-    const direct = getQueryParam('orderId');
-    if (direct) return direct;
-
-    const liffState = getQueryParam('liff.state');
-    if (!liffState) return '';
-
+function getLiffStateParam(key) {
+    const raw = getQueryParam('liff.state');
+    if (!raw) return '';
     try {
-        const stateParams = new URLSearchParams(decodeURIComponent(liffState));
-        return stateParams.get('orderId') || '';
+        const decoded = decodeURIComponent(raw);
+        return new URLSearchParams(decoded).get(key) || '';
     } catch (err) {
         console.warn('[Admin] Cannot parse liff.state:', err);
         return '';
     }
+}
+
+function getOrderIdFromUrl() {
+    return getQueryParam('orderId') || getLiffStateParam('orderId') || '';
 }
 
 const delay = (ms) => new Promise(r => setTimeout(r, ms));
