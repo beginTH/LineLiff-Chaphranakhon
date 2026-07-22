@@ -552,6 +552,20 @@
     },
     {
       "parameters": {
+        "jsCode": "const payload = $node['Attach Delivery Tax Invoice Sheet ID'].json;\nreturn { json: payload, binary: $binary };",
+        "mode": "runOnceForEachItem"
+      },
+      "id": "5a987dad-abb2-4370-a1af-d7274d93c646",
+      "name": "Restore Delivery Tax Invoice Payload",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        31616,
+        9616
+      ]
+    },
+    {
+      "parameters": {
         "url": "={{ 'https://docs.google.com/spreadsheets/d/' + $json.copiedFileId + '/export?format=pdf&size=A4&portrait=true&scale=4&fitw=true&sheetnames=false&printtitle=false&pagenumbers=false&gridlines=false&fzr=false&top_margin=0&bottom_margin=0&left_margin=0&right_margin=0&gid=' + $json.deliveryTaxInvoiceSheetId }}",
         "authentication": "predefinedCredentialType",
         "nodeCredentialType": "googleOAuth2Api",
@@ -617,83 +631,6 @@
         32384,
         9616
       ]
-    },
-    {
-      "parameters": {
-        "operation": "update",
-        "documentId": {
-          "__rl": true,
-          "value": "1aKwY4KOo8uGCRrHASD539Habt5Obam8meacRO-ir0Ks",
-          "mode": "list",
-          "cachedResultName": "Chaphranakhon_DB",
-          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1aKwY4KOo8uGCRrHASD539Habt5Obam8meacRO-ir0Ks/edit?usp=drivesdk"
-        },
-        "sheetName": {
-          "__rl": true,
-          "value": "gid=0",
-          "mode": "list",
-          "cachedResultName": "Orders",
-          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1aKwY4KOo8uGCRrHASD539Habt5Obam8meacRO-ir0Ks/edit#gid=0"
-        },
-        "columns": {
-          "mappingMode": "defineBelow",
-          "value": {
-            "Order_ID": "={{ $node['Aggregate Delivery Tax Invoice PDFs'].json.orderId }}",
-            "PO_PDF_File_ID": "={{ $node['Aggregate Delivery Tax Invoice PDFs'].json.poPdfFileId || '' }}",
-            "PO_PDF_URL": "={{ $node['Aggregate Delivery Tax Invoice PDFs'].json.poPdfUrl || '' }}"
-          },
-          "matchingColumns": [
-            "Order_ID"
-          ],
-          "schema": [
-            {
-              "id": "Order_ID",
-              "displayName": "Order_ID",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "canBeUsedToMatch": true
-            },
-            {
-              "id": "PO_PDF_File_ID",
-              "displayName": "PO_PDF_File_ID",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "canBeUsedToMatch": true
-            },
-            {
-              "id": "PO_PDF_URL",
-              "displayName": "PO_PDF_URL",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "canBeUsedToMatch": true
-            }
-          ],
-          "attemptToConvertTypes": false,
-          "convertFieldsToString": false
-        },
-        "options": {}
-      },
-      "id": "66e437fc-9373-4f98-a6ec-8c34e722636d",
-      "name": "Update PDF URL",
-      "type": "n8n-nodes-base.googleSheets",
-      "typeVersion": 4,
-      "position": [
-        32896,
-        9616
-      ],
-      "alwaysOutputData": true,
-      "credentials": {
-        "googleSheetsOAuth2Api": {
-          "id": "ZPODlcDmX45WFVuM",
-          "name": "Google Sheets account 2"
-        }
-      }
     },
     {
       "name": "Log Delivery Tax Invoice Document",
@@ -1058,6 +995,28 @@
         ]
       ]
     },
+    "Fill Delivery Tax Invoice Template": {
+      "main": [
+        [
+          {
+            "node": "Restore Delivery Tax Invoice Payload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Restore Delivery Tax Invoice Payload": {
+      "main": [
+        [
+          {
+            "node": "Export Delivery Tax Invoice PDF",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
     "Export Delivery Tax Invoice PDF": {
       "main": [
         [
@@ -1079,17 +1038,6 @@
           },
           {
             "node": "Log Delivery Tax Invoice Document",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Update PDF URL": {
-      "main": [
-        [
-          {
-            "node": "Build Branch LINE Message",
             "type": "main",
             "index": 0
           }
@@ -1278,34 +1226,6 @@
     "executionOrder": "v1",
     "binaryMode": "separate",
     "availableInMCP": false
-  },
-  "versionId": null,
-  "meta": {
-    "deliveryNoteVersion": "V9 HIDE ZERO QUANTITY CLEAN IMPORT",
-    "generatedAt": "2026-07-19T14:09:22.778Z",
-    "templateFileId": "1FYHjC9DjMpYJmc4fLo_sr6mOE-kKfp6OVQnrAqer8KY",
-    "sheetId": 906132224,
-    "itemsPerPage": 20,
-    "itemFontSize": "10pt",
-    "itemRowHeight": "17px",
-    "pdfExport": "A4 portrait fit-to-page, margins=0",
-    "columnWidthsPx": [
-      18,
-      42,
-      58,
-      58,
-      118,
-      118,
-      66,
-      58,
-      88,
-      96
-    ],
-    "signatureRows": "Row 53=24px, Row 54=4px, Rows 55-57=25px each, Row 58=4px, Row 59=18px",
-    "zeroQuantityRule": "Items with approved quantity less than or equal to zero are excluded from the Delivery Note before pagination.",
-    "documentType": "Delivery Note / Tax Invoice",
-    "outputFolderId": "1IBbwvnGB157SfL-766gvHNQqIljH5sfa",
-    "creditTermsDays": 7
   },
   "tags": []
 }
