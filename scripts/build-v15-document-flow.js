@@ -100,7 +100,7 @@ return [{json:{ orderId: base.orderId || base.Order_ID, branchUid: base.branchUi
   const restore = clone('Restore Delivery Tax Invoice Payload', `Restore ${prefix} Payload`, [31040, y]);
   restore.parameters.jsCode = `return { json: $node['Attach ${prefix} Sheet ID'].json, binary: $binary };`;
   const exportPdf = clone('Export Delivery Tax Invoice PDF', `Export ${prefix} PDF`, [31296, y]);
-  exportPdf.parameters.url = `={{ 'https://docs.google.com/spreadsheets/d/' + $json.copiedFileId + '/export?format=pdf&size=A4&portrait=true&scale=1&sheetnames=false&printtitle=false&pagenumbers=false&gridlines=false&fzr=false&top_margin=0&bottom_margin=0&left_margin=0&right_margin=0&gid=' + $json.documentSheetId }}`;
+  exportPdf.parameters.url = `={{ 'https://docs.google.com/spreadsheets/d/' + $json.copiedFileId + '/export?format=pdf&size=A4&portrait=true&scale=4&fitw=true&sheetnames=false&printtitle=false&pagenumbers=false&gridlines=false&fzr=false&top_margin=0&bottom_margin=0&left_margin=0&right_margin=0&gid=' + $json.documentSheetId }}`;
   const upload = clone('Upload Delivery Tax Invoice PDF', `Upload ${prefix} PDF`, [31552, y]);
   upload.parameters.name = `={{ $('Restore ${prefix} Payload').item.json.fileName }}`;
   upload.parameters.folderId.value = `https://drive.google.com/drive/folders/${folderId}`;
