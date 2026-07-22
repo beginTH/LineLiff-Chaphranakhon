@@ -1,3 +1,5 @@
+> Save point: 22 July 2026. Active modular workflows are in `outputs/modular/`; the V15 monolith is archived in `outputs/archive/v15-monolith/`.
+
 # eesign System — LINE LIFF ชาพระนคร
 
 เอกสารนี้อธิบาย UI ที่ใช้งานจริงใน `branch/` และ `admin/` ปัจจุบัน หากแก้ตัวแปร CSS หรือ component ต้องอัปเดตเอกสารนี้ด้วย

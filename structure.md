@@ -1,3 +1,5 @@
+> Save point: 22 July 2026. Active modular workflows are in `outputs/modular/`; the V15 monolith is archived in `outputs/archive/v15-monolith/`.
+
 # โครงสร้างระบบสั่งซื้อวัตถุดิบ ชาพระนคร
 
 เอกสารนี้เป็น Technical Reference ของระบบปัจจุบัน ใช้สำหรับพัฒนา LIFF, n8n workflow และ Google Sheets schema หากข้อมูลขัดกับ workflow ที่ active ให้ตรวจ implementation จริงและอัปเดตเอกสารนี้
