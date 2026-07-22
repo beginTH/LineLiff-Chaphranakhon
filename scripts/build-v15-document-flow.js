@@ -124,7 +124,7 @@ updatePo.parameters.columns.matchingColumns = ['Order_ID'];
 link('Build Purchase Order PDF URL', 'Update Purchase Order URL'); link('Update Purchase Order URL', 'Log Purchase Order Document');
 
 // Receipt: intentionally requires an authenticated admin call after payment proof has been reviewed.
-add({ name: 'POST /admin-verify-payment', type: 'n8n-nodes-base.webhook', typeVersion: 2, position: [28736, 10624], parameters: { httpMethod: 'POST', path: 'admin-verify-payment', responseMode: 'responseNode', options: {} } });
+add({ name: 'POST /admin-verify-payment', type: 'n8n-nodes-base.webhook', typeVersion: 2, position: [28736, 10624], parameters: { httpMethod: 'POST', path: 'admin-verify-payment', responseMode: 'responseNode', options: { allowedOrigins: 'https://beginth.github.io' } } });
 const readAdmins = clone('Read Admins For Approve', 'Read Admins For Payment Verify', [28992,10624]);
 const auth = clone('Authorize Admin Approval', 'Authorize Payment Verification', [29248,10624]);
 auth.parameters.jsCode = `const body = $node['POST /admin-verify-payment'].json.body || $node['POST /admin-verify-payment'].json; const admins = $input.all().map(i=>i.json); const admin = admins.find(i => String(i.LINE_UID || i.Line_UID || '').trim() === String(body.adminUid || body.lineUid || '').trim() && String(i.Status || '').trim().toLowerCase() === 'active'); if (!admin) throw new Error('Only an active admin may verify payment'); return [{json:{...body,adminUid:body.adminUid || body.lineUid,adminName:body.adminName || admin.Display_Name || admin.Admin_ID || '',verifiedAt:new Date().toISOString()}}];`;
