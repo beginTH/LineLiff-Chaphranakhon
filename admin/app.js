@@ -26,6 +26,8 @@ const CONFIG = {
     WEBHOOK: {
         GET_ORDER:     '/webhook/get-order',            // GET  ?orderId=xxx  (ดึงออเดอร์จาก sheet)
         ADMIN_APPROVE: '/webhook/admin-approve',        // POST → Update Shipping & Status
+        ADMIN_VERIFY_PAYMENT: '/webhook/admin-verify-payment',
+        ADMIN_REJECT_PAYMENT: '/webhook/admin-reject-payment',
     },
     IS_DEV_MODE: false, // ✅ Production mode
     TEST_ORDER_ID: 'PO-20260705-001',                        // Order ID สำหรับทดสอบจาก browser
@@ -93,6 +95,7 @@ const state = {
     adjustedItems: [], // รายการหลัง Admin ปรับลดจำนวน
     liffReady: false,
     adminProfilePromise: null,
+    mode: getQueryParam('mode') || 'order',
 };
 
 // =====================================================
@@ -212,6 +215,31 @@ async function apiApproveOrder(payload) {
     return res.json();
 }
 
+async function apiVerifyPayment(payload) {
+    const res = await fetch(`${CONFIG.N8N_BASE_URL}${CONFIG.WEBHOOK.ADMIN_VERIFY_PAYMENT}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+    if (!res.ok) throw new Error(`Payment verification failed: ${res.status}`);
+    return res.json();
+}
+
+async function apiRejectPayment(payload) {
+    const res = await fetch(`${CONFIG.N8N_BASE_URL}${CONFIG.WEBHOOK.ADMIN_REJECT_PAYMENT}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+    if (!res.ok) throw new Error(`Payment rejection failed: ${res.status}`);
+    return res.json();
+}
+
+function renderPaymentReview(order) {
+    setText('payment-review-order-id', order.orderId || order.Order_ID || state.orderId);
+    setText('payment-review-branch', order.branchInfo?.displayName || order.branchName || order.LINE_UID || '-');
+    setText('payment-review-expected', fmt(order.totalAmount ?? order.Total_Amount ?? 0));
+    setText('payment-review-submitted', fmt(order.paymentAmount ?? order.Payment_Amount ?? 0));
+    setText('payment-review-status', order.paymentStatus || order.Payment_Status || 'Submitted');
+    const proof = order.paymentProofUrl || order.Payment_Proof_URL || '';
+    const img = document.getElementById('payment-proof-image');
+    if (img && proof) { img.src = proof; img.classList.remove('hidden'); }
+    const link = document.getElementById('payment-proof-link');
+    if (link) { link.href = proof || '#'; link.classList.toggle('hidden', !proof); }
+}
+
 // =====================================================
 // 🖼️ RENDER
 // =====================================================
@@ -320,6 +348,13 @@ async function initApp() {
         }));
 
         state.admin = { uid: 'admin-pending', displayName: 'Admin' };
+
+        if (state.mode === 'payment') {
+            renderPaymentReview(order);
+            goTo('screen-payment-review');
+            initAdminProfileInBackground(state.orderId);
+            return;
+        }
 
         if (CONFIG.IS_DEV_MODE) {
             // 🧪 Dev mode
@@ -463,6 +498,21 @@ document.addEventListener('DOMContentLoaded', () => {
     // ─────────────────────────────────────────────
     // APPROVE BUTTON
     // ─────────────────────────────────────────────
+    const verifyBtn = document.getElementById('btn-verify-payment');
+    if (verifyBtn) verifyBtn.addEventListener('click', async () => {
+        verifyBtn.disabled = true;
+        try { const admin = await ensureAdminProfile(); await apiVerifyPayment({ orderId: state.orderId, adminUid: admin.uid, adminName: admin.displayName }); alert('ยืนยันการชำระเงินและสร้างใบเสร็จเรียบร้อยแล้ว'); goTo('screen-success'); }
+        catch (err) { alert('ยืนยันการชำระเงินไม่สำเร็จ\n' + err.message); verifyBtn.disabled = false; }
+    });
+    const rejectBtn = document.getElementById('btn-reject-payment');
+    if (rejectBtn) rejectBtn.addEventListener('click', async () => {
+        const reason = (document.getElementById('payment-rejection-reason')?.value || '').trim();
+        if (!reason) { alert('กรุณาระบุเหตุผลที่ไม่อนุมัติ'); return; }
+        rejectBtn.disabled = true;
+        try { const admin = await ensureAdminProfile(); await apiRejectPayment({ orderId: state.orderId, adminUid: admin.uid, adminName: admin.displayName, reason }); alert('ส่งผลการตรวจสอบกลับไปยังสาขาแล้ว'); goTo('screen-success'); }
+        catch (err) { alert('ปฏิเสธหลักฐานไม่สำเร็จ\n' + err.message); rejectBtn.disabled = false; }
+    });
+
     document.getElementById('btn-approve-order').addEventListener('click', async () => {
         // Validate shipping cost
         const shippingInput = document.getElementById('input-shipping');

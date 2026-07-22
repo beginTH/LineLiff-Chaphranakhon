@@ -227,6 +227,19 @@
         </div>
     </div>
 
+    <!-- ===== SCREEN: PAYMENT REVIEW ===== -->
+    <div id="screen-payment-review" class="screen">
+        <div class="app-header"><div class="header-brand"><span class="header-title">ตรวจสอบหลักฐานการชำระเงิน</span></div><div class="admin-tag">ADMIN</div></div>
+        <div class="screen-content">
+            <div class="info-card"><h3 class="info-title">ข้อมูลการชำระเงิน</h3><div class="info-row"><span class="info-label">เลขที่คำสั่งซื้อ</span><span class="info-value" id="payment-review-order-id">-</span></div><div class="info-row"><span class="info-label">สาขา</span><span class="info-value" id="payment-review-branch">-</span></div><div class="info-row"><span class="info-label">ยอดตามคำสั่งซื้อ</span><span class="info-value" id="payment-review-expected">฿0.00</span></div><div class="info-row"><span class="info-label">ยอดที่แจ้งโอน</span><span class="info-value" id="payment-review-submitted">฿0.00</span></div><div class="info-row"><span class="info-label">สถานะ</span><span class="info-value" id="payment-review-status">Submitted</span></div></div>
+            <img id="payment-proof-image" class="hidden" style="width:100%;max-height:420px;object-fit:contain;border-radius:12px;margin:12px 0" alt="หลักฐานการชำระเงิน">
+            <a id="payment-proof-link" class="btn-close hidden" target="_blank" rel="noopener">เปิดรูปหลักฐาน</a>
+            <textarea id="payment-rejection-reason" class="admin-note-input" rows="3" placeholder="เหตุผลกรณีไม่อนุมัติ เช่น ยอดไม่ตรง หรือไม่พบยอดโอน"></textarea>
+            <button class="btn-approve btn-full" id="btn-verify-payment">อนุมัติการชำระเงิน</button>
+            <button class="btn-full btn-close" id="btn-reject-payment">ไม่อนุมัติและแจ้งกลับสาขา</button>
+        </div>
+    </div>
+
     <!-- ===== SCREEN 3: ALREADY APPROVED ===== -->
     <div id="screen-approved" class="screen screen-center">
         <div class="center-content">
