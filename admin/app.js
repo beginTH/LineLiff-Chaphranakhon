@@ -160,6 +160,8 @@ function getLiffStateParam(key) {
             if (next === decoded) break;
             decoded = next;
         }
+        const queryIndex = decoded.indexOf('?');
+        if (queryIndex >= 0) decoded = decoded.slice(queryIndex + 1);
         decoded = decoded.replace(/^[?#]/, '');
         if (decoded.startsWith('{')) {
             const state = JSON.parse(decoded);
