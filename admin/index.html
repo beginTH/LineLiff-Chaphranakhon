@@ -1,10 +1,10 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="th">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>ชาพระนคร — แอดมิน อนุมัติออเดอร์</title>
-    <meta name="description" content="ระบบอนุมัติคำสั่งซื้อวัตถุดิบ — แอดมิน ชาพระนคร">
+    <title>เธเธฒเธเธฃเธฐเธเธเธฃ โ€” เนเธญเธ”เธกเธดเธ เธญเธเธธเธกเธฑเธ•เธดเธญเธญเน€เธ”เธญเธฃเน</title>
+    <meta name="description" content="เธฃเธฐเธเธเธญเธเธธเธกเธฑเธ•เธดเธเธณเธชเธฑเนเธเธเธทเนเธญเธงเธฑเธ•เธ–เธธเธ”เธดเธ โ€” เนเธญเธ”เธกเธดเธ เธเธฒเธเธฃเธฐเธเธเธฃ">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
@@ -16,13 +16,13 @@
     <div id="screen-loading" class="screen">
         <div class="loading-content">
             <div class="logo-wrapper">
-                <div class="logo-icon">🍵</div>
-                <h1 class="logo-title">ชาพระนคร</h1>
+                <div class="logo-icon">๐ต</div>
+                <h1 class="logo-title">เธเธฒเธเธฃเธฐเธเธเธฃ</h1>
                 <div class="admin-badge">ADMIN</div>
             </div>
             <div class="spinner-wrapper">
                 <div class="spinner"></div>
-                <p class="loading-text" id="loading-text">กำลังโหลดข้อมูลออเดอร์...</p>
+                <p class="loading-text" id="loading-text">เธเธณเธฅเธฑเธเนเธซเธฅเธ”เธเนเธญเธกเธนเธฅเธญเธญเน€เธ”เธญเธฃเน...</p>
             </div>
         </div>
     </div>
@@ -30,9 +30,9 @@
     <!-- ===== SCREEN 1: ORDER NOT FOUND ===== -->
     <div id="screen-not-found" class="screen screen-center">
         <div class="center-content">
-            <div class="icon-xl">🔍</div>
-            <h2 class="center-title">ไม่พบออเดอร์</h2>
-            <p class="center-subtitle" id="not-found-msg">ไม่พบข้อมูลคำสั่งซื้อ<br>กรุณาตรวจสอบลิงก์อีกครั้ง</p>
+            <div class="icon-xl">๐”</div>
+            <h2 class="center-title">เนเธกเนเธเธเธญเธญเน€เธ”เธญเธฃเน</h2>
+            <p class="center-subtitle" id="not-found-msg">เนเธกเนเธเธเธเนเธญเธกเธนเธฅเธเธณเธชเธฑเนเธเธเธทเนเธญ<br>เธเธฃเธธเธ“เธฒเธ•เธฃเธงเธเธชเธญเธเธฅเธดเธเธเนเธญเธตเธเธเธฃเธฑเนเธ</p>
         </div>
     </div>
 
@@ -42,8 +42,8 @@
         <!-- Header -->
         <div class="app-header">
             <div class="header-brand">
-                <span class="header-icon">🍵</span>
-                <span class="header-title">ชาพระนคร</span>
+                <span class="header-icon">๐ต</span>
+                <span class="header-title">เธเธฒเธเธฃเธฐเธเธเธฃ</span>
             </div>
             <div class="admin-tag">ADMIN</div>
         </div>
@@ -54,96 +54,96 @@
             <div class="order-hero">
                 <div class="order-hero-row">
                     <div>
-                        <p class="order-label">รหัสคำสั่งซื้อ</p>
+                        <p class="order-label">เธฃเธซเธฑเธชเธเธณเธชเธฑเนเธเธเธทเนเธญ</p>
                         <p class="order-id-text" id="display-order-id">PO-xxxxxxxx</p>
                     </div>
-                    <span class="status-badge status-pending" id="order-status-badge">รอยืนยัน</span>
+                    <span class="status-badge status-pending" id="order-status-badge">เธฃเธญเธขเธทเธเธขเธฑเธ</span>
                 </div>
-                <p class="order-timestamp" id="display-timestamp">—</p>
+                <p class="order-timestamp" id="display-timestamp">โ€”</p>
             </div>
 
             <!-- Branch Info -->
             <div class="info-card">
                 <div class="info-card-header">
-                    <span class="info-icon">🏪</span>
-                    <h3 class="info-title">ข้อมูลสาขา</h3>
+                    <span class="info-icon">๐ช</span>
+                    <h3 class="info-title">เธเนเธญเธกเธนเธฅเธชเธฒเธเธฒ</h3>
                 </div>
                 <div class="info-row">
-                    <span class="info-label">ชื่อสาขา</span>
-                    <span class="info-value" id="branch-name">—</span>
+                    <span class="info-label">เธเธทเนเธญเธชเธฒเธเธฒ</span>
+                    <span class="info-value" id="branch-name">โ€”</span>
                 </div>
                 <div class="info-row">
                     <span class="info-label">LINE UID</span>
-                    <span class="info-value info-uid" id="branch-uid">—</span>
+                    <span class="info-value info-uid" id="branch-uid">โ€”</span>
                 </div>
             </div>
 
             <!-- Delivery Address -->
             <div class="info-card">
                 <div class="info-card-header">
-                    <span class="info-icon">📍</span>
-                    <h3 class="info-title">ที่อยู่จัดส่ง</h3>
+                    <span class="info-icon">๐“</span>
+                    <h3 class="info-title">เธ—เธตเนเธญเธขเธนเนเธเธฑเธ”เธชเนเธ</h3>
                 </div>
-                <p class="address-label-text" id="delivery-label">—</p>
-                <p class="address-full-text" id="delivery-address">—</p>
+                <p class="address-label-text" id="delivery-label">โ€”</p>
+                <p class="address-full-text" id="delivery-address">โ€”</p>
             </div>
 
             <!-- Order Items -->
             <div class="info-card">
                 <div class="info-card-header">
-                    <span class="info-icon">📦</span>
-                    <h3 class="info-title">รายการสั่งซื้อ</h3>
-                    <span class="item-count-badge" id="item-count-badge">0 รายการ</span>
+                    <span class="info-icon">๐“ฆ</span>
+                    <h3 class="info-title">เธฃเธฒเธขเธเธฒเธฃเธชเธฑเนเธเธเธทเนเธญ</h3>
+                    <span class="item-count-badge" id="item-count-badge">0 เธฃเธฒเธขเธเธฒเธฃ</span>
                 </div>
                 <div id="order-items-list" class="order-items-list"></div>
             </div>
 
-            <!-- Note (ถ้ามี) -->
+            <!-- Note (เธ–เนเธฒเธกเธต) -->
             <div class="info-card" id="note-card" style="display:none;">
                 <div class="info-card-header">
-                    <span class="info-icon">📝</span>
-                    <h3 class="info-title">หมายเหตุจากสาขา</h3>
+                    <span class="info-icon">๐“</span>
+                    <h3 class="info-title">เธซเธกเธฒเธขเน€เธซเธ•เธธเธเธฒเธเธชเธฒเธเธฒ</h3>
                 </div>
-                <p class="note-text" id="order-note">—</p>
+                <p class="note-text" id="order-note">โ€”</p>
             </div>
 
             <!-- Price Breakdown -->
             <div class="price-card">
                 <div class="price-row">
-                    <span class="price-label">ค่าวัตถุดิบรวม</span>
-                    <span class="price-value" id="price-subtotal">฿0.00</span>
+                    <span class="price-label">เธเนเธฒเธงเธฑเธ•เธ–เธธเธ”เธดเธเธฃเธงเธก</span>
+                    <span class="price-value" id="price-subtotal">เธฟ0.00</span>
                 </div>
                 <div class="price-row">
-                    <span class="price-label shipping-label">ค่าขนส่ง <span class="required-star">*</span></span>
-                    <span class="price-value price-shipping" id="price-shipping">฿0.00</span>
+                    <span class="price-label shipping-label">เธเนเธฒเธเธเธชเนเธ <span class="required-star">*</span></span>
+                    <span class="price-value price-shipping" id="price-shipping">เธฟ0.00</span>
                 </div>
                 <div class="price-row">
-                    <span class="price-label">ส่วนลด</span>
-                    <span class="price-value" id="price-discount">฿0.00</span>
+                    <span class="price-label">เธชเนเธงเธเธฅเธ”</span>
+                    <span class="price-value" id="price-discount">เธฟ0.00</span>
                 </div>
                 <div class="price-row">
-                    <span class="price-label">ค่าใช้จ่ายอื่น</span>
-                    <span class="price-value" id="price-other-fee">฿0.00</span>
+                    <span class="price-label">เธเนเธฒเนเธเนเธเนเธฒเธขเธญเธทเนเธ</span>
+                    <span class="price-value" id="price-other-fee">เธฟ0.00</span>
                 </div>
                 <div class="price-row">
                     <span class="price-label">VAT 7%</span>
-                    <span class="price-value" id="price-vat">฿0.00</span>
+                    <span class="price-value" id="price-vat">เธฟ0.00</span>
                 </div>
                 <div class="price-divider"></div>
                 <div class="price-row price-total-row">
-                    <span class="price-label-total">ยอดรวมทั้งสิ้น</span>
-                    <span class="price-grand-total" id="price-grand-total">฿0.00</span>
+                    <span class="price-label-total">เธขเธญเธ”เธฃเธงเธกเธ—เธฑเนเธเธชเธดเนเธ</span>
+                    <span class="price-grand-total" id="price-grand-total">เธฟ0.00</span>
                 </div>
             </div>
 
             <!-- Shipping Cost Input -->
             <div class="shipping-input-section">
                 <label class="shipping-input-label" for="input-shipping">
-                    ระบุค่าขนส่ง
-                    <span class="shipping-input-hint">(กรอกตัวเลข เช่น 150)</span>
+                    เธฃเธฐเธเธธเธเนเธฒเธเธเธชเนเธ
+                    <span class="shipping-input-hint">(เธเธฃเธญเธเธ•เธฑเธงเน€เธฅเธ เน€เธเนเธ 150)</span>
                 </label>
                 <div class="shipping-input-wrapper">
-                    <span class="currency-prefix">฿</span>
+                    <span class="currency-prefix">เธฟ</span>
                     <input
                         type="number"
                         id="input-shipping"
@@ -158,11 +158,11 @@
 
             <div class="shipping-input-section">
                 <label class="shipping-input-label" for="input-discount">
-                    ส่วนลด
-                    <span class="shipping-input-hint">(ถ้าไม่มีให้กรอก 0)</span>
+                    เธชเนเธงเธเธฅเธ”
+                    <span class="shipping-input-hint">(เธ–เนเธฒเนเธกเนเธกเธตเนเธซเนเธเธฃเธญเธ 0)</span>
                 </label>
                 <div class="shipping-input-wrapper">
-                    <span class="currency-prefix">฿</span>
+                    <span class="currency-prefix">เธฟ</span>
                     <input
                         type="number"
                         id="input-discount"
@@ -177,11 +177,11 @@
 
             <div class="shipping-input-section">
                 <label class="shipping-input-label" for="input-other-fee">
-                    ค่าใช้จ่ายอื่น
-                    <span class="shipping-input-hint">(เช่น ค่าบริการเพิ่มเติม)</span>
+                    เธเนเธฒเนเธเนเธเนเธฒเธขเธญเธทเนเธ
+                    <span class="shipping-input-hint">(เน€เธเนเธ เธเนเธฒเธเธฃเธดเธเธฒเธฃเน€เธเธดเนเธกเน€เธ•เธดเธก)</span>
                 </label>
                 <div class="shipping-input-wrapper">
-                    <span class="currency-prefix">฿</span>
+                    <span class="currency-prefix">เธฟ</span>
                     <input
                         type="number"
                         id="input-other-fee"
@@ -196,32 +196,32 @@
 
             <div class="shipping-input-section">
                 <label class="shipping-input-label" for="input-admin-note">
-                    หมายเหตุแอดมิน
-                    <span class="shipping-input-hint">(ถ้ามี)</span>
+                    เธซเธกเธฒเธขเน€เธซเธ•เธธเนเธญเธ”เธกเธดเธ
+                    <span class="shipping-input-hint">(เธ–เนเธฒเธกเธต)</span>
                 </label>
                 <textarea
                     id="input-admin-note"
                     class="admin-note-input"
                     rows="3"
-                    placeholder="เช่น ปรับส่วนลด / หมายเหตุการจัดส่ง"
+                    placeholder="เน€เธเนเธ เธเธฃเธฑเธเธชเนเธงเธเธฅเธ” / เธซเธกเธฒเธขเน€เธซเธ•เธธเธเธฒเธฃเธเธฑเธ”เธชเนเธ"
                 ></textarea>
             </div>
 
             <div class="shipping-input-section" id="adjustment-reason-section">
                 <label class="shipping-input-label" for="input-adjustment-reason">
-                    สาเหตุการปรับลดจำนวน <span class="required-star">*</span>
-                    <span class="shipping-input-hint">(บังคับเมื่อมีรายการถูกลด)</span>
+                    เธชเธฒเน€เธซเธ•เธธเธเธฒเธฃเธเธฃเธฑเธเธฅเธ”เธเธณเธเธงเธ <span class="required-star">*</span>
+                    <span class="shipping-input-hint">(เธเธฑเธเธเธฑเธเน€เธกเธทเนเธญเธกเธตเธฃเธฒเธขเธเธฒเธฃเธ–เธนเธเธฅเธ”)</span>
                 </label>
-                <textarea id="input-adjustment-reason" class="admin-note-input" rows="3" placeholder="เช่น สินค้าคงเหลือไม่เพียงพอ จัดส่งได้เพียง 2 หน่วย"></textarea>
+                <textarea id="input-adjustment-reason" class="admin-note-input" rows="3" placeholder="เน€เธเนเธ เธชเธดเธเธเนเธฒเธเธเน€เธซเธฅเธทเธญเนเธกเนเน€เธเธตเธขเธเธเธญ เธเธฑเธ”เธชเนเธเนเธ”เนเน€เธเธตเธขเธ 2 เธซเธเนเธงเธข"></textarea>
             </div>
 
             <!-- Approve Button -->
             <div class="bottom-action">
                 <button class="btn-approve btn-full" id="btn-approve-order">
-                    <span id="approve-btn-text">✓ อนุมัติคำสั่งซื้อ</span>
+                    <span id="approve-btn-text">โ“ เธญเธเธธเธกเธฑเธ•เธดเธเธณเธชเธฑเนเธเธเธทเนเธญ</span>
                     <div class="submit-spinner hidden" id="approve-spinner"></div>
                 </button>
-                <p class="approve-note">เมื่ออนุมัติแล้ว ระบบจะส่งแจ้งเตือนไปยังสาขาอัตโนมัติ</p>
+                <p class="approve-note">เน€เธกเธทเนเธญเธญเธเธธเธกเธฑเธ•เธดเนเธฅเนเธง เธฃเธฐเธเธเธเธฐเธชเนเธเนเธเนเธเน€เธ•เธทเธญเธเนเธเธขเธฑเธเธชเธฒเธเธฒเธญเธฑเธ•เนเธเธกเธฑเธ•เธด</p>
             </div>
 
         </div>
@@ -229,35 +229,35 @@
 
     <!-- ===== SCREEN: PAYMENT REVIEW ===== -->
     <div id="screen-payment-review" class="screen">
-        <div class="app-header"><div class="header-brand"><span class="header-title">ตรวจสอบหลักฐานการชำระเงิน</span></div><div class="admin-tag">ADMIN</div></div>
+        <div class="app-header"><div class="header-brand"><span class="header-title">เธ•เธฃเธงเธเธชเธญเธเธซเธฅเธฑเธเธเธฒเธเธเธฒเธฃเธเธณเธฃเธฐเน€เธเธดเธ</span></div><div class="admin-tag">ADMIN</div></div>
         <div class="screen-content">
-            <div class="info-card"><h3 class="info-title">ข้อมูลการชำระเงิน</h3><div class="info-row"><span class="info-label">เลขที่คำสั่งซื้อ</span><span class="info-value" id="payment-review-order-id">-</span></div><div class="info-row"><span class="info-label">สาขา</span><span class="info-value" id="payment-review-branch">-</span></div><div class="info-row"><span class="info-label">ยอดตามคำสั่งซื้อ</span><span class="info-value" id="payment-review-expected">฿0.00</span></div><div class="info-row"><span class="info-label">ยอดที่แจ้งโอน</span><span class="info-value" id="payment-review-submitted">฿0.00</span></div><div class="info-row"><span class="info-label">สถานะ</span><span class="info-value" id="payment-review-status">Submitted</span></div></div>
-            <img id="payment-proof-image" class="hidden" style="width:100%;max-height:420px;object-fit:contain;border-radius:12px;margin:12px 0" alt="หลักฐานการชำระเงิน">
-            <a id="payment-proof-link" class="btn-close hidden" target="_blank" rel="noopener">เปิดรูปหลักฐาน</a>
-            <textarea id="payment-rejection-reason" class="admin-note-input" rows="3" placeholder="เหตุผลกรณีไม่อนุมัติ เช่น ยอดไม่ตรง หรือไม่พบยอดโอน"></textarea>
-            <button class="btn-approve btn-full" id="btn-verify-payment">อนุมัติการชำระเงิน</button>
-            <button class="btn-full btn-close" id="btn-reject-payment">ไม่อนุมัติและแจ้งกลับสาขา</button>
+            <div class="info-card"><h3 class="info-title">เธเนเธญเธกเธนเธฅเธเธฒเธฃเธเธณเธฃเธฐเน€เธเธดเธ</h3><div class="info-row"><span class="info-label">เน€เธฅเธเธ—เธตเนเธเธณเธชเธฑเนเธเธเธทเนเธญ</span><span class="info-value" id="payment-review-order-id">-</span></div><div class="info-row"><span class="info-label">เธชเธฒเธเธฒ</span><span class="info-value" id="payment-review-branch">-</span></div><div class="info-row"><span class="info-label">เธขเธญเธ”เธ•เธฒเธกเธเธณเธชเธฑเนเธเธเธทเนเธญ</span><span class="info-value" id="payment-review-expected">เธฟ0.00</span></div><div class="info-row"><span class="info-label">เธขเธญเธ”เธ—เธตเนเนเธเนเธเนเธญเธ</span><span class="info-value" id="payment-review-submitted">เธฟ0.00</span></div><div class="info-row"><span class="info-label">เธชเธ–เธฒเธเธฐ</span><span class="info-value" id="payment-review-status">Submitted</span></div></div>
+            <img id="payment-proof-image" class="hidden" style="width:100%;max-height:420px;object-fit:contain;border-radius:12px;margin:12px 0" alt="เธซเธฅเธฑเธเธเธฒเธเธเธฒเธฃเธเธณเธฃเธฐเน€เธเธดเธ">
+            <a id="payment-proof-link" class="btn-close hidden" target="_blank" rel="noopener">เน€เธเธดเธ”เธฃเธนเธเธซเธฅเธฑเธเธเธฒเธ</a>
+            <textarea id="payment-rejection-reason" class="admin-note-input" rows="3" placeholder="เน€เธซเธ•เธธเธเธฅเธเธฃเธ“เธตเนเธกเนเธญเธเธธเธกเธฑเธ•เธด เน€เธเนเธ เธขเธญเธ”เนเธกเนเธ•เธฃเธ เธซเธฃเธทเธญเนเธกเนเธเธเธขเธญเธ”เนเธญเธ"></textarea>
+            <button class="btn-approve btn-full" id="btn-verify-payment">เธญเธเธธเธกเธฑเธ•เธดเธเธฒเธฃเธเธณเธฃเธฐเน€เธเธดเธ</button>
+            <button class="btn-full btn-close" id="btn-reject-payment">เนเธกเนเธญเธเธธเธกเธฑเธ•เธดเนเธฅเธฐเนเธเนเธเธเธฅเธฑเธเธชเธฒเธเธฒ</button>
         </div>
     </div>
 
     <!-- ===== SCREEN 3: ALREADY APPROVED ===== -->
     <div id="screen-approved" class="screen screen-center">
         <div class="center-content">
-            <div class="already-icon">✅</div>
-            <h2 class="center-title">อนุมัติแล้ว</h2>
-            <p class="center-subtitle">ออเดอร์นี้ได้รับการอนุมัติไปแล้ว</p>
+            <div class="already-icon">โ…</div>
+            <h2 class="center-title">เธญเธเธธเธกเธฑเธ•เธดเนเธฅเนเธง</h2>
+            <p class="center-subtitle">เธญเธญเน€เธ”เธญเธฃเนเธเธตเนเนเธ”เนเธฃเธฑเธเธเธฒเธฃเธญเธเธธเธกเธฑเธ•เธดเนเธเนเธฅเนเธง</p>
             <div class="approved-summary-card">
                 <div class="approved-row">
-                    <span class="approved-label">รหัสออเดอร์</span>
-                    <span class="approved-value" id="approved-order-id">—</span>
+                    <span class="approved-label">เธฃเธซเธฑเธชเธญเธญเน€เธ”เธญเธฃเน</span>
+                    <span class="approved-value" id="approved-order-id">โ€”</span>
                 </div>
                 <div class="approved-row">
-                    <span class="approved-label">ค่าขนส่ง</span>
-                    <span class="approved-value" id="approved-shipping">—</span>
+                    <span class="approved-label">เธเนเธฒเธเธเธชเนเธ</span>
+                    <span class="approved-value" id="approved-shipping">โ€”</span>
                 </div>
                 <div class="approved-row approved-total-row">
-                    <span class="approved-label">ยอดรวม</span>
-                    <span class="approved-value approved-total" id="approved-total">—</span>
+                    <span class="approved-label">เธขเธญเธ”เธฃเธงเธก</span>
+                    <span class="approved-value approved-total" id="approved-total">โ€”</span>
                 </div>
             </div>
         </div>
@@ -275,59 +275,60 @@
                 <div class="success-ring success-ring-1"></div>
                 <div class="success-ring success-ring-2"></div>
             </div>
-            <h2 class="success-title">อนุมัติสำเร็จ!</h2>
-            <p class="success-subtitle">ระบบกำลังออกเอกสารและแจ้งเตือนสาขาอัตโนมัติ</p>
+            <h2 class="success-title">เธญเธเธธเธกเธฑเธ•เธดเธชเธณเน€เธฃเนเธ!</h2>
+            <p class="success-subtitle">เธฃเธฐเธเธเธเธณเธฅเธฑเธเธญเธญเธเน€เธญเธเธชเธฒเธฃเนเธฅเธฐเนเธเนเธเน€เธ•เธทเธญเธเธชเธฒเธเธฒเธญเธฑเธ•เนเธเธกเธฑเธ•เธด</p>
 
             <div class="success-summary-card">
                 <div class="success-summary-row">
-                    <span class="ss-label">รหัสออเดอร์</span>
-                    <span class="ss-value" id="success-order-id">—</span>
+                    <span class="ss-label">เธฃเธซเธฑเธชเธญเธญเน€เธ”เธญเธฃเน</span>
+                    <span class="ss-value" id="success-order-id">โ€”</span>
                 </div>
                 <div class="success-summary-row">
-                    <span class="ss-label">สาขา</span>
-                    <span class="ss-value" id="success-branch">—</span>
+                    <span class="ss-label">เธชเธฒเธเธฒ</span>
+                    <span class="ss-value" id="success-branch">โ€”</span>
                 </div>
                 <div class="success-summary-divider"></div>
                 <div class="success-summary-row">
-                    <span class="ss-label">ค่าวัตถุดิบ</span>
-                    <span class="ss-value" id="success-subtotal">—</span>
+                    <span class="ss-label">เธเนเธฒเธงเธฑเธ•เธ–เธธเธ”เธดเธ</span>
+                    <span class="ss-value" id="success-subtotal">โ€”</span>
                 </div>
                 <div class="success-summary-row">
-                    <span class="ss-label">ค่าขนส่ง</span>
-                    <span class="ss-value" id="success-shipping">—</span>
+                    <span class="ss-label">เธเนเธฒเธเธเธชเนเธ</span>
+                    <span class="ss-value" id="success-shipping">โ€”</span>
                 </div>
                 <div class="success-summary-row success-total-row">
-                    <span class="ss-label ss-label-total">ยอดรวมทั้งสิ้น</span>
-                    <span class="ss-value ss-total" id="success-grand-total">—</span>
+                    <span class="ss-label ss-label-total">เธขเธญเธ”เธฃเธงเธกเธ—เธฑเนเธเธชเธดเนเธ</span>
+                    <span class="ss-value ss-total" id="success-grand-total">โ€”</span>
                 </div>
             </div>
 
             <div class="auto-tasks">
-                <p class="auto-tasks-title">📬 ระบบดำเนินการอัตโนมัติ</p>
+                <p class="auto-tasks-title">๐“ฌ เธฃเธฐเธเธเธ”เธณเน€เธเธดเธเธเธฒเธฃเธญเธฑเธ•เนเธเธกเธฑเธ•เธด</p>
                 <div class="auto-task-item">
-                    <span class="auto-task-icon">📄</span>
-                    <span>ออกเอกสาร PDF ใบ PO</span>
+                    <span class="auto-task-icon">๐“</span>
+                    <span>เธญเธญเธเน€เธญเธเธชเธฒเธฃ PDF เนเธ PO</span>
                 </div>
                 <div class="auto-task-item">
-                    <span class="auto-task-icon">📊</span>
-                    <span>สร้างไฟล์ CSV สำหรับบัญชี</span>
+                    <span class="auto-task-icon">๐“</span>
+                    <span>เธชเธฃเนเธฒเธเนเธเธฅเน CSV เธชเธณเธซเธฃเธฑเธเธเธฑเธเธเธต</span>
                 </div>
                 <div class="auto-task-item">
-                    <span class="auto-task-icon">📧</span>
-                    <span>ส่ง Email ฝ่ายบัญชีพร้อมเอกสาร</span>
+                    <span class="auto-task-icon">๐“ง</span>
+                    <span>เธชเนเธ Email เธเนเธฒเธขเธเธฑเธเธเธตเธเธฃเนเธญเธกเน€เธญเธเธชเธฒเธฃ</span>
                 </div>
                 <div class="auto-task-item">
-                    <span class="auto-task-icon">💬</span>
-                    <span>แจ้งสาขาผ่าน LINE</span>
+                    <span class="auto-task-icon">๐’ฌ</span>
+                    <span>เนเธเนเธเธชเธฒเธเธฒเธเนเธฒเธ LINE</span>
                 </div>
             </div>
 
-            <button class="btn-approve btn-full btn-close" id="btn-close-liff">ปิดหน้าต่าง</button>
+            <button class="btn-approve btn-full btn-close" id="btn-close-liff">เธเธดเธ”เธซเธเนเธฒเธ•เนเธฒเธ</button>
         </div>
     </div>
 
     <!-- LINE LIFF SDK -->
     <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-    <script src="app.js?v=20260719-adjust-qty-delivery-note"></script>
+    <script src="app.js?v=20260722-payment-review"></script>
 </body>
 </html>
+
