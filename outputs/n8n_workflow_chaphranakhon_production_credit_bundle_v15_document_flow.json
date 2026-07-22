@@ -5,7 +5,9 @@
       "parameters": {
         "path": "get-user-profile",
         "responseMode": "lastNode",
-        "options": {}
+        "options": {
+          "allowedOrigins": "https://beginth.github.io"
+        }
       },
       "id": "661e9c2b-41a1-4624-980c-04e954351b39",
       "name": "GET /get-user-profile",
@@ -69,7 +71,9 @@
         "httpMethod": "POST",
         "path": "submit-order",
         "responseMode": "lastNode",
-        "options": {}
+        "options": {
+          "allowedOrigins": "https://beginth.github.io"
+        }
       },
       "id": "7914b36d-1e20-4032-b14a-d849211c9f89",
       "name": "POST /submit-order",
@@ -660,7 +664,9 @@
       "parameters": {
         "path": "get-order",
         "responseMode": "lastNode",
-        "options": {}
+        "options": {
+          "allowedOrigins": "https://beginth.github.io"
+        }
       },
       "id": "69ac270d-641d-4ef2-a4fd-9ed4ccb60cdc",
       "name": "GET /get-order",
@@ -724,7 +730,9 @@
         "httpMethod": "POST",
         "path": "admin-approve",
         "responseMode": "lastNode",
-        "options": {}
+        "options": {
+          "allowedOrigins": "https://beginth.github.io"
+        }
       },
       "id": "e85c28c0-10b3-4fb2-b67d-92775f39d1e6",
       "name": "POST /admin-approve",
@@ -1315,7 +1323,9 @@
       "parameters": {
         "path": "get-products",
         "responseMode": "lastNode",
-        "options": {}
+        "options": {
+          "allowedOrigins": "https://beginth.github.io"
+        }
       },
       "id": "4f7f5a7e-e59a-4bbd-8062-81eae8ab1a20",
       "name": "GET /get-products",
@@ -1632,7 +1642,9 @@
         "httpMethod": "GET",
         "path": "get-order-history",
         "responseMode": "responseNode",
-        "options": {}
+        "options": {
+          "allowedOrigins": "https://beginth.github.io"
+        }
       }
     },
     {
@@ -1680,7 +1692,7 @@
       "parameters": {
         "mode": "runOnceForAllItems",
         "language": "javaScript",
-        "jsCode": "\nfunction parseJson(value, fallback) { try { return value ? JSON.parse(value) : fallback; } catch { return fallback; } }\nconst uid = String($node['GET /get-order-history'].json.query?.uid || '').trim();\nif (!uid) throw new Error('uid is required');\nconst paymentLabel = (value) => { const key = String(value || '').trim().toLowerCase(); if (['credit pending','pending','unpaid'].includes(key)) return '\\u0e23\\u0e2d\\u0e0a\\u0e33\\u0e23\\u0e30\\u0e40\\u0e07\\u0e34\\u0e19'; if (key === 'submitted') return '\\u0e23\\u0e2d\\u0e15\\u0e23\\u0e27\\u0e08\\u0e2a\\u0e2d\\u0e1a\\u0e01\\u0e32\\u0e23\\u0e0a\\u0e33\\u0e23\\u0e30\\u0e40\\u0e07\\u0e34\\u0e19'; if (['verified','paid'].includes(key)) return '\\u0e0a\\u0e33\\u0e23\\u0e30\\u0e40\\u0e07\\u0e34\\u0e19\\u0e41\\u0e25\\u0e49\\u0e27'; if (key === 'rejected') return '\\u0e2b\\u0e25\\u0e31\\u0e01\\u0e10\\u0e32\\u0e19\\u0e01\\u0e32\\u0e23\\u0e0a\\u0e33\\u0e23\\u0e30\\u0e40\\u0e07\\u0e34\\u0e19\\u0e44\\u0e21\\u0e48\\u0e1c\\u0e48\\u0e32\\u0e19'; return '\\u0e22\\u0e31\\u0e07\\u0e44\\u0e21\\u0e48\\u0e0a\\u0e33\\u0e23\\u0e30\\u0e40\\u0e07\\u0e34\\u0e19'; };\nconst orders = $input.all().map(item => item.json)\n  .filter(row => String(row.LINE_UID || '').trim() === uid)\n  .map(row => ({\n    orderId: row.Order_ID || '', timestamp: row.Timestamp || '', status: row.Status || 'Pending',\n    totalAmount: Number(row.Total_Amount || 0), paymentStatus: paymentLabel(row.Payment_Status),\n    paymentSubmittedAt: row.Payment_Submitted_At || '', paymentProofUrl: row.Payment_Proof_URL || '',\n    pdfUrl: String(row.PO_PDF_URL || '').split(/\\n|,/).map(value => value.trim()).find(Boolean) || '',\n    adjustmentReason: row.Adjustment_Reason || '', orderDetails: parseJson(row.Order_Details, {}),\n  }))\n  .sort((a, b) => new Date(b.timestamp || 0) - new Date(a.timestamp || 0));\nreturn [{ json: { success: true, uid, orders } }];"
+        "jsCode": "\nfunction parseJson(value, fallback) { try { return value ? JSON.parse(value) : fallback; } catch { return fallback; } }\nconst uid = String($node['GET /get-order-history'].json.query?.uid || '').trim();\nif (!uid) throw new Error('uid is required');\nconst paymentLabel = (value) => { const key = String(value || '').trim().toLowerCase(); if (['credit pending','pending','unpaid'].includes(key)) return '\\u0e23\\u0e2d\\u0e0a\\u0e33\\u0e23\\u0e30\\u0e40\\u0e07\\u0e34\\u0e19'; if (key === 'submitted') return '\\u0e23\\u0e2d\\u0e15\\u0e23\\u0e27\\u0e08\\u0e2a\\u0e2d\\u0e1a\\u0e01\\u0e32\\u0e23\\u0e0a\\u0e33\\u0e23\\u0e30\\u0e40\\u0e07\\u0e34\\u0e19'; if (['verified','paid'].includes(key)) return '\\u0e0a\\u0e33\\u0e23\\u0e30\\u0e40\\u0e07\\u0e34\\u0e19\\u0e41\\u0e25\\u0e49\\u0e27'; if (key === 'rejected') return '\\u0e2b\\u0e25\\u0e31\\u0e01\\u0e10\\u0e32\\u0e19\\u0e01\\u0e32\\u0e23\\u0e0a\\u0e33\\u0e23\\u0e30\\u0e40\\u0e07\\u0e34\\u0e19\\u0e44\\u0e21\\u0e48\\u0e1c\\u0e48\\u0e32\\u0e19'; return '\\u0e22\\u0e31\\u0e07\\u0e44\\u0e21\\u0e48\\u0e0a\\u0e33\\u0e23\\u0e30\\u0e40\\u0e07\\u0e34\\u0e19'; };\nconst orders = $input.all().map(item => item.json)\n  .filter(row => String(row.LINE_UID || '').trim() === uid)\n  .map(row => ({\n    orderId: row.Order_ID || '', timestamp: row.Timestamp || '', status: row.Status || 'Pending',\n    totalAmount: Number(row.Total_Amount || 0), paymentStatus: paymentLabel(row.Payment_Status), paymentStatusRaw: row.Payment_Status || '',\n    paymentSubmittedAt: row.Payment_Submitted_At || '', paymentProofUrl: row.Payment_Proof_URL || '',\n    pdfUrl: String(row.PO_PDF_URL || '').split(/\\n|,/).map(value => value.trim()).find(Boolean) || '',\n    adjustmentReason: row.Adjustment_Reason || '', orderDetails: parseJson(row.Order_Details, {}),\n  }))\n  .sort((a, b) => new Date(b.timestamp || 0) - new Date(a.timestamp || 0));\nreturn [{ json: { success: true, uid, orders } }];"
       }
     },
     {
@@ -1711,7 +1723,9 @@
         "httpMethod": "POST",
         "path": "submit-payment-proof",
         "responseMode": "responseNode",
-        "options": {}
+        "options": {
+          "allowedOrigins": "https://beginth.github.io"
+        }
       }
     },
     {
@@ -1759,7 +1773,7 @@
       "parameters": {
         "mode": "runOnceForAllItems",
         "language": "javaScript",
-        "jsCode": "\nconst body = $node['POST /submit-payment-proof'].json.body || $node['POST /submit-payment-proof'].json;\nconst uid = String(body.lineUid || body.uid || '').trim();\nconst orderId = String(body.orderId || '').trim();\nconst amount = Number(body.amount || 0);\nconst transferAt = body.transferAt || '';\nconst note = String(body.note || '').trim();\nconst proofDataUrl = String(body.proofDataUrl || '');\nif (!uid || !orderId || !Number.isFinite(amount) || amount <= 0 || !transferAt || !proofDataUrl) throw new Error('Missing payment proof fields');\nconst order = $input.all().map(item => item.json).find(row => String(row.Order_ID || '').trim() === orderId && String(row.LINE_UID || '').trim() === uid);\nif (!order) throw new Error('Order not found or does not belong to this user');\nif (String(order.Status || '').toLowerCase() !== 'approved') throw new Error('Only approved orders can submit payment proof');\nconst currentPayment = String(order.Payment_Status || '').toLowerCase();\nif (['submitted', 'verified', 'paid'].includes(currentPayment)) throw new Error('Payment proof was already submitted for this order');\nconst match = proofDataUrl.match(/^data:(image\\/(?:jpeg|png|webp));base64,([A-Za-z0-9+/=]+)$/);\nif (!match) throw new Error('Only JPG, PNG, or WEBP proof images are accepted');\nconst bytes = Math.floor(match[2].length * 0.75);\nif (bytes > 5 * 1024 * 1024) throw new Error('Proof image must be 5 MB or smaller');\nconst ext = match[1] === 'image/png' ? 'png' : match[1] === 'image/webp' ? 'webp' : 'jpg';\nconst safeName = 'PAYMENT_' + orderId.replace(/[^A-Za-z0-9_-]/g, '_') + '_' + Date.now() + '.' + ext;\nreturn [{ json: { orderId, lineUid: uid, amount, transferAt, note, submittedAt: new Date().toISOString(), proofFileName: safeName }, binary: { data: { data: match[2], mimeType: match[1], fileName: safeName, fileExtension: ext } } }];"
+        "jsCode": "\nconst rawBody = $node['POST /submit-payment-proof'].json.body || $node['POST /submit-payment-proof'].json;\nconst body = typeof rawBody === 'string' ? JSON.parse(rawBody) : rawBody;\nconst uid = String(body.lineUid || body.uid || '').trim();\nconst orderId = String(body.orderId || '').trim();\nconst amount = Number(body.amount || 0);\nconst transferAt = body.transferAt || '';\nconst note = String(body.note || '').trim();\nconst proofDataUrl = String(body.proofDataUrl || '');\nif (!uid || !orderId || !Number.isFinite(amount) || amount <= 0 || !transferAt || !proofDataUrl) throw new Error('Missing payment proof fields');\nconst order = $input.all().map(item => item.json).find(row => String(row.Order_ID || '').trim() === orderId && String(row.LINE_UID || '').trim() === uid);\nif (!order) throw new Error('Order not found or does not belong to this user');\nif (String(order.Status || '').toLowerCase() !== 'approved') throw new Error('Only approved orders can submit payment proof');\nconst currentPayment = String(order.Payment_Status || '').toLowerCase();\nif (['submitted', 'verified', 'paid'].includes(currentPayment)) throw new Error('Payment proof was already submitted for this order');\nconst match = proofDataUrl.match(/^data:(image\\/(?:jpeg|png|webp));base64,([A-Za-z0-9+/=]+)$/);\nif (!match) throw new Error('Only JPG, PNG, or WEBP proof images are accepted');\nconst bytes = Math.floor(match[2].length * 0.75);\nif (bytes > 5 * 1024 * 1024) throw new Error('Proof image must be 5 MB or smaller');\nconst ext = match[1] === 'image/png' ? 'png' : match[1] === 'image/webp' ? 'webp' : 'jpg';\nconst safeName = 'PAYMENT_' + orderId.replace(/[^A-Za-z0-9_-]/g, '_') + '_' + Date.now() + '.' + ext;\nreturn [{ json: { orderId, lineUid: uid, amount, transferAt, note, submittedAt: new Date().toISOString(), proofFileName: safeName }, binary: { data: { data: match[2], mimeType: match[1], fileName: safeName, fileExtension: ext } } }];"
       }
     },
     {
@@ -2508,7 +2522,9 @@
         "httpMethod": "POST",
         "path": "admin-verify-payment",
         "responseMode": "responseNode",
-        "options": {}
+        "options": {
+          "allowedOrigins": "https://beginth.github.io"
+        }
       },
       "id": "v15-13"
     },
@@ -3351,7 +3367,9 @@
         "httpMethod": "POST",
         "path": "admin-reject-payment",
         "responseMode": "responseNode",
-        "options": {}
+        "options": {
+          "allowedOrigins": "https://beginth.github.io"
+        }
       },
       "id": "d1a83182-8234-4c7d-86fb-d23c3234bffd"
     },
