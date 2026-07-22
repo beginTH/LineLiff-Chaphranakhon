@@ -154,7 +154,17 @@ function getLiffStateParam(key) {
     const raw = getQueryParam('liff.state');
     if (!raw) return '';
     try {
-        const decoded = decodeURIComponent(raw);
+        let decoded = raw;
+        for (let i = 0; i < 2; i += 1) {
+            const next = decodeURIComponent(decoded);
+            if (next === decoded) break;
+            decoded = next;
+        }
+        decoded = decoded.replace(/^[?#]/, '');
+        if (decoded.startsWith('{')) {
+            const state = JSON.parse(decoded);
+            return state[key] || '';
+        }
         return new URLSearchParams(decoded).get(key) || '';
     } catch (err) {
         console.warn('[Admin] Cannot parse liff.state:', err);
