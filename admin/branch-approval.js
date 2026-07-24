@@ -1,5 +1,5 @@
 'use strict';
-const CONFIG={LIFF_ID:'2010570929-BJxo68XQ',BASE:'https://n8n.n8n-kokujapan.org',GET:'/webhook/get-branch-application',REVIEW:'/webhook/review-branch-application'};
+const CONFIG={LIFF_ID:'2010570929-NSJVdHLi',BASE:'https://n8n.n8n-kokujapan.org',GET:'/webhook/get-branch-application',REVIEW:'/webhook/review-branch-application'};
 const $=s=>document.querySelector(s); let app,admin;
 function error(t){const n=$('#notice');n.textContent=t;n.classList.remove('hidden')}
 function q(k){return new URLSearchParams(location.search).get(k)}
