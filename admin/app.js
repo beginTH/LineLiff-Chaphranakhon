@@ -20,6 +20,12 @@
 // =====================================================
 // ⚙️ CONFIGURATION
 // =====================================================
+const adminLiffState = new URLSearchParams(window.location.search).get('liff.state') || '';
+const decodedAdminLiffState = decodeURIComponent(adminLiffState);
+if (decodedAdminLiffState.startsWith('/branch-approval.html')) {
+    const approvalQuery = decodedAdminLiffState.split('?')[1] || '';
+    window.location.replace('branch-approval.html?' + approvalQuery);
+}
 const CONFIG = {
     LIFF_ID:      '2010570929-BJxo68XQ',                    // ✅ LIFF ID: จัดการออเดอร์ (Admin)
     N8N_BASE_URL: 'https://n8n.n8n-kokujapan.org',          // ✅ n8n instance URL
