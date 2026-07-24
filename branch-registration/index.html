@@ -39,8 +39,8 @@
         <section class="card">
           <h2>ที่อยู่สาขา</h2>
           <label>ที่อยู่ <em>*</em><textarea name="address" required rows="3" placeholder="เลขที่ / ถนน / ซอย"></textarea></label>
-          <div class="two-col"><label>แขวง / ตำบล <em>*</em><input name="subdistrict" required></label><label>เขต / อำเภอ <em>*</em><input name="district" required></label></div>
-          <div class="two-col"><label>จังหวัด <em>*</em><input name="province" required></label><label>รหัสไปรษณีย์ <em>*</em><input name="postalCode" required inputmode="numeric" maxlength="5" placeholder="10400"></label></div>
+          <div class="two-col"><label>จังหวัด <em>*</em><select id="province" name="province" required disabled><option value="">กำลังโหลดข้อมูล…</option></select></label><label>เขต / อำเภอ <em>*</em><select id="district" name="district" required disabled><option value="">เลือกจังหวัดก่อน</option></select></label></div>
+          <div class="two-col"><label>แขวง / ตำบล <em>*</em><select id="subdistrict" name="subdistrict" required disabled><option value="">เลือกเขต / อำเภอก่อน</option></select></label><label>รหัสไปรษณีย์ <em>*</em><input id="postal-code" name="postalCode" required readonly placeholder="เลือกแขวง / ตำบล"></label></div>
           <label>ลิงก์ Google Maps <small>(ถ้ามี)</small><input name="googleMapUrl" type="url" placeholder="https://maps.google.com/…"></label>
           <label>เลขประจำตัวผู้เสียภาษี <small>(ถ้ามี)</small><input name="taxId" inputmode="numeric" maxlength="13"></label>
         </section>
