@@ -2,7 +2,7 @@
 
 // เปลี่ยน LIFF_ID หลังสร้าง LIFF app ใหม่สำหรับ "สมัครบัญชีสาขา" ใน LINE Developers
 const CONFIG = {
-  LIFF_ID: 'REPLACE_WITH_BRANCH_REGISTRATION_LIFF_ID',
+  LIFF_ID: '2010570929-GTbRonBm',
   N8N_BASE_URL: 'https://n8n.n8n-kokujapan.org',
   SUBMIT_PATH: '/webhook/submit-branch-application',
 };
