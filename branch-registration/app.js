@@ -82,6 +82,12 @@ $('#application-form').addEventListener('submit', async (event) => {
   const form = event.currentTarget;
   if (!form.reportValidity()) return;
   const data = Object.fromEntries(new FormData(form).entries());
+  const selectedAddress = geography.find((row) => String(row.subdistrictCode) === String(data.subdistrict));
+  if (!selectedAddress) return showNotice('กรุณาเลือกแขวง / ตำบลจากรายการ');
+  data.province = selectedAddress.provinceNameTh;
+  data.district = selectedAddress.districtNameTh;
+  data.subdistrict = selectedAddress.subdistrictNameTh;
+  data.postalCode = String(selectedAddress.postalCode).padStart(5, '0');
   const tel = clean(data.tel).replace(/[\s-]/g, '');
   if (!/^\+?[0-9]{8,15}$/.test(tel)) return showNotice('กรุณากรอกเบอร์โทรศัพท์ให้ถูกต้อง');
   const button = $('#submit');
