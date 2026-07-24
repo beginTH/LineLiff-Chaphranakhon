@@ -1,0 +1,10 @@
+'use strict';
+const CONFIG={LIFF_ID:'2010570929-BJxo68XQ',BASE:'https://n8n.n8n-kokujapan.org',GET:'/webhook/get-branch-application',REVIEW:'/webhook/review-branch-application'};
+const $=s=>document.querySelector(s); let app,admin;
+function error(t){const n=$('#notice');n.textContent=t;n.classList.remove('hidden')}
+function q(k){return new URLSearchParams(location.search).get(k)}
+async function api(url,opts){const r=await fetch(url,opts);const j=await r.json().catch(()=>({}));if(!r.ok||j.success===false)throw Error(j.message||'ไม่สามารถดำเนินการได้');return j}
+function show(a){app=a;$('#id').textContent=a.Application_ID;$('#branch').textContent=a.Branch_Name;$('#owner').textContent=`${a.Owner_Name} | ${a.Tel}`;$('#address').textContent=[a.Address,a.Subdistrict,a.District,a.Province,a.Postal_Code].filter(Boolean).join(' ');$('#submitted').textContent=a.Submitted_At||'-';$('#sub').textContent='ตรวจสอบข้อมูลก่อนอนุมัติ';$('#card').classList.remove('hidden')}
+async function review(action){const reason=$('#reason').value.trim();if(action==='Rejected'&&!reason)return error('กรุณาระบุเหตุผลที่ปฏิเสธ');if(!confirm(action==='Approved'?'ยืนยันอนุมัติสาขานี้?':'ยืนยันปฏิเสธคำขอนี้?'))return;try{await api(CONFIG.BASE+CONFIG.REVIEW,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({applicationId:app.Application_ID,action,reason,adminUid:admin.userId,adminName:admin.displayName})});$('#card').innerHTML='<h2>บันทึกผลเรียบร้อย</h2><p>ระบบได้อัปเดตสถานะคำขอแล้ว</p>'}catch(e){error(e.message)}}
+(async()=>{try{await liff.init({liffId:CONFIG.LIFF_ID});if(!liff.isLoggedIn()){liff.login();return}admin=await liff.getProfile();const id=q('applicationId');if(!id)throw Error('ไม่พบเลขที่คำขอ');const data=await api(`${CONFIG.BASE}${CONFIG.GET}?applicationId=${encodeURIComponent(id)}`);show(data.application||data)}catch(e){$('#sub').textContent='';error(e.message)}})();
+$('#approve').onclick=()=>review('Approved');$('#reject').onclick=()=>review('Rejected');
