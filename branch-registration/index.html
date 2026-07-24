@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>สมัครบัญชีสาขา | ชาพระนคร</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main class="app-shell">
+    <section id="loading" class="loading-card"><span class="spinner"></span><p>กำลังเชื่อมต่อ LINE…</p></section>
+
+    <section id="app" hidden>
+      <header class="hero">
+        <span class="brand-mark">ช</span>
+        <div><h1>สมัครบัญชีสาขา</h1><p>กรอกข้อมูลเพื่อส่งให้ผู้ดูแลตรวจสอบ</p></div>
+      </header>
+
+      <div id="notice" class="notice" hidden></div>
+      <form id="application-form" novalidate>
+        <section class="card user-card">
+          <p class="eyebrow">ผู้สมัครผ่าน LINE</p>
+          <div class="user-row"><img id="picture" alt="รูปโปรไฟล์" hidden><div><strong id="line-name">-</strong><small id="line-uid">-</small></div></div>
+        </section>
+
+        <section class="card">
+          <h2>ข้อมูลสาขา</h2>
+          <label>ชื่อสาขา <em>*</em><input name="branchName" required maxlength="100" placeholder="เช่น ชาพระนคร สาขารัชดา"></label>
+          <label>ชื่อเจ้าของ / ผู้ติดต่อหลัก <em>*</em><input name="ownerName" required maxlength="100" autocomplete="name"></label>
+          <div class="two-col">
+            <label>เบอร์โทรศัพท์ <em>*</em><input name="tel" required inputmode="tel" autocomplete="tel" placeholder="0812345678"></label>
+            <label>อีเมล <small>(ถ้ามี)</small><input name="email" type="email" autocomplete="email"></label>
+          </div>
+        </section>
+
+        <section class="card">
+          <h2>ที่อยู่สาขา</h2>
+          <label>ที่อยู่ <em>*</em><textarea name="address" required rows="3" placeholder="เลขที่ / ถนน / ซอย"></textarea></label>
+          <div class="two-col"><label>แขวง / ตำบล <em>*</em><input name="subdistrict" required></label><label>เขต / อำเภอ <em>*</em><input name="district" required></label></div>
+          <div class="two-col"><label>จังหวัด <em>*</em><input name="province" required></label><label>รหัสไปรษณีย์ <em>*</em><input name="postalCode" required inputmode="numeric" maxlength="5" placeholder="10400"></label></div>
+          <label>ลิงก์ Google Maps <small>(ถ้ามี)</small><input name="googleMapUrl" type="url" placeholder="https://maps.google.com/…"></label>
+          <label>เลขประจำตัวผู้เสียภาษี <small>(ถ้ามี)</small><input name="taxId" inputmode="numeric" maxlength="13"></label>
+        </section>
+        <p class="hint">ข้อมูลจะมีสถานะ <strong>Pending</strong> จนกว่าผู้ดูแลจะอนุมัติ</p>
+        <button id="submit" class="submit" type="submit">ส่งคำขอสมัครสาขา</button>
+      </form>
+    </section>
+  </main>
+  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
