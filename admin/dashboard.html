@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Chaphranakhon Admin Dashboard</title>
+  <link rel="stylesheet" href="style.css">
+  <style>body{background:#f6f7fb}.dashboard{max-width:1100px;margin:0 auto;padding:24px}.dash-nav{display:flex;gap:8px;flex-wrap:wrap;margin:18px 0}.dash-nav button{border:0;border-radius:999px;padding:10px 16px;background:#e8eaf1;cursor:pointer}.dash-nav button.active{background:#123b2a;color:#fff}.dash-panel{display:none;background:#fff;border-radius:16px;padding:18px;box-shadow:0 4px 18px #14213d12}.dash-panel.active{display:block}.dash-table{width:100%;border-collapse:collapse}.dash-table th,.dash-table td{padding:10px;border-bottom:1px solid #eee;text-align:left;font-size:14px}.dash-table th{color:#667085}.dash-error{color:#b42318;padding:12px 0}.muted{color:#667085}</style>
+</head>
+<body>
+  <main class="dashboard">
+    <h1>แดชบอร์ดผู้ดูแล</h1><p class="muted" id="who">กำลังตรวจสอบสิทธิ์...</p>
+    <nav class="dash-nav" aria-label="เมนูผู้ดูแล"><button data-view="orders" class="active">ประวัติ Order</button><button data-view="payments">รายการชำระเงิน</button><button data-view="products">วัตถุดิบ</button><button data-view="users">สมาชิก</button></nav>
+    <section class="dash-panel active" id="panel-orders"><h2>ประวัติ Order</h2><div id="orders"></div></section>
+    <section class="dash-panel" id="panel-payments"><h2>รายการชำระเงิน</h2><div id="payments"></div></section>
+    <section class="dash-panel" id="panel-products"><h2>รายการวัตถุดิบ</h2><div id="products"></div></section>
+    <section class="dash-panel" id="panel-users"><h2>สมาชิก</h2><div id="users"></div></section>
+  </main>
+  <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script><script src="dashboard.js?v=20260725"></script>
+</body>
+</html>
