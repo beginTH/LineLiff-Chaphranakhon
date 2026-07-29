@@ -330,7 +330,21 @@
     <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <script>
     (function () {
-        const view = new URLSearchParams(location.search).get('view');
+        const params = new URLSearchParams(location.search);
+        let view = params.get('view');
+        // LINE LIFF may wrap custom query parameters inside liff.state.
+        if (!view) {
+            let state = params.get('liff.state') || '';
+            for (let i = 0; i < 2; i += 1) {
+                try {
+                    const decoded = decodeURIComponent(state);
+                    if (decoded === state) break;
+                    state = decoded;
+                } catch (_) { break; }
+            }
+            const stateQuery = state.includes('?') ? state.slice(state.indexOf('?') + 1) : state.replace(/^\?/, '');
+            view = new URLSearchParams(stateQuery).get('view');
+        }
         const allowed = ['orders', 'payments', 'products', 'users'];
         if (allowed.includes(view)) {
             location.replace('dashboard.html?view=' + encodeURIComponent(view));
