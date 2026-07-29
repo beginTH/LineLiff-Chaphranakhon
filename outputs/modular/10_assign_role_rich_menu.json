@@ -11,7 +11,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const body = $json.body || $json;\nconst LINE_UID = String(body.lineUid || body.LINE_UID || body.uid || '').trim();\nconst role = String(body.role || body.Role || 'customer').trim().toLowerCase();\nif (!LINE_UID) throw new Error('Missing LINE user ID');\nconst menuByRole = {\n  admin: 'richmenu-b964646053223519d82c60f15aaf2b5e',\n  superadmin: 'richmenu-b964646053223519d82c60f15aaf2b5e',\n  branch: 'richmenu-9e24dce8c6b1bc140f5d3f0c4c05ee75',\n  owner: 'richmenu-9e24dce8c6b1bc140f5d3f0c4c05ee75'\n};\nconst richMenuId = menuByRole[role] || '';\nreturn [{ json: { LINE_UID, role, richMenuId, hasRoleMenu: Boolean(richMenuId) } }];"
+        "jsCode": "const body = $json.body || $json;\nconst LINE_UID = String(body.lineUid || body.LINE_UID || body.uid || '').trim();\nconst role = String(body.role || body.Role || 'customer').trim().toLowerCase();\nif (!LINE_UID) throw new Error('Missing LINE user ID');\nconst menuByRole = {\n  admin: 'richmenu-f2b991c0d0009f560f38ef78b034c606',\n  superadmin: 'richmenu-f2b991c0d0009f560f38ef78b034c606',\n  branch: 'richmenu-9e24dce8c6b1bc140f5d3f0c4c05ee75',\n  owner: 'richmenu-9e24dce8c6b1bc140f5d3f0c4c05ee75'\n};\nconst richMenuId = menuByRole[role] || '';\nreturn [{ json: { LINE_UID, role, richMenuId, hasRoleMenu: Boolean(richMenuId) } }];"
       },
       "id": "resolve-role-menu",
       "name": "Resolve Role Rich Menu",

@@ -1,0 +1,94 @@
+{
+  "name": "12 - Reconcile Role Rich Menus (Admins + Users)",
+  "active": false,
+  "settings": {},
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "manual-trigger",
+      "name": "When clicking Execute workflow",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [0, 260]
+    },
+    {
+      "parameters": {
+        "documentId": {"__rl": true, "value": "1aKwY4KOo8uGCRrHASD539Habt5Obam8meacRO-ir0Ks", "mode": "list", "cachedResultName": "Chaphranakhon_DB"},
+        "sheetName": {"__rl": true, "value": "Admins", "mode": "name", "cachedResultName": "Admins"},
+        "options": {}
+      },
+      "id": "read-admins",
+      "name": "Read Active Admins",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [220, 260],
+      "credentials": {"googleSheetsOAuth2Api": {"id": "ZPODlcDmX45WFVuM", "name": "Google Sheets account 2"}}
+    },
+    {
+      "parameters": {
+        "documentId": {"__rl": true, "value": "1aKwY4KOo8uGCRrHASD539Habt5Obam8meacRO-ir0Ks", "mode": "list", "cachedResultName": "Chaphranakhon_DB"},
+        "sheetName": {"__rl": true, "value": "Users", "mode": "name", "cachedResultName": "Users"},
+        "options": {}
+      },
+      "id": "read-users",
+      "name": "Read Users",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [440, 260],
+      "credentials": {"googleSheetsOAuth2Api": {"id": "ZPODlcDmX45WFVuM", "name": "Google Sheets account 2"}}
+    },
+    {
+      "parameters": {
+        "jsCode": "const adminMenu = 'richmenu-f2b991c0d0009f560f38ef78b034c606';\nconst branchMenu = 'richmenu-9e24dce8c6b1bc140f5d3f0c4c05ee75';\nconst admins = $items('Read Active Admins').map(i => i.json);\nconst users = $input.all().map(i => i.json);\nconst active = v => ['active','true','1','yes'].includes(String(v ?? '').trim().toLowerCase());\nconst rows = new Map();\nfor (const row of users) {\n  const uid = String(row.LINE_UID || row.lineUid || '').trim();\n  if (uid) rows.set(uid, { uid, role: String(row.Role || '').trim().toLowerCase(), blocked: String(row.Friend_Status || '').trim().toLowerCase() === 'blocked' });\n}\nfor (const row of admins) {\n  const uid = String(row.LINE_UID || row.lineUid || '').trim();\n  if (uid && active(row.Status)) rows.set(uid, { uid, role: 'admin', blocked: false });\n}\nreturn [...rows.values()].map(row => {\n  const menu = row.blocked ? '' : (row.role === 'admin' || row.role === 'superadmin' || row.role === 'approver' || row.role === 'owner' ? adminMenu : row.role === 'branch' ? branchMenu : '');\n  return { json: { LINE_UID: row.uid, action: menu ? 'link' : 'unlink', richMenuId: menu, role: row.role || 'customer' } };\n});"
+      },
+      "id": "build-actions",
+      "name": "Build Role Menu Actions",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [680, 260]
+    },
+    {
+      "parameters": {"conditions": {"options": {"caseSensitive": true, "leftValue": "", "typeValidation": "strict", "version": 2}, "conditions": [{"leftValue": "={{ $json.action }}", "rightValue": "link", "operator": {"type": "string", "operation": "equals"}}], "combinator": "and"}, "options": {}},
+      "id": "is-link",
+      "name": "Link or Unlink?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [900, 260]
+    },
+    {
+      "parameters": {"method": "POST", "url": "=https://api.line.me/v2/bot/user/{{ $json.LINE_UID }}/richmenu/{{ $json.richMenuId }}", "authentication": "genericCredentialType", "genericAuthType": "httpHeaderAuth", "options": {}},
+      "id": "link-menu",
+      "name": "Link Role Rich Menu",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1140, 180],
+      "credentials": {"httpHeaderAuth": {"id": "", "name": "LINE Messaging API rkitja2523 HeaderAuth"}}
+    },
+    {
+      "parameters": {"method": "DELETE", "url": "=https://api.line.me/v2/bot/user/{{ $json.LINE_UID }}/richmenu", "authentication": "genericCredentialType", "genericAuthType": "httpHeaderAuth", "options": {}},
+      "id": "unlink-menu",
+      "name": "Return User to Default Rich Menu",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1140, 340],
+      "credentials": {"httpHeaderAuth": {"id": "", "name": "LINE Messaging API rkitja2523 HeaderAuth"}}
+    },
+    {
+      "parameters": {"jsCode": "return $input.all().map(i => ({ json: { success: true, LINE_UID: i.json.LINE_UID, action: i.json.action, role: i.json.role, richMenuId: i.json.richMenuId || null } }));"},
+      "id": "show-result",
+      "name": "Show Reconcile Result",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1380, 260]
+    }
+  ],
+  "connections": {
+    "When clicking Execute workflow": {"main": [[{"node": "Read Active Admins", "type": "main", "index": 0}]]},
+    "Read Active Admins": {"main": [[{"node": "Read Users", "type": "main", "index": 0}]]},
+    "Read Users": {"main": [[{"node": "Build Role Menu Actions", "type": "main", "index": 0}]]},
+    "Build Role Menu Actions": {"main": [[{"node": "Link or Unlink?", "type": "main", "index": 0}]]},
+    "Link or Unlink?": {"main": [[{"node": "Link Role Rich Menu", "type": "main", "index": 0}], [{"node": "Return User to Default Rich Menu", "type": "main", "index": 0}]]},
+    "Link Role Rich Menu": {"main": [[{"node": "Show Reconcile Result", "type": "main", "index": 0}]]},
+    "Return User to Default Rich Menu": {"main": [[{"node": "Show Reconcile Result", "type": "main", "index": 0}]]}
+  }
+}
