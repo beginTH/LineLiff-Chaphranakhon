@@ -328,7 +328,15 @@
 
     <!-- LINE LIFF SDK -->
     <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-    <script src="app.js?v=20260724-branch-approval-route"></script>
+    <script>
+    (function () {
+        const view = new URLSearchParams(location.search).get('view');
+        const allowed = ['orders', 'payments', 'products', 'users'];
+        if (allowed.includes(view)) {
+            location.replace('dashboard.html?view=' + encodeURIComponent(view));
+        }
+    }());
+    </script>    <script src="app.js?v=20260724-branch-approval-route"></script>
 </body>
 </html>
 
