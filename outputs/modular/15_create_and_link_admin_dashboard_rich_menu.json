@@ -1,18 +1,351 @@
 {
-  "name": "15 - Create and Link Admin Dashboard Rich Menu",
-  "active": false,
-  "settings": {},
-  "nodes": [
-    {"parameters":{},"id":"manual-trigger","name":"When clicking Execute workflow","type":"n8n-nodes-base.manualTrigger","typeVersion":1,"position":[0,260]},
-    {"parameters":{"jsCode":"const base='https://beginth.github.io/LineLiff-Chaphranakhon/admin/dashboard.html'; return [{json:{menu:{size:{width:2500,height:1686},selected:false,name:'Chaphranakhon - Admin Dashboard',chatBarText:'Admin Menu',areas:[{bounds:{x:0,y:0,width:1250,height:843},action:{type:'uri',uri:base.replace('/dashboard.html','/orders.html')}},{bounds:{x:1250,y:0,width:1250,height:843},action:{type:'uri',uri:base.replace('/dashboard.html','/payments.html')}},{bounds:{x:0,y:843,width:1250,height:843},action:{type:'uri',uri:base.replace('/dashboard.html','/inventory.html')}},{bounds:{x:1250,y:843,width:1250,height:843},action:{type:'uri',uri:base.replace('/dashboard.html','/members.html')}}]}}}];"},"id":"build-menu","name":"Build Admin Separate Pages Rich Menu","type":"n8n-nodes-base.code","typeVersion":2,"position":[220,260]},
-    {"parameters":{"method":"POST","url":"https://api.line.me/v2/bot/richmenu","authentication":"genericCredentialType","genericAuthType":"httpHeaderAuth","sendBody":true,"contentType":"json","specifyBody":"json","jsonBody":"={{ JSON.stringify($json.menu) }}","options":{}},"id":"create-menu","name":"Create New Admin Dashboard Menu","type":"n8n-nodes-base.httpRequest","typeVersion":4.2,"position":[440,260],"notesInFlow":true,"notes":"เลือก Header Auth credential เดิม: LINE Messaging API rkitja2523 HeaderAuth"},
-    {"parameters":{"jsCode":"const id=String($json.richMenuId||'').trim(); if(!id) throw new Error('LINE did not return richMenuId'); return [{json:{richMenuId:id,imageUrl:'https://beginth.github.io/LineLiff-Chaphranakhon/assets/rich-menu/rich-menu-admin-line.jpg'}}];"},"id":"prepare-upload","name":"Prepare Admin Menu Upload","type":"n8n-nodes-base.code","typeVersion":2,"position":[660,260]},
-    {"parameters":{"url":"={{ $json.imageUrl }}","responseFormat":"file","options":{}},"id":"download-image","name":"Download Admin Menu Image","type":"n8n-nodes-base.httpRequest","typeVersion":4.2,"position":[880,260]},
-    {"parameters":{"method":"POST","url":"=https://api-data.line.me/v2/bot/richmenu/{{ $('Prepare Admin Menu Upload').item.json.richMenuId }}/content","authentication":"genericCredentialType","genericAuthType":"httpHeaderAuth","sendBody":true,"contentType":"binaryData","inputDataFieldName":"data","options":{}},"id":"upload-image","name":"Upload Admin Menu Image","type":"n8n-nodes-base.httpRequest","typeVersion":4.2,"position":[1100,260],"notesInFlow":true,"notes":"เลือก Header Auth credential เดิม: LINE Messaging API rkitja2523 HeaderAuth"},
-    {"parameters":{"documentId":{"__rl":true,"value":"1aKwY4KOo8uGCRrHASD539Habt5Obam8meacRO-ir0Ks","mode":"list","cachedResultName":"Chaphranakhon_DB"},"sheetName":{"__rl":true,"value":"Admins","mode":"name","cachedResultName":"Admins"},"options":{}},"id":"read-admins","name":"Read Active Admins","type":"n8n-nodes-base.googleSheets","typeVersion":4,"position":[1320,260],"credentials":{"googleSheetsOAuth2Api":{"id":"ZPODlcDmX45WFVuM","name":"Google Sheets account 2"}}},
-    {"parameters":{"jsCode":"const menuId=String($node['Prepare Admin Menu Upload'].json.richMenuId||'').trim(); return $input.all().map(i=>i.json).filter(a=>String(a.LINE_UID||'').trim()&&String(a.Status||'').trim().toLowerCase()==='active').map(a=>({json:{LINE_UID:String(a.LINE_UID).trim(),richMenuId:menuId}}));"},"id":"build-links","name":"Build Active Admin Links","type":"n8n-nodes-base.code","typeVersion":2,"position":[1540,260]},
-    {"parameters":{"method":"POST","url":"=https://api.line.me/v2/bot/user/{{ $json.LINE_UID }}/richmenu/{{ $json.richMenuId }}","authentication":"genericCredentialType","genericAuthType":"httpHeaderAuth","options":{}},"id":"link-admins","name":"Link Menu to Active Admins","type":"n8n-nodes-base.httpRequest","typeVersion":4.2,"position":[1760,260],"notesInFlow":true,"notes":"เลือก Header Auth credential เดิม: LINE Messaging API rkitja2523 HeaderAuth"},
-    {"parameters":{"jsCode":"return [{json:{success:true,richMenuId:$node['Prepare Admin Menu Upload'].json.richMenuId,message:'Created, uploaded and linked Admin Dashboard Rich Menu'}}];"},"id":"result","name":"Show Result","type":"n8n-nodes-base.code","typeVersion":2,"position":[1980,260]}
-  ],
-  "connections":{"When clicking Execute workflow":{"main":[[{"node":"Build Admin Separate Pages Rich Menu","type":"main","index":0}]]},"Build Admin Separate Pages Rich Menu":{"main":[[{"node":"Create New Admin Dashboard Menu","type":"main","index":0}]]},"Create New Admin Dashboard Menu":{"main":[[{"node":"Prepare Admin Menu Upload","type":"main","index":0}]]},"Prepare Admin Menu Upload":{"main":[[{"node":"Download Admin Menu Image","type":"main","index":0}]]},"Download Admin Menu Image":{"main":[[{"node":"Upload Admin Menu Image","type":"main","index":0}]]},"Upload Admin Menu Image":{"main":[[{"node":"Read Active Admins","type":"main","index":0}]]},"Read Active Admins":{"main":[[{"node":"Build Active Admin Links","type":"main","index":0}]]},"Build Active Admin Links":{"main":[[{"node":"Link Menu to Active Admins","type":"main","index":0}]]},"Link Menu to Active Admins":{"main":[[{"node":"Show Result","type":"main","index":0}]]}}
+    "name":  "15 - Create, Reset and Link Admin Dashboard Rich Menu",
+    "active":  false,
+    "settings":  {
+
+                 },
+    "nodes":  [
+                  {
+                      "parameters":  {
+
+                                     },
+                      "id":  "manual-trigger",
+                      "name":  "When clicking Execute workflow",
+                      "type":  "n8n-nodes-base.manualTrigger",
+                      "typeVersion":  1,
+                      "position":  [
+                                       0,
+                                       260
+                                   ]
+                  },
+                  {
+                      "parameters":  {
+                                         "jsCode":  "const base=\u0027https://beginth.github.io/LineLiff-Chaphranakhon/admin/dashboard.html\u0027; return [{json:{menu:{size:{width:2500,height:1686},selected:false,name:\u0027Chaphranakhon - Admin Dashboard\u0027,chatBarText:\u0027Admin Menu\u0027,areas:[{bounds:{x:0,y:0,width:1250,height:843},action:{type:\u0027uri\u0027,uri:base.replace(\u0027/dashboard.html\u0027,\u0027/orders.html\u0027)}},{bounds:{x:1250,y:0,width:1250,height:843},action:{type:\u0027uri\u0027,uri:base.replace(\u0027/dashboard.html\u0027,\u0027/payments.html\u0027)}},{bounds:{x:0,y:843,width:1250,height:843},action:{type:\u0027uri\u0027,uri:base.replace(\u0027/dashboard.html\u0027,\u0027/inventory.html\u0027)}},{bounds:{x:1250,y:843,width:1250,height:843},action:{type:\u0027uri\u0027,uri:base.replace(\u0027/dashboard.html\u0027,\u0027/members.html\u0027)}}]}}}];"
+                                     },
+                      "id":  "build-menu",
+                      "name":  "Build Admin Separate Pages Rich Menu",
+                      "type":  "n8n-nodes-base.code",
+                      "typeVersion":  2,
+                      "position":  [
+                                       220,
+                                       260
+                                   ]
+                  },
+                  {
+                      "parameters":  {
+                                         "method":  "POST",
+                                         "url":  "https://api.line.me/v2/bot/richmenu",
+                                         "authentication":  "genericCredentialType",
+                                         "genericAuthType":  "httpHeaderAuth",
+                                         "sendBody":  true,
+                                         "contentType":  "json",
+                                         "specifyBody":  "json",
+                                         "jsonBody":  "={{ JSON.stringify($json.menu) }}",
+                                         "options":  {
+
+                                                     }
+                                     },
+                      "id":  "create-menu",
+                      "name":  "Create New Admin Dashboard Menu",
+                      "type":  "n8n-nodes-base.httpRequest",
+                      "typeVersion":  4.2,
+                      "position":  [
+                                       440,
+                                       260
+                                   ],
+                      "notesInFlow":  true,
+                      "notes":  "เน€เธโฌเน€เธเธ…เน€เธเธ—เน€เธเธเน€เธย Header Auth credential เน€เธโฌเน€เธโ€เน€เธเธ”เน€เธเธ: LINE Messaging API rkitja2523 HeaderAuth"
+                  },
+                  {
+                      "parameters":  {
+                                         "jsCode":  "const id=String($json.richMenuId||\u0027\u0027).trim(); if(!id) throw new Error(\u0027LINE did not return richMenuId\u0027); return [{json:{richMenuId:id,imageUrl:\u0027https://beginth.github.io/LineLiff-Chaphranakhon/assets/rich-menu/rich-menu-admin-line.jpg\u0027}}];"
+                                     },
+                      "id":  "prepare-upload",
+                      "name":  "Prepare Admin Menu Upload",
+                      "type":  "n8n-nodes-base.code",
+                      "typeVersion":  2,
+                      "position":  [
+                                       660,
+                                       260
+                                   ]
+                  },
+                  {
+                      "parameters":  {
+                                         "url":  "={{ $json.imageUrl }}",
+                                         "responseFormat":  "file",
+                                         "options":  {
+
+                                                     }
+                                     },
+                      "id":  "download-image",
+                      "name":  "Download Admin Menu Image",
+                      "type":  "n8n-nodes-base.httpRequest",
+                      "typeVersion":  4.2,
+                      "position":  [
+                                       880,
+                                       260
+                                   ]
+                  },
+                  {
+                      "parameters":  {
+                                         "method":  "POST",
+                                         "url":  "=https://api-data.line.me/v2/bot/richmenu/{{ $(\u0027Prepare Admin Menu Upload\u0027).item.json.richMenuId }}/content",
+                                         "authentication":  "genericCredentialType",
+                                         "genericAuthType":  "httpHeaderAuth",
+                                         "sendBody":  true,
+                                         "contentType":  "binaryData",
+                                         "inputDataFieldName":  "data",
+                                         "options":  {
+
+                                                     }
+                                     },
+                      "id":  "upload-image",
+                      "name":  "Upload Admin Menu Image",
+                      "type":  "n8n-nodes-base.httpRequest",
+                      "typeVersion":  4.2,
+                      "position":  [
+                                       1100,
+                                       260
+                                   ],
+                      "notesInFlow":  true,
+                      "notes":  "เน€เธโฌเน€เธเธ…เน€เธเธ—เน€เธเธเน€เธย Header Auth credential เน€เธโฌเน€เธโ€เน€เธเธ”เน€เธเธ: LINE Messaging API rkitja2523 HeaderAuth"
+                  },
+                  {
+                      "parameters":  {
+                                         "documentId":  {
+                                                            "__rl":  true,
+                                                            "value":  "1aKwY4KOo8uGCRrHASD539Habt5Obam8meacRO-ir0Ks",
+                                                            "mode":  "list",
+                                                            "cachedResultName":  "Chaphranakhon_DB"
+                                                        },
+                                         "sheetName":  {
+                                                           "__rl":  true,
+                                                           "value":  "Admins",
+                                                           "mode":  "name",
+                                                           "cachedResultName":  "Admins"
+                                                       },
+                                         "options":  {
+
+                                                     }
+                                     },
+                      "id":  "read-admins",
+                      "name":  "Read Active Admins",
+                      "type":  "n8n-nodes-base.googleSheets",
+                      "typeVersion":  4,
+                      "position":  [
+                                       1320,
+                                       260
+                                   ],
+                      "credentials":  {
+                                          "googleSheetsOAuth2Api":  {
+                                                                        "id":  "ZPODlcDmX45WFVuM",
+                                                                        "name":  "Google Sheets account 2"
+                                                                    }
+                                      }
+                  },
+                  {
+                      "parameters":  {
+                                         "jsCode":  "const menuId=String($node[\u0027Prepare Admin Menu Upload\u0027].json.richMenuId||\u0027\u0027).trim(); return $input.all().map(i=\u003ei.json).filter(a=\u003eString(a.LINE_UID||\u0027\u0027).trim()\u0026\u0026String(a.Status||\u0027\u0027).trim().toLowerCase()===\u0027active\u0027).map(a=\u003e({json:{LINE_UID:String(a.LINE_UID).trim(),richMenuId:menuId}}));"
+                                     },
+                      "id":  "build-links",
+                      "name":  "Build Active Admin Links",
+                      "type":  "n8n-nodes-base.code",
+                      "typeVersion":  2,
+                      "position":  [
+                                       1540,
+                                       260
+                                   ]
+                  },
+                  {
+                      "parameters":  {
+                                         "method":  "POST",
+                                         "url":  "=https://api.line.me/v2/bot/user/{{ $json.LINE_UID }}/richmenu/{{ $json.richMenuId }}",
+                                         "authentication":  "genericCredentialType",
+                                         "genericAuthType":  "httpHeaderAuth",
+                                         "options":  {
+
+                                                     }
+                                     },
+                      "id":  "link-admins",
+                      "name":  "Link Menu to Active Admins",
+                      "type":  "n8n-nodes-base.httpRequest",
+                      "typeVersion":  4.2,
+                      "position":  [
+                                       1760,
+                                       260
+                                   ],
+                      "notesInFlow":  true,
+                      "notes":  "เน€เธโฌเน€เธเธ…เน€เธเธ—เน€เธเธเน€เธย Header Auth credential เน€เธโฌเน€เธโ€เน€เธเธ”เน€เธเธ: LINE Messaging API rkitja2523 HeaderAuth"
+                  },
+                  {
+                      "parameters":  {
+                                         "jsCode":  "return [{json:{success:true,richMenuId:$node[\u0027Prepare Admin Menu Upload\u0027].json.richMenuId,message:\u0027Created, uploaded and linked Admin Dashboard Rich Menu\u0027}}];"
+                                     },
+                      "id":  "result",
+                      "name":  "Show Result",
+                      "type":  "n8n-nodes-base.code",
+                      "typeVersion":  2,
+                      "position":  [
+                                       1980,
+                                       260
+                                   ]
+                  },
+                  {
+                      "parameters":  {
+                                         "method":  "DELETE",
+                                         "url":  "=https://api.line.me/v2/bot/user/{{ $json.LINE_UID }}/richmenu",
+                                         "authentication":  "genericCredentialType",
+                                         "genericAuthType":  "httpHeaderAuth",
+                                         "options":  {
+
+                                                     }
+                                     },
+                      "id":  "unlink-admins",
+                      "name":  "Unlink Existing Rich Menu",
+                      "type":  "n8n-nodes-base.httpRequest",
+                      "typeVersion":  4.2,
+                      "position":  [
+                                       1760,
+                                       180
+                                   ],
+                      "notesInFlow":  true,
+                      "notes":  "เธขเธเน€เธฅเธดเธ Rich Menu เน€เธ”เธดเธกเธเนเธญเธเธเธนเธเน€เธกเธเธนเนเธซเธกเน"
+                  },
+                  {
+                      "parameters":  {
+                                         "jsCode":  "const source=$node[\u0027Build Active Admin Links\u0027].json; return [{json:{LINE_UID:String(source.LINE_UID||\u0027\u0027),richMenuId:String(source.richMenuId||\u0027\u0027)}}];"
+                                     },
+                      "id":  "restore-link-data",
+                      "name":  "Restore Admin Link Data",
+                      "type":  "n8n-nodes-base.code",
+                      "typeVersion":  2,
+                      "position":  [
+                                       1980,
+                                       180
+                                   ]
+                  }
+              ],
+    "connections":  {
+                        "When clicking Execute workflow":  {
+                                                               "main":  [
+                                                                            [
+                                                                                {
+                                                                                    "node":  "Build Admin Separate Pages Rich Menu",
+                                                                                    "type":  "main",
+                                                                                    "index":  0
+                                                                                }
+                                                                            ]
+                                                                        ]
+                                                           },
+                        "Build Admin Separate Pages Rich Menu":  {
+                                                                     "main":  [
+                                                                                  [
+                                                                                      {
+                                                                                          "node":  "Create New Admin Dashboard Menu",
+                                                                                          "type":  "main",
+                                                                                          "index":  0
+                                                                                      }
+                                                                                  ]
+                                                                              ]
+                                                                 },
+                        "Create New Admin Dashboard Menu":  {
+                                                                "main":  [
+                                                                             [
+                                                                                 {
+                                                                                     "node":  "Prepare Admin Menu Upload",
+                                                                                     "type":  "main",
+                                                                                     "index":  0
+                                                                                 }
+                                                                             ]
+                                                                         ]
+                                                            },
+                        "Prepare Admin Menu Upload":  {
+                                                          "main":  [
+                                                                       [
+                                                                           {
+                                                                               "node":  "Download Admin Menu Image",
+                                                                               "type":  "main",
+                                                                               "index":  0
+                                                                           }
+                                                                       ]
+                                                                   ]
+                                                      },
+                        "Download Admin Menu Image":  {
+                                                          "main":  [
+                                                                       [
+                                                                           {
+                                                                               "node":  "Upload Admin Menu Image",
+                                                                               "type":  "main",
+                                                                               "index":  0
+                                                                           }
+                                                                       ]
+                                                                   ]
+                                                      },
+                        "Upload Admin Menu Image":  {
+                                                        "main":  [
+                                                                     [
+                                                                         {
+                                                                             "node":  "Read Active Admins",
+                                                                             "type":  "main",
+                                                                             "index":  0
+                                                                         }
+                                                                     ]
+                                                                 ]
+                                                    },
+                        "Read Active Admins":  {
+                                                   "main":  [
+                                                                [
+                                                                    {
+                                                                        "node":  "Build Active Admin Links",
+                                                                        "type":  "main",
+                                                                        "index":  0
+                                                                    }
+                                                                ]
+                                                            ]
+                                               },
+                        "Build Active Admin Links":  {
+                                                         "main":  [
+                                                                      [
+                                                                          {
+                                                                              "node":  "Unlink Existing Rich Menu",
+                                                                              "type":  "main",
+                                                                              "index":  0
+                                                                          }
+                                                                      ]
+                                                                  ]
+                                                     },
+                        "Link Menu to Active Admins":  {
+                                                           "main":  [
+                                                                        [
+                                                                            {
+                                                                                "node":  "Show Result",
+                                                                                "type":  "main",
+                                                                                "index":  0
+                                                                            }
+                                                                        ]
+                                                                    ]
+                                                       },
+                        "Unlink Existing Rich Menu":  {
+                                                          "main":  [
+                                                                       [
+                                                                           {
+                                                                               "node":  "Restore Admin Link Data",
+                                                                               "type":  "main",
+                                                                               "index":  0
+                                                                           }
+                                                                       ]
+                                                                   ]
+                                                      },
+                        "Restore Admin Link Data":  {
+                                                        "main":  [
+                                                                     [
+                                                                         {
+                                                                             "node":  "Link Menu to Active Admins",
+                                                                             "type":  "main",
+                                                                             "index":  0
+                                                                         }
+                                                                     ]
+                                                                 ]
+                                                    }
+                    }
 }
