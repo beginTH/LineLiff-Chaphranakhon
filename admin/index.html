@@ -335,9 +335,14 @@
         try {
             await liff.init({ liffId: '2010570929-BJxo68XQ' });
             const view = new URLSearchParams(location.search).get('view');
-            const allowed = ['orders', 'payments', 'products', 'users'];
-            if (allowed.includes(view)) {
-                location.replace('dashboard.html?view=' + encodeURIComponent(view));
+            const pageByView = {
+                orders: 'orders.html',
+                payments: 'payments.html',
+                products: 'inventory.html',
+                users: 'members.html',
+            };
+            if (pageByView[view]) {
+                location.replace(pageByView[view]);
                 return;
             }
         } catch (error) {
