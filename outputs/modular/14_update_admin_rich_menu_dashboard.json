@@ -1,0 +1,12 @@
+{
+  "name": "14 - Update Admin Rich Menu to Dashboard Links",
+  "active": false,
+  "settings": {},
+  "nodes": [
+    {"parameters":{},"id":"manual-trigger","name":"When clicking Execute workflow","type":"n8n-nodes-base.manualTrigger","typeVersion":1,"position":[0,260]},
+    {"parameters":{"jsCode":"const base='https://beginth.github.io/LineLiff-Chaphranakhon/admin/dashboard.html'; return [{json:{menu:{size:{width:2500,height:1686},selected:false,name:'Chaphranakhon - Admin Dashboard',chatBarText:'เมนูผู้ดูแล',areas:[{bounds:{x:0,y:0,width:1250,height:843},action:{type:'uri',uri:base+'?view=orders'}},{bounds:{x:1250,y:0,width:1250,height:843},action:{type:'uri',uri:base+'?view=payments'}},{bounds:{x:0,y:843,width:1250,height:843},action:{type:'uri',uri:base+'?view=products'}},{bounds:{x:1250,y:843,width:1250,height:843},action:{type:'uri',uri:base+'?view=users'}}]}}}];"},"id":"build-menu","name":"Build Admin Dashboard Menu","type":"n8n-nodes-base.code","typeVersion":2,"position":[240,260]},
+    {"parameters":{"method":"PUT","url":"=https://api.line.me/v2/bot/richmenu/richmenu-b964646053223519d82c60f15aaf2b5e","authentication":"genericCredentialType","genericAuthType":"httpHeaderAuth","sendBody":true,"contentType":"raw","rawContentType":"application/json","body":"={{ JSON.stringify($json.menu) }}","options":{}},"id":"update-menu","name":"Update Existing Admin Rich Menu","type":"n8n-nodes-base.httpRequest","typeVersion":4.2,"position":[520,260],"notesInFlow":true,"notes":"เลือก Header Auth credential เดิม: LINE Messaging API rkitja2523 HeaderAuth"},
+    {"parameters":{"jsCode":"return [{json:{success:true,message:'Admin Rich Menu updated to Dashboard links',richMenuId:'richmenu-b964646053223519d82c60f15aaf2b5e'}}];"},"id":"response","name":"Show Update Result","type":"n8n-nodes-base.code","typeVersion":2,"position":[800,260]}
+  ],
+  "connections":{"When clicking Execute workflow":{"main":[[{"node":"Build Admin Dashboard Menu","type":"main","index":0}]]},"Build Admin Dashboard Menu":{"main":[[{"node":"Update Existing Admin Rich Menu","type":"main","index":0}]]},"Update Existing Admin Rich Menu":{"main":[[{"node":"Show Update Result","type":"main","index":0}]]}}
+}
