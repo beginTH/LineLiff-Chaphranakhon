@@ -329,28 +329,25 @@
     <!-- LINE LIFF SDK -->
     <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <script>
-    (function () {
-        const params = new URLSearchParams(location.search);
-        let view = params.get('view');
-        // LINE LIFF may wrap custom query parameters inside liff.state.
-        if (!view) {
-            let state = params.get('liff.state') || '';
-            for (let i = 0; i < 2; i += 1) {
-                try {
-                    const decoded = decodeURIComponent(state);
-                    if (decoded === state) break;
-                    state = decoded;
-                } catch (_) { break; }
+    (async function () {
+        // LIFF restores view after liff.init() has completed.
+        // Redirecting earlier loses the Rich Menu destination.
+        try {
+            await liff.init({ liffId: '2010570929-BJxo68XQ' });
+            const view = new URLSearchParams(location.search).get('view');
+            const allowed = ['orders', 'payments', 'products', 'users'];
+            if (allowed.includes(view)) {
+                location.replace('dashboard.html?view=' + encodeURIComponent(view));
+                return;
             }
-            const stateQuery = state.includes('?') ? state.slice(state.indexOf('?') + 1) : state.replace(/^\?/, '');
-            view = new URLSearchParams(stateQuery).get('view');
+        } catch (error) {
+            console.warn('LIFF routing skipped:', error);
         }
-        const allowed = ['orders', 'payments', 'products', 'users'];
-        if (allowed.includes(view)) {
-            location.replace('dashboard.html?view=' + encodeURIComponent(view));
-        }
+        const legacyApp = document.createElement('script');
+        legacyApp.src = 'app.js?v=20260724-branch-approval-route';
+        document.body.appendChild(legacyApp);
     }());
-    </script>    <script src="app.js?v=20260724-branch-approval-route"></script>
+    </script>
 </body>
 </html>
 
