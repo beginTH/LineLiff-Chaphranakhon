@@ -342,7 +342,12 @@
                 users: 'members.html',
             };
             if (pageByView[view]) {
-                location.replace(pageByView[view]);
+                let uid = '';
+                if (liff.isLoggedIn()) {
+                    const profile = await liff.getProfile();
+                    uid = profile.userId || '';
+                }
+                location.replace(`${pageByView[view]}?uid=${encodeURIComponent(uid)}`);
                 return;
             }
         } catch (error) {
