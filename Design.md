@@ -214,3 +214,12 @@ AAT Template เป็นเอกสาร A4 ไม่ใช้ token เด�
 - [ ] ตรวจข้อความยาวไม่ล้น
 - [ ] อัปเดต screenshot/version query หากต้อง bust cache
 - [ ] อัปเดต `eesign.md` เมื่อเพิ่มหรือเปลี่ยน component/token
+### Standalone Admin List Pages
+
+หน้าจอ Admin แบบแยก (`admin/orders.html`, `admin/payments.html`, `admin/inventory.html`, `admin/members.html`) ใช้แม่แบบเดียวกันจาก `admin/admin-pages.css` และ `admin/admin-page.js`:
+
+- ใช้ token สี, spacing, radius และฟอนต์จาก Design System เดียวกัน
+- มี header ผู้ดูแล, ชื่อหน้า, สถานะการยืนยันสิทธิ์ และ card สำหรับรายการข้อมูล
+- รองรับ loading, empty และ error/retry state
+- รายการแสดงเป็น card บนมือถือเพื่อรองรับข้อความยาวและกดใช้งานง่าย
+- หน้าแยกแต่ละหน้าใช้ LINE UID ที่ส่งต่อจาก LIFF เพื่อเรียกเฉพาะข้อมูลที่ผู้ดูแลมีสิทธิ์ดู
