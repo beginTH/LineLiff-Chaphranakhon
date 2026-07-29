@@ -1,0 +1,109 @@
+{
+  "name": "09b - Create Role Rich Menus (Branch and Admin)",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "manual-trigger",
+      "name": "When clicking Execute workflow",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [0, 260]
+    },
+    {
+      "parameters": {
+        "jsCode": "const base = 'https://liff.line.me/2010570929-oEaIS3oQ';\nconst admin = {\n  kind: 'admin',\n  imageUrl: 'https://beginth.github.io/LineLiff-Chaphranakhon/assets/rich-menu/rich-menu-admin-line.jpg',\n  menu: { size: { width: 2500, height: 1686 }, selected: false, name: 'ชาพระนคร - เมนูผู้ดูแล (API)', chatBarText: 'เมนูผู้ดูแล', areas: [\n    { bounds: { x: 0, y: 0, width: 1250, height: 843 }, action: { type: 'message', text: 'ประวัติ Order' } },\n    { bounds: { x: 1250, y: 0, width: 1250, height: 843 }, action: { type: 'message', text: 'รายการชำระเงิน' } },\n    { bounds: { x: 0, y: 843, width: 1250, height: 843 }, action: { type: 'message', text: 'ปรับวัตถุดิบ' } },\n    { bounds: { x: 1250, y: 843, width: 1250, height: 843 }, action: { type: 'message', text: 'จัดการสมาชิก' } }\n  ] }\n};\nconst branch = {\n  kind: 'branch',\n  imageUrl: 'https://beginth.github.io/LineLiff-Chaphranakhon/outputs/rich-menu/rich_menu_transfer_proof_2500x1686.png',\n  menu: { size: { width: 2500, height: 1686 }, selected: false, name: 'ชาพระนคร - เมนูสาขา (API)', chatBarText: 'เมนูสาขา', areas: [\n    { bounds: { x: 0, y: 0, width: 1250, height: 843 }, action: { type: 'uri', uri: base } },\n    { bounds: { x: 1250, y: 0, width: 1250, height: 843 }, action: { type: 'uri', uri: base + '?screen=history' } },\n    { bounds: { x: 0, y: 843, width: 1250, height: 843 }, action: { type: 'uri', uri: 'tel:+66887896282' } },\n    { bounds: { x: 1250, y: 843, width: 1250, height: 843 }, action: { type: 'uri', uri: base + '?screen=payment-proof' } }\n  ] }\n};\nreturn [admin, branch].map(json => ({ json }));"
+      },
+      "id": "define-role-menus",
+      "name": "Define Role Rich Menus",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [240, 260],
+      "notesInFlow": true,
+      "notes": "สร้างข้อมูล Rich Menu สำหรับ Admin และ Branch โดยยังไม่กระทบ Default menu ใน OA Manager"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.line.me/v2/bot/richmenu",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.menu) }}",
+        "options": {}
+      },
+      "id": "create-rich-menu",
+      "name": "Create LINE Rich Menu",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [520, 260],
+      "notesInFlow": true,
+      "notes": "เลือก Header Auth credential เดิม: LINE Messaging API rkitja2523 HeaderAuth"
+    },
+    {
+      "parameters": {
+        "jsCode": "const created = $input.all();\nconst definitions = $('Define Role Rich Menus').all();\nreturn created.map((item, index) => {\n  const definition = definitions[index].json;\n  const richMenuId = String(item.json.richMenuId || '').trim();\n  if (!richMenuId) throw new Error('LINE did not return richMenuId for ' + definition.kind);\n  return { json: { kind: definition.kind, richMenuId, imageUrl: definition.imageUrl } };\n});"
+      },
+      "id": "prepare-image-upload",
+      "name": "Prepare Image Upload",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [780, 260]
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.imageUrl }}",
+        "responseFormat": "file",
+        "options": {}
+      },
+      "id": "download-menu-image",
+      "name": "Download Rich Menu Image",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1040, 260],
+      "notesInFlow": true,
+      "notes": "ดาวน์โหลดภาพที่เผยแพร่บน GitHub Pages เพื่อส่งให้ LINE"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://api-data.line.me/v2/bot/richmenu/{{ $('Prepare Image Upload').item.json.richMenuId }}/content",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "contentType": "binaryData",
+        "inputDataFieldName": "data",
+        "options": {}
+      },
+      "id": "upload-menu-image",
+      "name": "Upload Rich Menu Image to LINE",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1300, 260],
+      "notesInFlow": true,
+      "notes": "เลือก Header Auth credential เดิม: LINE Messaging API rkitja2523 HeaderAuth"
+    },
+    {
+      "parameters": {
+        "jsCode": "const definitions = $('Prepare Image Upload').all();\nreturn definitions.map(item => ({ json: { success: true, kind: item.json.kind, richMenuId: item.json.richMenuId, message: 'สร้างและอัปโหลด Rich Menu สำเร็จ' } }));"
+      },
+      "id": "build-result",
+      "name": "Show Rich Menu IDs",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1560, 260],
+      "notesInFlow": true,
+      "notes": "เก็บ richMenuId ของ admin และ branch จาก output นี้ เพื่อนำไปใส่ workflow ผูกเมนูตาม Role ขั้นถัดไป"
+    }
+  ],
+  "connections": {
+    "When clicking Execute workflow": { "main": [[{ "node": "Define Role Rich Menus", "type": "main", "index": 0 }]] },
+    "Define Role Rich Menus": { "main": [[{ "node": "Create LINE Rich Menu", "type": "main", "index": 0 }]] },
+    "Create LINE Rich Menu": { "main": [[{ "node": "Prepare Image Upload", "type": "main", "index": 0 }]] },
+    "Prepare Image Upload": { "main": [[{ "node": "Download Rich Menu Image", "type": "main", "index": 0 }]] },
+    "Download Rich Menu Image": { "main": [[{ "node": "Upload Rich Menu Image to LINE", "type": "main", "index": 0 }]] },
+    "Upload Rich Menu Image to LINE": { "main": [[{ "node": "Show Rich Menu IDs", "type": "main", "index": 0 }]] }
+  },
+  "active": false,
+  "settings": { "executionOrder": "v1" }
+}

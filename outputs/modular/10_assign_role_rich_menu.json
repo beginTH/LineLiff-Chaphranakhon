@@ -1,0 +1,70 @@
+{
+  "name": "10 - Assign LINE Rich Menu by Role",
+  "nodes": [
+    {
+      "parameters": {"httpMethod":"POST","path":"assign-role-rich-menu","responseMode":"lastNode","options":{"allowedOrigins":"https://beginth.github.io"}},
+      "id": "assign-role-webhook",
+      "name": "POST /assign-role-rich-menu",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [0, 260]
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $json.body || $json;\nconst LINE_UID = String(body.lineUid || body.LINE_UID || body.uid || '').trim();\nconst role = String(body.role || body.Role || 'customer').trim().toLowerCase();\nif (!LINE_UID) throw new Error('Missing LINE user ID');\nconst menuByRole = {\n  admin: 'richmenu-b964646053223519d82c60f15aaf2b5e',\n  superadmin: 'richmenu-b964646053223519d82c60f15aaf2b5e',\n  branch: 'richmenu-9e24dce8c6b1bc140f5d3f0c4c05ee75',\n  owner: 'richmenu-9e24dce8c6b1bc140f5d3f0c4c05ee75'\n};\nconst richMenuId = menuByRole[role] || '';\nreturn [{ json: { LINE_UID, role, richMenuId, hasRoleMenu: Boolean(richMenuId) } }];"
+      },
+      "id": "resolve-role-menu",
+      "name": "Resolve Role Rich Menu",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [240, 260],
+      "notesInFlow": true,
+      "notes": "admin/superadmin ได้เมนูผู้ดูแล, branch/owner ได้เมนูสาขา, Role อื่นยกเลิกเมนูเฉพาะบุคคลและกลับไปใช้ Default OA menu"
+    },
+    {
+      "parameters": {"conditions":{"options":{"caseSensitive":true,"leftValue":"","typeValidation":"strict","version":2},"conditions":[{"leftValue":"={{ $json.hasRoleMenu }}","rightValue":true,"operator":{"type":"boolean","operation":"true","singleValue":true}}],"combinator":"and"},"options":{}},
+      "id": "has-role-menu",
+      "name": "Has Role-specific Menu?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [500, 260]
+    },
+    {
+      "parameters": {"method":"POST","url":"=https://api.line.me/v2/bot/user/{{ $json.LINE_UID }}/richmenu/{{ $json.richMenuId }}","authentication":"genericCredentialType","genericAuthType":"httpHeaderAuth","options":{}},
+      "id": "link-role-menu",
+      "name": "Link Role Rich Menu",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [760, 160],
+      "notesInFlow": true,
+      "notes": "เลือก Header Auth credential เดิม: LINE Messaging API rkitja2523 HeaderAuth"
+    },
+    {
+      "parameters": {"method":"DELETE","url":"=https://api.line.me/v2/bot/user/{{ $json.LINE_UID }}/richmenu","authentication":"genericCredentialType","genericAuthType":"httpHeaderAuth","options":{}},
+      "id": "unlink-role-menu",
+      "name": "Return to Default Rich Menu",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [760, 360],
+      "notesInFlow": true,
+      "notes": "ลบการผูก Rich Menu เฉพาะบุคคล ทำให้ LINE แสดง Default menu ที่ตั้งจาก OA Manager"
+    },
+    {
+      "parameters": {"jsCode":"const data = $('Resolve Role Rich Menu').first().json;\nreturn [{ json: { success: true, LINE_UID: data.LINE_UID, role: data.role, richMenuId: data.richMenuId || null, action: data.hasRoleMenu ? 'linked' : 'returned_to_default', message: data.hasRoleMenu ? 'ผูก Rich Menu ตาม Role เรียบร้อย' : 'กลับไปใช้ Default Rich Menu เรียบร้อย' } }];"},
+      "id": "build-assignment-response",
+      "name": "Build Assignment Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1040, 260]
+    }
+  ],
+  "connections": {
+    "POST /assign-role-rich-menu": {"main":[[{"node":"Resolve Role Rich Menu","type":"main","index":0}]]},
+    "Resolve Role Rich Menu": {"main":[[{"node":"Has Role-specific Menu?","type":"main","index":0}]]},
+    "Has Role-specific Menu?": {"main":[[{"node":"Link Role Rich Menu","type":"main","index":0}],[{"node":"Return to Default Rich Menu","type":"main","index":0}]]},
+    "Link Role Rich Menu": {"main":[[{"node":"Build Assignment Response","type":"main","index":0}]]},
+    "Return to Default Rich Menu": {"main":[[{"node":"Build Assignment Response","type":"main","index":0}]]}
+  },
+  "active": false,
+  "settings": {"executionOrder":"v1"}
+}

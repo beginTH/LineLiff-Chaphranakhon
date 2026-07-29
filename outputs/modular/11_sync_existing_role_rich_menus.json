@@ -1,0 +1,18 @@
+{
+  "name": "11 - Sync Existing Role Rich Menus",
+  "nodes": [
+    {"parameters":{},"id":"manual-trigger","name":"When clicking Execute workflow","type":"n8n-nodes-base.manualTrigger","typeVersion":1,"position":[0,260]},
+    {"parameters":{"documentId":{"__rl":true,"value":"1aKwY4KOo8uGCRrHASD539Habt5Obam8meacRO-ir0Ks","mode":"list","cachedResultName":"Chaphranakhon_DB"},"sheetName":{"__rl":true,"value":"Users","mode":"name","cachedResultName":"Users"},"options":{}},"id":"read-users","name":"Read Users for Rich Menu Sync","type":"n8n-nodes-base.googleSheets","typeVersion":4,"position":[220,260],"credentials":{"googleSheetsOAuth2Api":{"id":"ZPODlcDmX45WFVuM","name":"Google Sheets account 2"}}},
+    {"parameters":{"jsCode":"const map = { admin: 'richmenu-b964646053223519d82c60f15aaf2b5e', superadmin: 'richmenu-b964646053223519d82c60f15aaf2b5e', branch: 'richmenu-9e24dce8c6b1bc140f5d3f0c4c05ee75', owner: 'richmenu-9e24dce8c6b1bc140f5d3f0c4c05ee75' };\nreturn $input.all().flatMap(item => {\n  const LINE_UID = String(item.json.LINE_UID || '').trim();\n  const role = String(item.json.Role || '').trim().toLowerCase();\n  const friendStatus = String(item.json.Friend_Status || '').trim().toLowerCase();\n  const richMenuId = map[role];\n  if (!LINE_UID || !richMenuId || friendStatus === 'blocked') return [];\n  return [{ json: { LINE_UID, role, richMenuId } }];\n});"},"id":"filter-role-users","name":"Find Admin and Branch Users","type":"n8n-nodes-base.code","typeVersion":2,"position":[460,260],"notesInFlow":true,"notes":"อ่าน Users แล้วเลือกเฉพาะ Role admin, superadmin, branch หรือ owner ที่ยัง active"},
+    {"parameters":{"method":"POST","url":"=https://api.line.me/v2/bot/user/{{ $json.LINE_UID }}/richmenu/{{ $json.richMenuId }}","authentication":"genericCredentialType","genericAuthType":"httpHeaderAuth","options":{}},"id":"link-role-menu","name":"Link Rich Menu to Each Role User","type":"n8n-nodes-base.httpRequest","typeVersion":4.2,"position":[700,260],"notesInFlow":true,"notes":"เลือก Header Auth credential เดิม: LINE Messaging API rkitja2523 HeaderAuth"},
+    {"parameters":{"jsCode":"const people = $('Find Admin and Branch Users').all().map(i => i.json);\nreturn people.map(p => ({ json: { success: true, LINE_UID: p.LINE_UID, role: p.role, richMenuId: p.richMenuId, message: 'ผูก Rich Menu เรียบร้อย' } }));"},"id":"show-sync-result","name":"Show Synced Users","type":"n8n-nodes-base.code","typeVersion":2,"position":[940,260]}
+  ],
+  "connections": {
+    "When clicking Execute workflow":{"main":[[{"node":"Read Users for Rich Menu Sync","type":"main","index":0}]]},
+    "Read Users for Rich Menu Sync":{"main":[[{"node":"Find Admin and Branch Users","type":"main","index":0}]]},
+    "Find Admin and Branch Users":{"main":[[{"node":"Link Rich Menu to Each Role User","type":"main","index":0}]]},
+    "Link Rich Menu to Each Role User":{"main":[[{"node":"Show Synced Users","type":"main","index":0}]]}
+  },
+  "active":false,
+  "settings":{"executionOrder":"v1"}
+}
