@@ -1,0 +1,238 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="robots" content="noindex,nofollow,noarchive">
+  <meta name="referrer" content="no-referrer">
+  <title>P002 Product Write Test | ชาพระนคร</title>
+  <style>
+    :root {
+      color-scheme: light;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #f8f3fa;
+      color: #201b24;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; min-height: 100vh; display: grid; place-items: center; padding: 24px; }
+    main {
+      width: min(100%, 580px);
+      padding: 28px;
+      border: 1px solid #e8dfee;
+      border-radius: 24px;
+      background: #fff;
+      box-shadow: 0 18px 50px rgb(80 44 97 / 10%);
+    }
+    .eyebrow { margin: 0 0 8px; color: #76538b; font-size: 13px; font-weight: 800; letter-spacing: .08em; }
+    h1 { margin: 0; font-size: clamp(28px, 7vw, 40px); line-height: 1.1; }
+    .description { margin: 14px 0 22px; color: #685f6d; line-height: 1.6; }
+    .status {
+      min-height: 92px;
+      padding: 16px;
+      border-radius: 16px;
+      background: #f6f2f8;
+      line-height: 1.55;
+      white-space: pre-line;
+      overflow-wrap: anywhere;
+    }
+    .status[data-kind="success"] { background: #e9f8ef; color: #17603a; }
+    .status[data-kind="error"] { background: #fff0f0; color: #9d2525; }
+    button {
+      width: 100%;
+      margin-top: 12px;
+      padding: 14px 18px;
+      border: 0;
+      border-radius: 14px;
+      background: #69417f;
+      color: #fff;
+      font: inherit;
+      font-weight: 800;
+      cursor: pointer;
+    }
+    button:first-of-type { margin-top: 18px; }
+    button[data-action="restore"] { background: #276448; }
+    button:disabled { cursor: not-allowed; opacity: .45; }
+    .notice { margin: 16px 0 0; color: #756d79; font-size: 13px; line-height: 1.5; }
+  </style>
+</head>
+<body>
+  <main>
+    <p class="eyebrow">CHAPHRANAKHON · TEMPORARY WRITE TEST</p>
+    <h1>ทดสอบและคืนค่า P002</h1>
+    <p class="description">
+      ขั้นทดสอบจะเพิ่มราคา P002 เพียง 0.01 บาท แล้วส่งค่าดั้งเดิมกลับคืน
+      ข้อมูลสำรองและ LINE token อยู่ในหน่วยความจำของหน้านี้เท่านั้น
+    </p>
+    <div class="status" id="status" role="status" aria-live="polite">
+      กำลังเชื่อมต่อ LINE…
+    </div>
+    <button type="button" data-action="backup" disabled>1. อ่านและสำรองค่า P002</button>
+    <button type="button" data-action="update" disabled>2. ทดสอบเพิ่มราคา 0.01 บาท</button>
+    <button type="button" data-action="restore" disabled>3. คืนค่าเดิม P002</button>
+    <p class="notice">
+      ก่อนข้อ 1 ให้กด Execute workflow ใน Workflow 13 TEST
+      และก่อนข้อ 2–3 ให้กด Execute workflow ใน Workflow 14 TEST ทุกครั้ง
+      ห้ามปิดหรือรีเฟรชหน้านี้จนกว่าจะคืนค่าสำเร็จ
+    </p>
+  </main>
+
+  <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+  <script>
+    (() => {
+      'use strict';
+
+      const LIFF_ID = '2010570929-BJxo68XQ';
+      const PRODUCT_ID = 'P002';
+      const READ_URL = 'https://n8n.n8n-kokujapan.org/webhook-test/admin-products-security-test';
+      const WRITE_URL = 'https://n8n.n8n-kokujapan.org/webhook-test/admin-product-update-security-test';
+      const status = document.querySelector('#status');
+      const backupButton = document.querySelector('[data-action="backup"]');
+      const updateButton = document.querySelector('[data-action="update"]');
+      const restoreButton = document.querySelector('[data-action="restore"]');
+      let idToken = '';
+      let originalProduct = null;
+
+      function show(message, kind = '') {
+        status.textContent = message;
+        status.dataset.kind = kind;
+      }
+
+      function productPayload(product, price = product.price) {
+        return {
+          productId: PRODUCT_ID,
+          unit: String(product.unit || ''),
+          price: Number(price),
+          imageUrl: String(product.imageUrl || ''),
+          status: String(product.status || '').toLowerCase(),
+          customerType: String(product.customerType || ''),
+        };
+      }
+
+      async function initialize() {
+        try {
+          await liff.init({ liffId: LIFF_ID });
+          if (!liff.isLoggedIn()) {
+            liff.login({ redirectUri: location.href });
+            return;
+          }
+
+          idToken = liff.getIDToken() || '';
+          if (!idToken) throw new Error('ไม่พบ LINE ID token กรุณาปิดแล้วเปิดจาก LINE ใหม่');
+
+          const profile = await liff.getProfile();
+          show(`พร้อมสำรอง P002 ในฐานะ ${profile.displayName || 'ผู้ดูแล'}`, 'success');
+          backupButton.disabled = false;
+        } catch (error) {
+          idToken = '';
+          show(error?.message || 'ไม่สามารถเชื่อมต่อ LINE LIFF ได้', 'error');
+        }
+      }
+
+      async function authorizedFetch(url, options) {
+        return fetch(url, {
+          ...options,
+          headers: {
+            ...(options.headers || {}),
+            Authorization: `Bearer ${idToken}`,
+          },
+          cache: 'no-store',
+        });
+      }
+
+      backupButton.addEventListener('click', async () => {
+        backupButton.disabled = true;
+        show('กำลังอ่านและสำรองค่า P002…');
+        try {
+          const response = await authorizedFetch(READ_URL, { method: 'GET' });
+          if (!response.ok) throw new Error(`อ่านไม่สำเร็จ HTTP ${response.status}`);
+          const result = await response.json();
+          const product = result?.products?.find(item => String(item.productId).trim() === PRODUCT_ID);
+          if (!product) throw new Error('ไม่พบ P002 ในผลลัพธ์');
+
+          const payload = productPayload(product);
+          if (!payload.unit || !Number.isFinite(payload.price) || payload.price < 0) {
+            throw new Error('ข้อมูลเดิมของ P002 ไม่ครบ จึงยกเลิกการทดสอบ');
+          }
+          if (!['active', 'inactive', 'cancelled'].includes(payload.status)) {
+            throw new Error(`สถานะเดิมของ P002 ไม่รองรับ: ${payload.status || 'ว่าง'}`);
+          }
+          if (payload.imageUrl && !/^https?:\/\//i.test(payload.imageUrl)) {
+            throw new Error('URL รูปเดิมไม่ใช่ http/https จึงยกเลิกการทดสอบ');
+          }
+
+          originalProduct = Object.freeze({ ...payload });
+          updateButton.disabled = false;
+          restoreButton.disabled = false;
+          show(
+            `สำรอง P002 สำเร็จ\nราคาเดิม ${originalProduct.price.toFixed(2)} บาท · หน่วย ${originalProduct.unit} · สถานะ ${originalProduct.status}`,
+            'success',
+          );
+        } catch (error) {
+          originalProduct = null;
+          backupButton.disabled = false;
+          updateButton.disabled = true;
+          restoreButton.disabled = true;
+          show(error?.message || 'ไม่สามารถสำรอง P002 ได้', 'error');
+        }
+      });
+
+      updateButton.addEventListener('click', async () => {
+        if (!originalProduct) return show('ต้องสำรอง P002 ก่อน', 'error');
+        updateButton.disabled = true;
+        const testPrice = Math.round((originalProduct.price + 0.01) * 100) / 100;
+        show(`กำลังทดสอบเปลี่ยนราคาเป็น ${testPrice.toFixed(2)} บาท…`);
+        try {
+          const response = await authorizedFetch(WRITE_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(productPayload(originalProduct, testPrice)),
+          });
+          if (!response.ok) throw new Error(`ทดสอบเขียนไม่สำเร็จ HTTP ${response.status}`);
+          show(
+            `ทดสอบเขียน P002 สำเร็จ HTTP ${response.status}\nกรุณากด Execute workflow ใน Workflow 14 TEST แล้วกดคืนค่าเดิมทันที`,
+            'success',
+          );
+        } catch (error) {
+          show(
+            `${error?.message || 'ไม่สามารถยืนยันผลการเขียนได้'}\nโปรดตรวจ n8n แล้วกดคืนค่าเดิมเพื่อความปลอดภัย`,
+            'error',
+          );
+        } finally {
+          updateButton.disabled = false;
+          restoreButton.disabled = false;
+        }
+      });
+
+      restoreButton.addEventListener('click', async () => {
+        if (!originalProduct) return show('ไม่มีข้อมูลสำรอง P002 สำหรับคืนค่า', 'error');
+        updateButton.disabled = true;
+        restoreButton.disabled = true;
+        show(`กำลังคืนราคาเดิม ${originalProduct.price.toFixed(2)} บาท…`);
+        try {
+          const response = await authorizedFetch(WRITE_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(originalProduct),
+          });
+          if (!response.ok) throw new Error(`คืนค่าไม่สำเร็จ HTTP ${response.status}`);
+          show(
+            `คืนค่าเดิม P002 สำเร็จ HTTP ${response.status}\nหยุดการทดสอบได้และอย่ากดปุ่มเพิ่มราคาอีก`,
+            'success',
+          );
+          updateButton.disabled = true;
+        } catch (error) {
+          show(
+            `${error?.message || 'ไม่สามารถคืนค่า P002 ได้'}\nอย่าปิดหน้านี้ และตรวจ Workflow 14 TEST ก่อนลองคืนค่าอีกครั้ง`,
+            'error',
+          );
+          updateButton.disabled = false;
+        } finally {
+          restoreButton.disabled = false;
+        }
+      });
+
+      initialize();
+    })();
+  </script>
+</body>
+</html>
