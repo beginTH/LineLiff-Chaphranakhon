@@ -1,0 +1,249 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="robots" content="noindex,nofollow,noarchive">
+  <meta name="referrer" content="no-referrer">
+  <title>ExtraSkill Role Write Test | ชาพระนคร</title>
+  <style>
+    :root {
+      color-scheme: light;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #f8f3fa;
+      color: #201b24;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; min-height: 100vh; display: grid; place-items: center; padding: 24px; }
+    main {
+      width: min(100%, 580px);
+      padding: 28px;
+      border: 1px solid #e8dfee;
+      border-radius: 24px;
+      background: #fff;
+      box-shadow: 0 18px 50px rgb(80 44 97 / 10%);
+    }
+    .eyebrow { margin: 0 0 8px; color: #76538b; font-size: 13px; font-weight: 800; letter-spacing: .08em; }
+    h1 { margin: 0; font-size: clamp(28px, 7vw, 40px); line-height: 1.1; }
+    .description { margin: 14px 0 22px; color: #685f6d; line-height: 1.6; }
+    .status {
+      min-height: 92px;
+      padding: 16px;
+      border-radius: 16px;
+      background: #f6f2f8;
+      line-height: 1.55;
+      white-space: pre-line;
+      overflow-wrap: anywhere;
+    }
+    .status[data-kind="success"] { background: #e9f8ef; color: #17603a; }
+    .status[data-kind="error"] { background: #fff0f0; color: #9d2525; }
+    button {
+      width: 100%;
+      margin-top: 12px;
+      padding: 14px 18px;
+      border: 0;
+      border-radius: 14px;
+      background: #69417f;
+      color: #fff;
+      font: inherit;
+      font-weight: 800;
+      cursor: pointer;
+    }
+    button:first-of-type { margin-top: 18px; }
+    button[data-action="restore"] { background: #276448; }
+    button:disabled { cursor: not-allowed; opacity: .45; }
+    .notice { margin: 16px 0 0; color: #756d79; font-size: 13px; line-height: 1.5; }
+  </style>
+</head>
+<body>
+  <main>
+    <p class="eyebrow">CHAPHRANAKHON · TEMPORARY ROLE TEST</p>
+    <h1>ทดสอบและคืนค่า ExtraSkill</h1>
+    <p class="description">
+      ขั้นทดสอบจะเปลี่ยน Role ของ ExtraSkill จาก branch เป็น customer
+      แล้วส่งค่าเดิมกลับคืน ข้อมูลสำรองและ LINE token อยู่ในหน่วยความจำของหน้านี้เท่านั้น
+    </p>
+    <div class="status" id="status" role="status" aria-live="polite">
+      กำลังเชื่อมต่อ LINE…
+    </div>
+    <button type="button" data-action="backup" disabled>1. อ่านและสำรอง Role เดิม</button>
+    <button type="button" data-action="update" disabled>2. ทดสอบเปลี่ยนเป็น customer</button>
+    <button type="button" data-action="restore" disabled>3. คืนค่าเป็น branch</button>
+    <p class="notice">
+      ก่อนข้อ 1 ให้กด Execute workflow ใน Workflow 13 TEST
+      และก่อนข้อ 2–3 ให้กด Execute workflow ใน Workflow 14 TEST ทุกครั้ง
+      ห้ามปิดหรือรีเฟรชหน้านี้จนกว่าจะคืนค่าสำเร็จ
+    </p>
+  </main>
+
+  <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+  <script>
+    (() => {
+      'use strict';
+
+      const LIFF_ID = '2010570929-BJxo68XQ';
+      const TARGET_NAME = 'ExtraSkill';
+      const ORIGINAL_ROLE = 'branch';
+      const TEST_ROLE = 'customer';
+      const READ_URL = 'https://n8n.n8n-kokujapan.org/webhook-test/admin-users-security-test';
+      const WRITE_URL = 'https://n8n.n8n-kokujapan.org/webhook-test/admin-user-role-update-security-test';
+      const status = document.querySelector('#status');
+      const backupButton = document.querySelector('[data-action="backup"]');
+      const updateButton = document.querySelector('[data-action="update"]');
+      const restoreButton = document.querySelector('[data-action="restore"]');
+      let idToken = '';
+      let actingUid = '';
+      let originalUser = null;
+
+      function show(message, kind = '') {
+        status.textContent = message;
+        status.dataset.kind = kind;
+      }
+
+      function decodeTokenPayload(token) {
+        try {
+          const encodedPayload = token.split('.')[1] || '';
+          const normalized = encodedPayload.replace(/-/g, '+').replace(/_/g, '/');
+          const padded = normalized.padEnd(Math.ceil(normalized.length / 4) * 4, '=');
+          return JSON.parse(atob(padded));
+        } catch {
+          return {};
+        }
+      }
+
+      async function initialize() {
+        try {
+          await liff.init({ liffId: LIFF_ID });
+          if (!liff.isLoggedIn()) {
+            liff.login({ redirectUri: location.href });
+            return;
+          }
+
+          idToken = liff.getIDToken() || '';
+          if (!idToken) throw new Error('ไม่พบ LINE ID token กรุณาปิดแล้วเปิดจาก LINE ใหม่');
+          const tokenPayload = decodeTokenPayload(idToken);
+          const expiresAt = Number(tokenPayload.exp || 0) * 1000;
+          if (expiresAt && expiresAt <= Date.now() + 60_000) {
+            show('LINE token หมดอายุ กำลังพาเข้าสู่ระบบใหม่…');
+            idToken = '';
+            liff.logout();
+            liff.login({ redirectUri: location.href });
+            return;
+          }
+          actingUid = String(tokenPayload.sub || '').trim();
+          if (!actingUid) throw new Error('ไม่พบตัวตนผู้ดูแลใน LINE token');
+
+          const profile = await liff.getProfile();
+          show(`พร้อมสำรอง ExtraSkill ในฐานะ ${profile.displayName || 'ผู้ดูแล'}`, 'success');
+          backupButton.disabled = false;
+        } catch (error) {
+          idToken = '';
+          actingUid = '';
+          show(error?.message || 'ไม่สามารถเชื่อมต่อ LINE LIFF ได้', 'error');
+        }
+      }
+
+      async function authorizedFetch(url, options) {
+        return fetch(url, {
+          ...options,
+          headers: {
+            ...(options.headers || {}),
+            Authorization: `Bearer ${idToken}`,
+          },
+          cache: 'no-store',
+        });
+      }
+
+      async function writeRole(role) {
+        return authorizedFetch(WRITE_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ lineUid: originalUser.lineUid, role }),
+        });
+      }
+
+      backupButton.addEventListener('click', async () => {
+        backupButton.disabled = true;
+        show('กำลังอ่านและสำรอง Role ของ ExtraSkill…');
+        try {
+          const response = await authorizedFetch(READ_URL, { method: 'GET' });
+          if (!response.ok) throw new Error(`อ่านไม่สำเร็จ HTTP ${response.status}`);
+          const result = await response.json();
+          const matches = (result?.users || []).filter(
+            user => String(user.displayName || '').trim() === TARGET_NAME,
+          );
+          if (matches.length !== 1) {
+            throw new Error(`ต้องพบ ExtraSkill เพียง 1 รายการ แต่พบ ${matches.length}`);
+          }
+
+          const user = matches[0];
+          const lineUid = String(user.lineUid || '').trim();
+          const role = String(user.role || '').trim().toLowerCase();
+          if (!lineUid) throw new Error('ExtraSkill ไม่มี LINE UID');
+          if (lineUid === actingUid) throw new Error('ยกเลิก: ExtraSkill เป็นบัญชี owner ที่กำลังใช้งาน');
+          if (role !== ORIGINAL_ROLE) {
+            throw new Error(`Role เดิมไม่ใช่ branch แต่เป็น ${role || 'ว่าง'} จึงยกเลิกการทดสอบ`);
+          }
+
+          originalUser = Object.freeze({ lineUid, role });
+          updateButton.disabled = false;
+          restoreButton.disabled = false;
+          show('สำรอง ExtraSkill สำเร็จ\nRole เดิม branch · พร้อมทดสอบ', 'success');
+        } catch (error) {
+          originalUser = null;
+          backupButton.disabled = false;
+          updateButton.disabled = true;
+          restoreButton.disabled = true;
+          show(error?.message || 'ไม่สามารถสำรอง ExtraSkill ได้', 'error');
+        }
+      });
+
+      updateButton.addEventListener('click', async () => {
+        if (!originalUser) return show('ต้องสำรอง ExtraSkill ก่อน', 'error');
+        updateButton.disabled = true;
+        show('กำลังทดสอบเปลี่ยน Role เป็น customer…');
+        try {
+          const response = await writeRole(TEST_ROLE);
+          if (!response.ok) throw new Error(`ทดสอบเขียนไม่สำเร็จ HTTP ${response.status}`);
+          show(
+            `ทดสอบเปลี่ยน Role สำเร็จ HTTP ${response.status}\nกรุณากด Execute workflow ใน Workflow 14 TEST แล้วคืนค่าเป็น branch ทันที`,
+            'success',
+          );
+        } catch (error) {
+          show(
+            `${error?.message || 'ไม่สามารถยืนยันผลการเขียนได้'}\nโปรดตรวจ n8n แล้วกดคืนค่าเดิมเพื่อความปลอดภัย`,
+            'error',
+          );
+        } finally {
+          updateButton.disabled = false;
+          restoreButton.disabled = false;
+        }
+      });
+
+      restoreButton.addEventListener('click', async () => {
+        if (!originalUser) return show('ไม่มีข้อมูลสำรอง ExtraSkill สำหรับคืนค่า', 'error');
+        updateButton.disabled = true;
+        restoreButton.disabled = true;
+        show('กำลังคืน Role เดิมเป็น branch…');
+        try {
+          const response = await writeRole(originalUser.role);
+          if (!response.ok) throw new Error(`คืนค่าไม่สำเร็จ HTTP ${response.status}`);
+          show(
+            `คืน Role เดิมเป็น branch สำเร็จ HTTP ${response.status}\nหยุดการทดสอบได้และอย่ากดปุ่มเปลี่ยน Role อีก`,
+            'success',
+          );
+        } catch (error) {
+          updateButton.disabled = false;
+          restoreButton.disabled = false;
+          show(
+            `${error?.message || 'ไม่สามารถคืน Role เดิมได้'}\nอย่าปิดหน้านี้ และตรวจ Workflow 14 TEST ก่อนลองคืนค่าอีกครั้ง`,
+            'error',
+          );
+        }
+      });
+
+      initialize();
+    })();
+  </script>
+</body>
+</html>
