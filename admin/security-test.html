@@ -68,6 +68,9 @@
     <button id="test-product-validation" type="button" disabled>
       ทดสอบสิทธิ์แก้สินค้า — ไม่เขียนข้อมูล
     </button>
+    <button id="test-role-authorization" type="button" disabled>
+      ทดสอบป้องกันการแก้ Role — ไม่เขียนข้อมูล
+    </button>
     <p class="notice">
       ใช้หน้านี้เฉพาะระหว่างที่ n8n กำลังรอ Test workflow
       ระบบจะส่งคำขอไปยัง webhook-test เท่านั้น
@@ -83,6 +86,7 @@
       const TEST_URLS = Object.freeze({
         orders: 'https://n8n.n8n-kokujapan.org/webhook-test/admin-orders-security-test',
         productValidation: 'https://n8n.n8n-kokujapan.org/webhook-test/admin-product-update-security-test',
+        roleAuthorization: 'https://n8n.n8n-kokujapan.org/webhook-test/admin-user-role-update-security-test',
       });
       const status = document.querySelector('#status');
       const buttons = [...document.querySelectorAll('button')];
@@ -159,6 +163,17 @@
             }),
           },
           'Workflow 14 TEST',
+        );
+      });
+      document.querySelector('#test-role-authorization').addEventListener('click', () => {
+        runTest(
+          TEST_URLS.roleAuthorization,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ lineUid: '', role: 'owner' }),
+          },
+          'Workflow 14 Role TEST',
         );
       });
 
