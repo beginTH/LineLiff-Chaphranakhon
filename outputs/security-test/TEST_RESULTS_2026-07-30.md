@@ -57,6 +57,9 @@ The imported inactive TEST workflows were exercised through `/webhook-test/`:
 - Workflow 13 rejected a fake token at `Verify LINE Token for Orders` before any Google Sheets node.
 - Workflow 14 rejected fake tokens in both Product Update and Role Update branches before reading Admins or reaching an Update node.
 - Workflow 13 accepted a valid LIFF ID token, read Admins, authorized the active Admin, and only then read Orders and Branches. The request completed with HTTP 200.
+- Workflow 13 accepted a valid LIFF ID token for Payments, authorized the active Admin before reading Orders and Branches, and completed the formatted Payments response.
+- Workflow 13 accepted a valid LIFF ID token for Products, authorized the active Admin before reading all 41 Products, and completed the formatted Products response.
+- Workflow 13 accepted a valid LIFF ID token for Users, authorized the active Admin before reading both Users, and completed the formatted Users response.
 - Workflow 14 accepted a valid LIFF ID token and read Admins, but exposed an operational Role-name mismatch: the sheet uses `approve`, while the draft allowed only `owner` and `approver`.
 
 The Role-name mismatch was remediated in both canonical and TEST Workflow 14 files. Product update authorization now accepts exact active roles `owner`, `approve`, or `approver`; all other roles remain denied. Local regression tests confirmed that an active `approve` reaches payload validation while the intentionally invalid test payload stops before `Update Product`.
@@ -66,7 +69,7 @@ The updated Workflow 14 TEST was then exercised with a valid LIFF token. The act
 ## End-to-end tests still required
 
 - If suitable accounts are available, confirm real valid-token executions for inactive and non-Admin users stop at `Authorize Active Admin`.
-- Confirm valid-token reads for Payments, Products and Users; Orders has been verified end to end.
+
 - Select disposable product and member records before testing successful writes.
 - Confirm no unauthorized request reaches an Update node.
 
