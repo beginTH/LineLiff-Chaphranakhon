@@ -41,7 +41,7 @@ CORS preflight was verified against the production n8n host on 2026-07-30. `admi
 
 | Operation | Required authorization |
 |---|---|
-| Admin read APIs | UID exists in `Admins` and `Status=active` |
+| Admin read APIs | UID exists in `Admins` and `Status=active`; authorization completes before reading Orders, Payments, Products or Users |
 | Product update | Active Admin with exact Role `owner` or `approver` |
 | User Role update | Active Admin with exact Role `owner` |
 | Change own Role | Denied |
@@ -63,6 +63,7 @@ CORS preflight was verified against the production n8n host on 2026-07-30. `admi
 - Random bearer token is rejected by LINE.
 - Valid non-Admin token is rejected after LINE verification.
 - Inactive Admin is rejected.
+- Valid non-Admin and inactive Admin requests stop before sensitive business-data sheets are read.
 - Active Admin can read Admin pages.
 - Approver can update a product but cannot update a user Role.
 - Owner can update a product and another user's Role.

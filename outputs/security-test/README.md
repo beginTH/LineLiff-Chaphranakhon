@@ -39,8 +39,8 @@ active. Keep both TEST workflows inactive during the initial test rounds.
 4. Run the read workflow in manual test mode first.
 5. Verify a missing bearer token is rejected before any Google Sheets node runs.
 6. Verify a random bearer token is rejected by LINE before any Google Sheets node runs.
-7. Verify a valid non-Admin token cannot read Admin data.
-8. Verify an inactive Admin cannot read Admin data.
+7. Verify a valid non-Admin token stops at `Authorize Active Admin` before business-data sheets run.
+8. Verify an inactive Admin stops at `Authorize Active Admin` before business-data sheets run.
 9. Verify an active Admin can read all four endpoints.
 10. Test write authorization boundaries only after selecting disposable test records.
 
