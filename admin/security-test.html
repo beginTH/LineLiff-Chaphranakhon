@@ -173,7 +173,7 @@
           if (!payload.unit || !Number.isFinite(payload.price) || payload.price < 0) {
             throw new Error('ข้อมูลเดิมของ P002 ไม่ครบ จึงยกเลิกการทดสอบ');
           }
-          if (!['active', 'inactive', 'cancelled'].includes(payload.status)) {
+          if (!['active', 'available', 'in stock', 'พร้อม', 'inactive', 'disabled', 'ปิด', 'cancelled', 'canceled', 'ยกเลิก'].includes(payload.status)) {
             throw new Error(`สถานะเดิมของ P002 ไม่รองรับ: ${payload.status || 'ว่าง'}`);
           }
           if (payload.imageUrl && !/^https?:\/\//i.test(payload.imageUrl)) {
