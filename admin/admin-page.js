@@ -1,7 +1,8 @@
 const ADMIN_API_BASE = 'https://n8n.n8n-kokujapan.org';
 const ADMIN_LIFF_ID = '2010570929-BJxo68XQ';
 const pageView = document.body.dataset.view;
-let adminUid = new URLSearchParams(location.search).get('uid') || '';
+let adminIdToken = '';
+let adminProfile = null;
 let allItems = [];
 let activeStatus = 'all';
 let activeBranch = 'all';
@@ -22,6 +23,11 @@ const money = value => `฿${Number(value || 0).toLocaleString('th-TH', { minimu
 const dateTime = value => { const parsed = new Date(value); return !value || Number.isNaN(parsed.getTime()) ? (value ? String(value).replace('T', ' ').replace('.000Z', '') : '—') : parsed.toLocaleString('th-TH', { dateStyle: 'medium', timeStyle: 'short' }); };
 const orderAge = value => { const then = new Date(value); if (Number.isNaN(then.getTime())) return 'ไม่ทราบเวลา'; const minutes = Math.max(0, Math.floor((Date.now() - then.getTime()) / 60000)); if (minutes < 60) return `${minutes} นาทีที่แล้ว`; const hours = Math.floor(minutes / 60); if (hours < 24) return `${hours} ชั่วโมงที่แล้ว`; return `${Math.floor(hours / 24)} วันที่แล้ว`; };
 const statusClass = value => /approved|verified|paid|\bactive\b|\bavailable\b|พร้อม|สำเร็จ|success/i.test(String(value)) ? 'admin-badge--success' : /pending|รอ|submit|review|ยังไม่ชำระ/i.test(String(value)) ? 'admin-badge--warn' : /reject|cancel|inactive|unavailable|ระงับ|ยกเลิก/i.test(String(value)) ? 'admin-badge--danger' : 'admin-badge--neutral';
+
+function authHeaders(extra = {}) {
+  if (!adminIdToken) throw new Error('ไม่พบเซสชัน LINE กรุณาเปิดหน้า Admin ใหม่จาก LINE');
+  return { ...extra, Authorization: `Bearer ${adminIdToken}` };
+}
 
 function setState(kind, title, detail = '', retry = false) {
   const content = document.querySelector('#page-content');
@@ -62,8 +68,8 @@ function bindEditors() {
 }
 async function saveEdit(event) {
   event.preventDefault(); const form = event.currentTarget; const submit = form.querySelector('[type="submit"]'); const message = form.querySelector('.admin-form-message'); submit.disabled = true; message.textContent = 'กำลังบันทึก…';
-  const data = Object.fromEntries(new FormData(form)); const isProduct = form.dataset.productId; const payload = isProduct ? { uid: adminUid, productId: isProduct, ...data, price: Number(data.price) } : { uid: adminUid, lineUid: form.dataset.userId, role: data.role };
-  try { const response = await fetch(`${ADMIN_API_BASE}/webhook/${isProduct ? 'admin-product-update' : 'admin-user-role-update'}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }); if (!response.ok) throw new Error(`บันทึกไม่สำเร็จ (${response.status})`); message.textContent = 'บันทึกเรียบร้อย'; await loadPage(); } catch (error) { message.textContent = error.message || 'กรุณาลองใหม่'; submit.disabled = false; }
+  const data = Object.fromEntries(new FormData(form)); const isProduct = form.dataset.productId; const payload = isProduct ? { productId: isProduct, ...data, price: Number(data.price) } : { lineUid: form.dataset.userId, role: data.role };
+  try { const response = await fetch(`${ADMIN_API_BASE}/webhook/${isProduct ? 'admin-product-update' : 'admin-user-role-update'}`, { method: 'POST', headers: authHeaders({ 'Content-Type': 'application/json' }), body: JSON.stringify(payload) }); if (!response.ok) throw new Error(`บันทึกไม่สำเร็จ (${response.status})`); message.textContent = 'บันทึกเรียบร้อย'; await loadPage(); } catch (error) { message.textContent = error.message || 'กรุณาลองใหม่'; submit.disabled = false; }
 }
 function renderList() {
   const copy = pageCopy[pageView]; const content = document.querySelector('#page-content');
@@ -76,12 +82,26 @@ function renderList() {
   document.querySelectorAll('#admin-filters button').forEach(button => button.addEventListener('click', () => { activeStatus = button.dataset.status; renderList(); })); bindEditors();
 }
 function renderData(data) { allItems = data[pageView] || []; renderList(); }
-async function requestData() { const response = await fetch(`${ADMIN_API_BASE}/webhook/${pageCopy[pageView].endpoint}?uid=${encodeURIComponent(adminUid)}`); if (!response.ok) throw new Error(`ไม่สามารถโหลดข้อมูลได้ (${response.status})`); return response.json(); }
+async function requestData() { const response = await fetch(`${ADMIN_API_BASE}/webhook/${pageCopy[pageView].endpoint}`, { headers: authHeaders() }); if (!response.ok) throw new Error(`ไม่สามารถโหลดข้อมูลได้ (${response.status})`); return response.json(); }
 async function loadPage() { setState('loading', 'กำลังโหลดข้อมูล…', 'โปรดรอสักครู่'); try { renderData(await requestData()); } catch (error) { setState('error', 'ไม่สามารถโหลดข้อมูลได้', error.message || 'กรุณาลองใหม่อีกครั้ง', true); } }
 async function init() {
   const copy = pageCopy[pageView]; if (!copy) return setState('error', 'ไม่พบหน้าที่ต้องการ', 'กรุณากลับไปหน้า Admin');
   document.querySelector('#page-title').textContent = copy.title; document.querySelector('#page-subtitle').textContent = copy.subtitle;
   document.querySelector('.admin-hero').insertAdjacentHTML('beforeend', `<nav class="admin-tabs" aria-label="หน้าผู้ดูแล">${Object.entries(pageLinks).map(([view, href]) => `<a class="${view === pageView ? 'is-active' : ''}" href="${href}" ${view === pageView ? 'aria-current="page"' : ''}>${pageLabels[view]}</a>`).join('')}</nav>`);
-  try { if (!adminUid && window.liff) { await liff.init({ liffId: ADMIN_LIFF_ID }); if (liff.isLoggedIn()) adminUid = (await liff.getProfile()).userId; } document.querySelector('#admin-context').innerHTML = adminUid ? '<span class="admin-context-dot" aria-hidden="true"></span><strong>เชื่อมต่อในฐานะผู้ดูแลแล้ว</strong>' : 'กรุณาเปิดผ่าน LINE LIFF เพื่อยืนยันสิทธิ์'; if (adminUid) document.querySelectorAll('.admin-tabs a').forEach(link => { const url = new URL(link.href); url.searchParams.set('uid', adminUid); link.href = url.href; }); await loadPage(); } catch (error) { document.querySelector('#admin-context').textContent = 'ไม่สามารถยืนยันสิทธิ์ผู้ดูแลได้'; setState('error', 'ไม่สามารถเปิดหน้าผู้ดูแลได้', error.message || 'กรุณาลองใหม่อีกครั้ง', true); }
+  try {
+    if (!window.liff) throw new Error('ไม่พบ LINE LIFF SDK');
+    await liff.init({ liffId: ADMIN_LIFF_ID });
+    if (!liff.isLoggedIn()) { liff.login({ redirectUri: location.href }); return; }
+    adminIdToken = liff.getIDToken() || '';
+    if (!adminIdToken) throw new Error('ไม่สามารถรับ LINE ID token ได้ กรุณาเปิดหน้าใหม่จาก LINE');
+    adminProfile = await liff.getProfile();
+    const currentUrl = new URL(location.href);
+    if (currentUrl.searchParams.has('uid')) {
+      currentUrl.searchParams.delete('uid');
+      history.replaceState(null, '', `${currentUrl.pathname}${currentUrl.search}${currentUrl.hash}`);
+    }
+    document.querySelector('#admin-context').innerHTML = `<span class="admin-context-dot" aria-hidden="true"></span><strong>เชื่อมต่อในฐานะ ${esc(adminProfile.displayName || 'ผู้ดูแล')}</strong>`;
+    await loadPage();
+  } catch (error) { document.querySelector('#admin-context').textContent = 'ไม่สามารถยืนยันสิทธิ์ผู้ดูแลได้'; setState('error', 'ไม่สามารถเปิดหน้าผู้ดูแลได้', error.message || 'กรุณาลองใหม่อีกครั้ง', true); }
 }
 init();
