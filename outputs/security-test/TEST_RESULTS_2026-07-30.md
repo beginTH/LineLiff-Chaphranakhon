@@ -8,7 +8,7 @@ Status: local, external token-rejection, and selected n8n end-to-end tests passe
 - 0 local workflow tests failed after remediation.
 - A fake token was rejected by LINE with HTTP 400 and `JWS format error`.
 - Two isolated TEST workflows were imported into n8n and kept inactive; neither was published.
-- Google Sheets reads occurred only in valid-token test-mode executions; no Google Sheets write node ran.
+- Google Sheets reads occurred only in valid-token test-mode executions. Two authorized Product writes ran: the reversible P002 price test and its restoration.
 - No production webhook, Admin frontend or production workflow was deployed; the temporary LIFF test page was removed after testing.
 
 ## Tests passed
@@ -66,12 +66,16 @@ The Role-name mismatch was remediated in both canonical and TEST Workflow 14 fil
 
 The updated Workflow 14 TEST was then exercised with a valid LIFF token. The active `approve` account reached product validation, stopped with `Invalid product data`, and did not run `Update Product`. A valid-token Role Update request from the same `approve` account stopped with `Only an active owner may update user roles`, and did not run `Update User Role`.
 
+A production-data compatibility mismatch was then found before the write test: P002 uses the existing Thai status `พร้อม`, while Workflow 14 and the Admin editor initially allowed only English status values. The canonical Workflow, TEST Workflow, Admin editor and temporary test page were updated to accept only the known status aliases already supported by the storefront. Eleven status regression cases passed, including rejection of an unknown status and preservation of the original Thai value.
+
+The active `approve` account then updated P002 from THB 490.00 to THB 490.01 through the full Product Update path and received HTTP 200. A second authorized execution restored the original price, unit and status. A fresh Workflow 13 read confirmed P002 at THB 490.00, unit `ถุง` and status `พร้อม`.
+
 ## End-to-end tests still required
 
 - If suitable accounts are available, confirm real valid-token executions for inactive and non-Admin users stop at `Authorize Active Admin`.
 
-- Select disposable product and member records before testing successful writes.
-- Confirm no unauthorized request reaches an Update node.
+- Use an active `owner` account and a disposable member record before testing a successful user-Role write.
+
 
 Browser and Windows UI automation could not connect in this session because the
 Windows sandbox stopped the automation runtime before it opened n8n. This did
