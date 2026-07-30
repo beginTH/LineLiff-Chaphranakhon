@@ -9,12 +9,12 @@ The modular files separate the business events while keeping the existing Sheets
 | `03_payment_submission.json` | Payment proof upload and Admin notice | 10 |
 | `04_payment_verification_receipt.json` | Verification and receipt | 20 |
 | `05_payment_rejection.json` | Rejection and branch notice | 9 |
-| `06_read_apis.json` | Read APIs | 13 |
+| `06_read_apis.json` | Read APIs | 13 |`r`n| `13_admin_read_apis.json` | Admin orders, payments, products, and users read APIs | 18 |`r`n| `14_admin_write_apis.json` | Admin product and user Role update APIs | 10 |
 
 ## Import
 
 1. Keep a backup of the current n8n workflows.
-2. Import all six files from `outputs/modular/`.
+2. Import the required files from `outputs/modular/`. For the standalone Admin pages, import workflows 13 and 14 together.
 3. Reconnect credentials and check `Allowed Origins=https://beginth.github.io`.
 4. Disable the V15 monolith and any duplicate webhook paths.
 5. Publish and test Order -> Approval -> Payment -> Verify/Reject.

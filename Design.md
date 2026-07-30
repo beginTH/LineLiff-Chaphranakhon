@@ -223,3 +223,7 @@ AAT Template เป็นเอกสาร A4 ไม่ใช้ token เด�
 - รองรับ loading, empty และ error/retry state
 - รายการแสดงเป็น card บนมือถือเพื่อรองรับข้อความยาวและกดใช้งานง่าย
 - หน้าแยกแต่ละหน้าใช้ LINE UID ที่ส่งต่อจาก LIFF เพื่อเรียกเฉพาะข้อมูลที่ผู้ดูแลมีสิทธิ์ดู
+- หน้า Order และ Payment รองรับตัวกรองสาขาจาก Branch_Name ที่จับคู่ด้วย LINE_UID`r
+- หน้า Payment ต้องรวม Order ที่ยังไม่มี Payment_Status และแสดงเวลาที่สร้าง Order/อายุรายการ
+- หน้า Products แก้ไข Image_URL, Price, Unit, Customer_Type และ Status ผ่าน Admin write API
+- หน้า Members แก้ไข Role ได้เฉพาะค่าที่อนุญาต และทุก write API ต้องตรวจ Admin ที่มีสถานะ active
