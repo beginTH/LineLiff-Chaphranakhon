@@ -48,6 +48,7 @@
       font-weight: 800;
       cursor: pointer;
     }
+    button + button { margin-top: 10px; }
     button:disabled { cursor: wait; opacity: .55; }
     .notice { margin: 16px 0 0; color: #756d79; font-size: 13px; line-height: 1.5; }
   </style>
@@ -57,13 +58,16 @@
     <p class="eyebrow">CHAPHRANAKHON · TEMPORARY TEST</p>
     <h1>ทดสอบสิทธิ์ Admin</h1>
     <p class="description">
-      หน้านี้ส่ง LINE ID token ไปยัง Workflow 13 TEST เฉพาะเมื่อกดปุ่ม
+      หน้านี้ส่ง LINE ID token ไปยัง Workflow TEST เฉพาะเมื่อกดปุ่ม
       และจะไม่แสดงหรือบันทึก token
     </p>
     <div class="status" id="status" role="status" aria-live="polite">
       กำลังเชื่อมต่อ LINE…
     </div>
-    <button id="test-button" type="button" disabled>ทดสอบอ่าน Order</button>
+    <button id="test-orders" type="button" disabled>ทดสอบอ่าน Order</button>
+    <button id="test-product-validation" type="button" disabled>
+      ทดสอบสิทธิ์แก้สินค้า — ไม่เขียนข้อมูล
+    </button>
     <p class="notice">
       ใช้หน้านี้เฉพาะระหว่างที่ n8n กำลังรอ Test workflow
       ระบบจะส่งคำขอไปยัง webhook-test เท่านั้น
@@ -76,9 +80,12 @@
       'use strict';
 
       const LIFF_ID = '2010570929-BJxo68XQ';
-      const TEST_URL = 'https://n8n.n8n-kokujapan.org/webhook-test/admin-orders-security-test';
+      const TEST_URLS = Object.freeze({
+        orders: 'https://n8n.n8n-kokujapan.org/webhook-test/admin-orders-security-test',
+        productValidation: 'https://n8n.n8n-kokujapan.org/webhook-test/admin-product-update-security-test',
+      });
       const status = document.querySelector('#status');
-      const button = document.querySelector('#test-button');
+      const buttons = [...document.querySelectorAll('button')];
       let idToken = '';
 
       function show(message, kind = '') {
@@ -99,22 +106,22 @@
 
           const profile = await liff.getProfile();
           show(`พร้อมทดสอบในฐานะ ${profile.displayName || 'ผู้ดูแล'}`, 'success');
-          button.disabled = false;
+          buttons.forEach(button => { button.disabled = false; });
         } catch (error) {
           idToken = '';
           show(error?.message || 'ไม่สามารถเชื่อมต่อ LINE LIFF ได้', 'error');
         }
       }
 
-      button.addEventListener('click', async () => {
+      async function runTest(url, request, label) {
         if (!idToken) return show('ไม่พบ LINE ID token กรุณาเปิดหน้าใหม่จาก LINE', 'error');
 
-        button.disabled = true;
-        show('กำลังส่งคำขอไปยัง Workflow 13 TEST…');
+        buttons.forEach(button => { button.disabled = true; });
+        show(`กำลังส่งคำขอไปยัง ${label}…`);
         try {
-          const response = await fetch(TEST_URL, {
-            method: 'GET',
-            headers: { Authorization: `Bearer ${idToken}` },
+          const response = await fetch(url, {
+            ...request,
+            headers: { ...(request.headers || {}), Authorization: `Bearer ${idToken}` },
             cache: 'no-store',
           });
           const body = await response.text();
@@ -128,8 +135,31 @@
           show(error?.message || 'ไม่สามารถเชื่อมต่อ Workflow TEST ได้', 'error');
         } finally {
           idToken = '';
-          button.disabled = true;
+          buttons.forEach(button => { button.disabled = true; });
         }
+      }
+
+      document.querySelector('#test-orders').addEventListener('click', () => {
+        runTest(TEST_URLS.orders, { method: 'GET' }, 'Workflow 13 TEST');
+      });
+
+      document.querySelector('#test-product-validation').addEventListener('click', () => {
+        runTest(
+          TEST_URLS.productValidation,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              productId: '',
+              unit: '',
+              price: -1,
+              imageUrl: '',
+              status: 'invalid',
+              customerType: '',
+            }),
+          },
+          'Workflow 14 TEST',
+        );
       });
 
       initialize();
