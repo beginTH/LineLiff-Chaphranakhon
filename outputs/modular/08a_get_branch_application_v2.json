@@ -1,0 +1,98 @@
+{
+    "name":  "08a - Get Branch Application v2",
+    "nodes":  [
+                  {
+                      "parameters":  {
+                                         "httpMethod":  "GET",
+                                         "path":  "get-branch-application",
+                                         "responseMode":  "lastNode",
+                                         "options":  {
+                                                         "allowedOrigins":  "https://beginth.github.io"
+                                                     }
+                                     },
+                      "id":  "get-branch-webhook",
+                      "name":  "GET /get-branch-application",
+                      "type":  "n8n-nodes-base.webhook",
+                      "typeVersion":  1,
+                      "position":  [
+                                       0,
+                                       220
+                                   ]
+                  },
+                  {
+                      "parameters":  {
+                                         "documentId":  {
+                                                            "__rl":  true,
+                                                            "value":  "1aKwY4KOo8uGCRrHASD539Habt5Obam8meacRO-ir0Ks",
+                                                            "mode":  "list",
+                                                            "cachedResultName":  "Chaphranakhon_DB"
+                                                        },
+                                         "sheetName":  {
+                                                           "__rl":  true,
+                                                           "value":  "Branch_Applications",
+                                                           "mode":  "name",
+                                                           "cachedResultName":  "Branch_Applications"
+                                                       },
+                                         "options":  {
+
+                                                     }
+                                     },
+                      "id":  "read-branch-applications",
+                      "name":  "Read Branch Applications",
+                      "type":  "n8n-nodes-base.googleSheets",
+                      "typeVersion":  4,
+                      "position":  [
+                                       230,
+                                       220
+                                   ],
+                      "alwaysOutputData":  true,
+                      "credentials":  {
+                                          "googleSheetsOAuth2Api":  {
+                                                                        "id":  "ZPODlcDmX45WFVuM",
+                                                                        "name":  "Google Sheets account 2"
+                                                                    }
+                                      }
+                  },
+                  {
+                      "parameters":  {
+                                         "jsCode":  "const request = $node[\u0027GET /get-branch-application\u0027].json;\nconst applicationId = String(request.query?.applicationId || \u0027\u0027).trim();\nif (!applicationId) return [{ json: { success: false, message: \u0027Missing application ID\u0027 } }];\nconst rows = $input.all().map(item =\u003e item.json);\nconst application = rows.find(row =\u003e String(row.Application_ID || \u0027\u0027).trim() === applicationId);\nif (!application) return [{ json: { success: false, message: \u0027Application not found\u0027 } }];\nreturn [{ json: { success: true, application } }];"
+                                     },
+                      "id":  "build-application-response",
+                      "name":  "Build Application Response",
+                      "type":  "n8n-nodes-base.code",
+                      "typeVersion":  2,
+                      "position":  [
+                                       470,
+                                       220
+                                   ]
+                  }
+              ],
+    "connections":  {
+                        "GET /get-branch-application":  {
+                                                            "main":  [
+                                                                         [
+                                                                             {
+                                                                                 "node":  "Read Branch Applications",
+                                                                                 "type":  "main",
+                                                                                 "index":  0
+                                                                             }
+                                                                         ]
+                                                                     ]
+                                                        },
+                        "Read Branch Applications":  {
+                                                         "main":  [
+                                                                      [
+                                                                          {
+                                                                              "node":  "Build Application Response",
+                                                                              "type":  "main",
+                                                                              "index":  0
+                                                                          }
+                                                                      ]
+                                                                  ]
+                                                     }
+                    },
+    "active":  false,
+    "settings":  {
+                     "executionOrder":  "v1"
+                 }
+}

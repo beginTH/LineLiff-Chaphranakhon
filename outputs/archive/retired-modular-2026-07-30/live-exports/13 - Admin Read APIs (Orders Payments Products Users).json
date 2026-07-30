@@ -1,0 +1,609 @@
+{
+  "name": "13 - Admin Read APIs (Orders Payments Products Users)",
+  "nodes": [
+    {
+      "parameters": {
+        "path": "admin-orders",
+        "responseMode": "lastNode",
+        "options": {
+          "allowedOrigins": "https://beginth.github.io"
+        }
+      },
+      "id": "313c8b9f-132f-43cd-ba12-b6e21980d903",
+      "name": "GET /admin-orders",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        1008,
+        384
+      ],
+      "webhookId": "b65a0811-9a13-4448-b65e-4a2ca8a95f91"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1aKwY4KOo8uGCRrHASD539Habt5Obam8meacRO-ir0Ks",
+          "mode": "list",
+          "cachedResultName": "Chaphranakhon_DB"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Admins",
+          "mode": "name",
+          "cachedResultName": "Admins"
+        },
+        "options": {}
+      },
+      "id": "1557f535-6077-4e03-9969-7bee7ce116a2",
+      "name": "Read Admins for Orders",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        1232,
+        384
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "ZPODlcDmX45WFVuM",
+          "name": "Google Sheets account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1aKwY4KOo8uGCRrHASD539Habt5Obam8meacRO-ir0Ks",
+          "mode": "list",
+          "cachedResultName": "Chaphranakhon_DB"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Orders",
+          "mode": "name",
+          "cachedResultName": "Orders"
+        },
+        "options": {}
+      },
+      "id": "cc422bf0-e795-4479-94bb-caa6f29c8d63",
+      "name": "Read All Orders",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        1456,
+        384
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "ZPODlcDmX45WFVuM",
+          "name": "Google Sheets account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const uid=String($node['GET /admin-orders'].json.query?.uid||'').trim(); const admins=$items('Read Admins for Orders').map(i=>i.json); const ok=admins.some(a=>String(a.LINE_UID||'').trim()===uid&&String(a.Status||'').trim().toLowerCase()==='active'); if(!uid||!ok) throw new Error('Active admin UID is required'); const branchMap=Object.fromEntries($input.all().map(i=>[String(i.json.LINE_UID||'').trim(),i.json.Branch_Name||i.json.Display_Name||''])); const orders=$items('Read All Orders').map(i=>i.json).map(r=>({orderId:r.Order_ID||'',timestamp:r.Timestamp||'',lineUid:r.LINE_UID||'',branchName:branchMap[String(r.LINE_UID||'').trim()]||'ไม่ระบุสาขา',status:r.Status||'',totalAmount:Number(r.Total_Amount||0),paymentStatus:r.Payment_Status||'',poUrl:r.PO_PDF_URL||'',paymentProofUrl:r.Payment_Proof_URL||''})).sort((a,b)=>new Date(b.timestamp||0)-new Date(a.timestamp||0)); return [{json:{success:true,orders}}];"
+      },
+      "id": "5cf45ab3-7d4f-4c6b-88d5-33d9a9b62c29",
+      "name": "Format Admin Orders",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1888,
+        384
+      ]
+    },
+    {
+      "parameters": {
+        "path": "admin-payments",
+        "responseMode": "lastNode",
+        "options": {
+          "allowedOrigins": "https://beginth.github.io"
+        }
+      },
+      "id": "b89bf7c5-20de-4fa3-b34a-01fddc4b3279",
+      "name": "GET /admin-payments",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        1008,
+        656
+      ],
+      "webhookId": "cbacee41-1f12-4555-9b3e-baf9aec129da"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1aKwY4KOo8uGCRrHASD539Habt5Obam8meacRO-ir0Ks",
+          "mode": "list",
+          "cachedResultName": "Chaphranakhon_DB"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Admins",
+          "mode": "name",
+          "cachedResultName": "Admins"
+        },
+        "options": {}
+      },
+      "id": "b22f9b56-3d0e-4268-bfe6-cf626f303c38",
+      "name": "Read Admins for Payments",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        1232,
+        656
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "ZPODlcDmX45WFVuM",
+          "name": "Google Sheets account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1aKwY4KOo8uGCRrHASD539Habt5Obam8meacRO-ir0Ks",
+          "mode": "list",
+          "cachedResultName": "Chaphranakhon_DB"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Orders",
+          "mode": "name",
+          "cachedResultName": "Orders"
+        },
+        "options": {}
+      },
+      "id": "ec0536dc-070c-4630-8c27-239ff898ae2f",
+      "name": "Read Orders for Payments",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        1456,
+        656
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "ZPODlcDmX45WFVuM",
+          "name": "Google Sheets account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const uid=String($node['GET /admin-payments'].json.query?.uid||'').trim(); const admins=$items('Read Admins for Payments').map(i=>i.json); const ok=admins.some(a=>String(a.LINE_UID||'').trim()===uid&&String(a.Status||'').trim().toLowerCase()==='active'); if(!uid||!ok) throw new Error('Active admin UID is required'); const branchMap=Object.fromEntries($input.all().map(i=>[String(i.json.LINE_UID||'').trim(),i.json.Branch_Name||i.json.Display_Name||''])); const payments=$items('Read Orders for Payments').map(i=>i.json).map(r=>({orderId:r.Order_ID||'',timestamp:r.Timestamp||'',lineUid:r.LINE_UID||'',branchName:branchMap[String(r.LINE_UID||'').trim()]||'ไม่ระบุสาขา',totalAmount:Number(r.Total_Amount||0),paymentStatus:r.Payment_Status||'',submittedAt:r.Payment_Submitted_At||'',proofUrl:r.Payment_Proof_URL||'',status:r.Status||''})).sort((a,b)=>new Date(b.timestamp||0)-new Date(a.timestamp||0)); return [{json:{success:true,payments}}];"
+      },
+      "id": "44a6a1fe-18ef-40f8-8a8e-b12551fcea9a",
+      "name": "Format Admin Payments",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1888,
+        656
+      ]
+    },
+    {
+      "parameters": {
+        "path": "admin-products",
+        "responseMode": "lastNode",
+        "options": {
+          "allowedOrigins": "https://beginth.github.io"
+        }
+      },
+      "id": "6c284f74-303f-4ec8-a5a8-ad6b85c3bc50",
+      "name": "GET /admin-products",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        1008,
+        912
+      ],
+      "webhookId": "f030d02a-f6ca-4fba-b372-fe3f733b7fed"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1aKwY4KOo8uGCRrHASD539Habt5Obam8meacRO-ir0Ks",
+          "mode": "list",
+          "cachedResultName": "Chaphranakhon_DB"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Admins",
+          "mode": "name",
+          "cachedResultName": "Admins"
+        },
+        "options": {}
+      },
+      "id": "3706f2d8-d320-498f-91d5-ed1d0b3fae8a",
+      "name": "Read Admins for Products",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        1232,
+        912
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "ZPODlcDmX45WFVuM",
+          "name": "Google Sheets account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1aKwY4KOo8uGCRrHASD539Habt5Obam8meacRO-ir0Ks",
+          "mode": "list",
+          "cachedResultName": "Chaphranakhon_DB"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Products",
+          "mode": "name",
+          "cachedResultName": "Products"
+        },
+        "options": {}
+      },
+      "id": "2038cde6-7a77-4b0a-abdd-de9ccbdf606a",
+      "name": "Read All Products",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        1456,
+        912
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "ZPODlcDmX45WFVuM",
+          "name": "Google Sheets account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const uid=String($node['GET /admin-products'].json.query?.uid||'').trim(); const admins=$items('Read Admins for Products').map(i=>i.json); const ok=admins.some(a=>String(a.LINE_UID||'').trim()===uid&&String(a.Status||'').trim().toLowerCase()==='active'); if(!uid||!ok) throw new Error('Active admin UID is required'); const products=$input.all().map(i=>i.json).map(r=>({productId:r.Product_ID||r.ID||'',name:r.Product_Name||r.Name||'',unit:r.Unit||'',price:Number(r.Price||0),imageUrl:r.Image_URL||'',status:r.Status||'',customerType:r.Customer_Type||''})); return [{json:{success:true,products}}];"
+      },
+      "id": "7547079d-b01f-4b6f-9b77-8828e5b47bf3",
+      "name": "Format Admin Products",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1680,
+        912
+      ]
+    },
+    {
+      "parameters": {
+        "path": "admin-users",
+        "responseMode": "lastNode",
+        "options": {
+          "allowedOrigins": "https://beginth.github.io"
+        }
+      },
+      "id": "dc9d868b-4ffe-48e9-aa90-08baea3c15f6",
+      "name": "GET /admin-users",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        1008,
+        1168
+      ],
+      "webhookId": "2ed1b604-6940-4c04-9db9-473fc655795d"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1aKwY4KOo8uGCRrHASD539Habt5Obam8meacRO-ir0Ks",
+          "mode": "list",
+          "cachedResultName": "Chaphranakhon_DB"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Admins",
+          "mode": "name",
+          "cachedResultName": "Admins"
+        },
+        "options": {}
+      },
+      "id": "794ce156-9eca-4634-b136-4b77b712e293",
+      "name": "Read Admins for Users",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        1232,
+        1168
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "ZPODlcDmX45WFVuM",
+          "name": "Google Sheets account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1aKwY4KOo8uGCRrHASD539Habt5Obam8meacRO-ir0Ks",
+          "mode": "list",
+          "cachedResultName": "Chaphranakhon_DB"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Users",
+          "mode": "name",
+          "cachedResultName": "Users"
+        },
+        "options": {}
+      },
+      "id": "c435e578-c9c9-4c83-bfd3-f197d26f4f3c",
+      "name": "Read All Users",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        1456,
+        1168
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "ZPODlcDmX45WFVuM",
+          "name": "Google Sheets account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const uid=String($node['GET /admin-users'].json.query?.uid||'').trim(); const admins=$items('Read Admins for Users').map(i=>i.json); const ok=admins.some(a=>String(a.LINE_UID||'').trim()===uid&&String(a.Status||'').trim().toLowerCase()==='active'); if(!uid||!ok) throw new Error('Active admin UID is required'); const users=$input.all().map(i=>i.json).map(r=>({lineUid:r.LINE_UID||'',displayName:r.Display_Name||'',role:r.Role||'customer',friendStatus:r.Friend_Status||'',updatedAt:r.Updated_At||''})); return [{json:{success:true,users}}];"
+      },
+      "id": "83173594-b483-4534-a62a-4e3a38a6ec94",
+      "name": "Format Admin Users",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1680,
+        1168
+      ]
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "mode": "list",
+          "__rl": true,
+          "cachedResultName": "Chaphranakhon_DB",
+          "value": "1aKwY4KOo8uGCRrHASD539Habt5Obam8meacRO-ir0Ks"
+        },
+        "sheetName": {
+          "mode": "name",
+          "__rl": true,
+          "cachedResultName": "Users_Addresses",
+          "value": "Users_Addresses"
+        },
+        "options": {}
+      },
+      "id": "4ff512f5-8176-42e9-9ac0-b16175b52fe2",
+      "name": "Read Branches for Orders",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        1680,
+        384
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "ZPODlcDmX45WFVuM",
+          "name": "Google Sheets account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "mode": "list",
+          "__rl": true,
+          "cachedResultName": "Chaphranakhon_DB",
+          "value": "1aKwY4KOo8uGCRrHASD539Habt5Obam8meacRO-ir0Ks"
+        },
+        "sheetName": {
+          "mode": "name",
+          "__rl": true,
+          "cachedResultName": "Users_Addresses",
+          "value": "Users_Addresses"
+        },
+        "options": {}
+      },
+      "id": "7134f1e6-0a25-42c5-b9af-242890d9f69e",
+      "name": "Read Branches for Payments",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        1680,
+        656
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "ZPODlcDmX45WFVuM",
+          "name": "Google Sheets account 2"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "GET /admin-orders": {
+      "main": [
+        [
+          {
+            "node": "Read Admins for Orders",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Admins for Orders": {
+      "main": [
+        [
+          {
+            "node": "Read All Orders",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read All Orders": {
+      "main": [
+        [
+          {
+            "node": "Read Branches for Orders",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GET /admin-payments": {
+      "main": [
+        [
+          {
+            "node": "Read Admins for Payments",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Admins for Payments": {
+      "main": [
+        [
+          {
+            "node": "Read Orders for Payments",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Orders for Payments": {
+      "main": [
+        [
+          {
+            "node": "Read Branches for Payments",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GET /admin-products": {
+      "main": [
+        [
+          {
+            "node": "Read Admins for Products",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Admins for Products": {
+      "main": [
+        [
+          {
+            "node": "Read All Products",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read All Products": {
+      "main": [
+        [
+          {
+            "node": "Format Admin Products",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GET /admin-users": {
+      "main": [
+        [
+          {
+            "node": "Read Admins for Users",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Admins for Users": {
+      "main": [
+        [
+          {
+            "node": "Read All Users",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read All Users": {
+      "main": [
+        [
+          {
+            "node": "Format Admin Users",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Branches for Orders": {
+      "main": [
+        [
+          {
+            "node": "Format Admin Orders",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Branches for Payments": {
+      "main": [
+        [
+          {
+            "node": "Format Admin Payments",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "ba72303c-96be-4326-93ec-bf4b15f02fa4",
+  "meta": {
+    "instanceId": "c20a6dd4079f66152f6eb0e4f4430ccd14d2f96a74552098f94caca40dd51250"
+  },
+  "nodeGroups": [],
+  "id": "nIPMoS43NxLZvPsf",
+  "tags": []
+}

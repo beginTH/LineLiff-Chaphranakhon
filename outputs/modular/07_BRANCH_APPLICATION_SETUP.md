@@ -3,11 +3,11 @@
 ไฟล์ที่เกี่ยวข้อง:
 
 - `branch-registration/` คือหน้า LIFF สำหรับผู้สมัคร
-- `07_branch_application_registration.json` คือ workflow บันทึกคำขอลงชีต `Branch_Applications`
+- `07_branch_application_registration_v6_approval_liff.json` คือ workflow บันทึกคำขอลงชีต `Branch_Applications`
 
 ## 1. นำเข้าและตั้งค่า workflow
 
-1. Import ไฟล์ `07_branch_application_registration.json` ใน n8n
+1. Import ไฟล์ `07_branch_application_registration_v6_approval_liff.json` ใน n8n
 2. เปิด node Google Sheets ทั้ง 2 จุด แล้วกด Refresh หาก n8n แจ้งให้รีเฟรชฟิลด์
 3. ยืนยันว่าเลือก Spreadsheet `Chaphranakhon_DB` และ Sheet `Branch_Applications`
 4. ที่ node `Append Pending Application` หากยังไม่จับคอลัมน์อัตโนมัติ ให้เลือก **Map Automatically** แล้วกด Refresh; ชื่อฟิลด์ตรงกับหัวคอลัมน์ A:T ที่สร้างไว้แล้ว

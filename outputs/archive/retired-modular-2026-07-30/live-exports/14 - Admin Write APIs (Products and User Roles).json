@@ -1,0 +1,341 @@
+{
+  "name": "14 - Admin Write APIs (Products and User Roles)",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "admin-product-update",
+        "responseMode": "lastNode",
+        "options": {
+          "allowedOrigins": "https://beginth.github.io"
+        }
+      },
+      "id": "456f8742-c265-4571-855e-4b342386baef",
+      "name": "POST /admin-product-update",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        1072,
+        256
+      ],
+      "webhookId": "7ad173b1-68a5-4e0b-a45c-551eee705bec"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1aKwY4KOo8uGCRrHASD539Habt5Obam8meacRO-ir0Ks",
+          "mode": "list",
+          "cachedResultName": "Chaphranakhon_DB"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Admins",
+          "mode": "name",
+          "cachedResultName": "Admins"
+        },
+        "options": {}
+      },
+      "id": "4dffc399-0951-4743-ada7-0fd61d75acf3",
+      "name": "Read Admins for Product Update",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        1296,
+        256
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "ZPODlcDmX45WFVuM",
+          "name": "Google Sheets account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const body=$node['POST /admin-product-update'].json.body||{}; const uid=String(body.uid||'').trim(); const ok=$input.all().some(i=>String(i.json.LINE_UID||'').trim()===uid&&String(i.json.Status||'').trim().toLowerCase()==='active'); if(!ok) throw new Error('Active admin UID is required'); const Product_ID=String(body.productId||'').trim(); const Unit=String(body.unit||'').trim(); const Price=Number(body.price); const Image_URL=String(body.imageUrl||'').trim(); const Status=String(body.status||'').trim().toLowerCase(); const Customer_Type=String(body.customerType||'').trim(); if(!Product_ID||!Unit||!Number.isFinite(Price)||Price<0) throw new Error('Invalid product data'); if(!['active','inactive','cancelled'].includes(Status)) throw new Error('Invalid product status'); if(Image_URL&&!/^https?:\\/\\//i.test(Image_URL)) throw new Error('Image URL must use http or https'); return [{json:{Product_ID,Unit,Price,Image_URL,Status,Customer_Type,Updated_At:new Date().toISOString(),Updated_By_UID:uid}}];"
+      },
+      "id": "16ced70d-816f-4690-8ed1-2d3400394e14",
+      "name": "Validate Product Update",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1520,
+        256
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "1aKwY4KOo8uGCRrHASD539Habt5Obam8meacRO-ir0Ks",
+          "mode": "list",
+          "cachedResultName": "Chaphranakhon_DB"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Products",
+          "mode": "name",
+          "cachedResultName": "Products"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [
+            "Product_ID"
+          ],
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "12403029-ed33-4b19-9156-79985e181395",
+      "name": "Update Product",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        1744,
+        256
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "ZPODlcDmX45WFVuM",
+          "name": "Google Sheets account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{json:{success:true,message:'Product updated',productId:$json.Product_ID||''}}];"
+      },
+      "id": "bce9bd05-a548-4e20-ac6a-e7ad9d7bb7bf",
+      "name": "Product Update Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1952,
+        256
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "admin-user-role-update",
+        "responseMode": "lastNode",
+        "options": {
+          "allowedOrigins": "https://beginth.github.io"
+        }
+      },
+      "id": "9006dbe2-4bc6-4183-8d41-11e4a3e36e38",
+      "name": "POST /admin-user-role-update",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        1072,
+        560
+      ],
+      "webhookId": "04ac6045-cd75-47be-a0ea-23195edea7e2"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1aKwY4KOo8uGCRrHASD539Habt5Obam8meacRO-ir0Ks",
+          "mode": "list",
+          "cachedResultName": "Chaphranakhon_DB"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Admins",
+          "mode": "name",
+          "cachedResultName": "Admins"
+        },
+        "options": {}
+      },
+      "id": "96ba37dd-eb3a-4ad7-807e-9a60b50dbcce",
+      "name": "Read Admins for Role Update",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        1296,
+        560
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "ZPODlcDmX45WFVuM",
+          "name": "Google Sheets account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const body=$node['POST /admin-user-role-update'].json.body||{}; const uid=String(body.uid||'').trim(); const ok=$input.all().some(i=>String(i.json.LINE_UID||'').trim()===uid&&String(i.json.Status||'').trim().toLowerCase()==='active'); if(!ok) throw new Error('Active admin UID is required'); const LINE_UID=String(body.lineUid||'').trim(); const Role=String(body.role||'').trim().toLowerCase(); if(!LINE_UID||!['customer','branch','owner','admin','superadmin'].includes(Role)) throw new Error('Invalid user role data'); return [{json:{LINE_UID,Role,Updated_At:new Date().toISOString(),Updated_By_UID:uid}}];"
+      },
+      "id": "4070e67d-7d1a-4b61-ac8b-5e66cb9118b1",
+      "name": "Validate Role Update",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1520,
+        560
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "1aKwY4KOo8uGCRrHASD539Habt5Obam8meacRO-ir0Ks",
+          "mode": "list",
+          "cachedResultName": "Chaphranakhon_DB"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Users",
+          "mode": "name",
+          "cachedResultName": "Users"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [
+            "LINE_UID"
+          ],
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "3bb08ecd-3e66-4a9f-be9a-12fa16243049",
+      "name": "Update User Role",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        1744,
+        560
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "ZPODlcDmX45WFVuM",
+          "name": "Google Sheets account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{json:{success:true,message:'User role updated',lineUid:$json.LINE_UID||'',role:$json.Role||''}}];"
+      },
+      "id": "eeaeffe8-903d-4d14-a28e-304d75d2dc40",
+      "name": "Role Update Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1952,
+        560
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "POST /admin-product-update": {
+      "main": [
+        [
+          {
+            "node": "Read Admins for Product Update",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Admins for Product Update": {
+      "main": [
+        [
+          {
+            "node": "Validate Product Update",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Product Update": {
+      "main": [
+        [
+          {
+            "node": "Update Product",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Product": {
+      "main": [
+        [
+          {
+            "node": "Product Update Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "POST /admin-user-role-update": {
+      "main": [
+        [
+          {
+            "node": "Read Admins for Role Update",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Admins for Role Update": {
+      "main": [
+        [
+          {
+            "node": "Validate Role Update",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Role Update": {
+      "main": [
+        [
+          {
+            "node": "Update User Role",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update User Role": {
+      "main": [
+        [
+          {
+            "node": "Role Update Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "904bafa7-d9b0-41d5-b37b-75bd643a1df9",
+  "meta": {
+    "instanceId": "c20a6dd4079f66152f6eb0e4f4430ccd14d2f96a74552098f94caca40dd51250"
+  },
+  "nodeGroups": [],
+  "id": "Ya61jPEmXjXaYjRN",
+  "tags": []
+}

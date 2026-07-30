@@ -27,9 +27,9 @@ The following files are present locally, but repository state alone cannot confi
 |---|---|---|
 | `00_line_users_sync.json` | untracked | `1d892a769f35215af7650d9b3f2f72afc1d50335f81f75facc61a58807d7c622` |
 | `01_line_users_processor_subworkflow.json` | untracked | `733799545d7a7a10ee47d779bccace52d13b066dd6e08c467c2e4d9489a89755` |
-| `07_branch_application_registration_v6_approval_liff.json` | untracked | `c1fefb82ee05c03da9dd372bc9d3067aa1598ebfb19f2d46e63a34cb63f5a1a9` |
+| `07_branch_application_registration_v6_approval_liff.json` | retained latest version | `c1fefb82ee05c03da9dd372bc9d3067aa1598ebfb19f2d46e63a34cb63f5a1a9` |
 | `08_branch_approval_review_v4_activate_and_link_branch_menu.json` | tracked | `c45957ebe93e29f216e0131dc9cd9c458b2fac8a72c6a688297599cd8ed88ead` |
-| `08a_get_branch_application_v2.json` | untracked | `ca67a193b329557b171151faf1b41ceaaf0719b8154e8edcc49528ed06d08a6d` |
+| `08a_get_branch_application_v2.json` | retained latest version | `ca67a193b329557b171151faf1b41ceaaf0719b8154e8edcc49528ed06d08a6d` |
 | `10_assign_role_rich_menu.json` | tracked | `7671443709fa42852df03ab744d66be4ae29f1ed6cf263300a99d201bd6682ed` |
 | `12_role_rich_menu_reconcile.json` | tracked | `22ccb208368da64ed30519182736291222c70e3a5230a69ecee44138944fbd2f` |
 | `15_create_and_link_admin_dashboard_rich_menu.json` | tracked | `53449976ec780cf2e5bd03eaa4e3ed1afe004b4b069383a6856102280f82a5b8` |
@@ -52,3 +52,12 @@ The following files are present locally, but repository state alone cannot confi
 ## Current decision gate
 
 Do not deploy phase 2 until the live exports for workflows 13 and 14 are confirmed to match the intended production behavior. No secrets, tokens or credential payloads should be committed to this repository.
+
+## Duplicate cleanup record
+
+On 30 July 2026, clear version duplicates were moved to `outputs/archive/retired-modular-2026-07-30/`. No workflow was deleted. The modular directory now keeps only v6 of workflow 07, v4 of workflow 08, v2 of workflow 08a, and the canonical names for workflows 13–14. One-time Rich Menu utilities were deliberately left in place pending a separate review.
+
+The supplied active n8n exports were archived with these hashes:
+
+- Workflow 13: `9b3d9df268e23f0123d5dcdef20b2040326aea9c7750f9d464a18aec075d5c17`
+- Workflow 14: `3cd556b7a56cc73f685f7b637922aab631551c4898b1216759f5b77293620dd2`

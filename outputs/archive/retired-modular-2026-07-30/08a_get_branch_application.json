@@ -1,0 +1,50 @@
+{
+  "name": "08a - Get Branch Application",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "GET",
+        "path": "get-branch-application",
+        "responseMode": "lastNode",
+        "options": { "allowedOrigins": "https://beginth.github.io" }
+      },
+      "id": "get-branch-webhook",
+      "name": "GET /get-branch-application",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [0, 220]
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "documentId": { "__rl": true, "value": "1aKwY4KOo8uGCRrHASD539Habt5Obam8meacRO-ir0Ks", "mode": "list", "cachedResultName": "Chaphranakhon_DB" },
+        "sheetName": { "__rl": true, "value": "Branch_Applications", "mode": "name", "cachedResultName": "Branch_Applications" },
+        "returnAll": true,
+        "options": {}
+      },
+      "id": "read-branch-applications",
+      "name": "Read Branch Applications",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [230, 220],
+      "alwaysOutputData": true,
+      "credentials": { "googleSheetsOAuth2Api": { "id": "ZPODlcDmX45WFVuM", "name": "Google Sheets account 2" } }
+    },
+    {
+      "parameters": {
+        "jsCode": "const request = $node['GET /get-branch-application'].json;\nconst applicationId = String(request.query?.applicationId || '').trim();\nif (!applicationId) return [{ json: { success: false, message: 'Missing application ID' } }];\nconst rows = $input.all().map(item => item.json);\nconst application = rows.find(row => String(row.Application_ID || '').trim() === applicationId);\nif (!application) return [{ json: { success: false, message: 'Application not found' } }];\nreturn [{ json: { success: true, application } }];"
+      },
+      "id": "build-application-response",
+      "name": "Build Application Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [470, 220]
+    }
+  ],
+  "connections": {
+    "GET /get-branch-application": { "main": [[{ "node": "Read Branch Applications", "type": "main", "index": 0 }]] },
+    "Read Branch Applications": { "main": [[{ "node": "Build Application Response", "type": "main", "index": 0 }]] }
+  },
+  "active": false,
+  "settings": { "executionOrder": "v1" }
+}
