@@ -1,15 +1,15 @@
 # Admin Security Test Results — 2026-07-30
 
-Status: local and external token-rejection tests passed; n8n end-to-end tests pending.
+Status: local, external token-rejection, and selected n8n end-to-end tests passed; production rollout pending.
 
 ## Result summary
 
 - 51 local workflow tests passed.
 - 0 local workflow tests failed after remediation.
 - A fake token was rejected by LINE with HTTP 400 and `JWS format error`.
-- No workflow was imported or activated in n8n.
-- No Google Sheets read or write was performed by these tests.
-- No production webhook, frontend or workflow was deployed.
+- Two isolated TEST workflows were imported into n8n and kept inactive; neither was published.
+- Google Sheets reads occurred only in valid-token test-mode executions; no Google Sheets write node ran.
+- No production webhook, Admin frontend or production workflow was deployed; the temporary LIFF test page was removed after testing.
 
 ## Tests passed
 
@@ -61,13 +61,12 @@ The imported inactive TEST workflows were exercised through `/webhook-test/`:
 
 The Role-name mismatch was remediated in both canonical and TEST Workflow 14 files. Product update authorization now accepts exact active roles `owner`, `approve`, or `approver`; all other roles remain denied. Local regression tests confirmed that an active `approve` reaches payload validation while the intentionally invalid test payload stops before `Update Product`.
 
+The updated Workflow 14 TEST was then exercised with a valid LIFF token. The active `approve` account reached product validation, stopped with `Invalid product data`, and did not run `Update Product`. A valid-token Role Update request from the same `approve` account stopped with `Only an active owner may update user roles`, and did not run `Update User Role`.
+
 ## End-to-end tests still required
 
-- Re-import the updated Workflow 14 TEST file into the existing inactive TEST workflow.
-- Re-run Product Update with a real LIFF ID token and the intentionally invalid payload; confirm `Invalid product data` before `Update Product`.
-- Confirm execution stops at the expected node for inactive and non-Admin
-  accounts.
-- Confirm an active Admin can read all four Admin datasets.
+- If suitable accounts are available, confirm real valid-token executions for inactive and non-Admin users stop at `Authorize Active Admin`.
+- Confirm valid-token reads for Payments, Products and Users; Orders has been verified end to end.
 - Select disposable product and member records before testing successful writes.
 - Confirm no unauthorized request reaches an Update node.
 
