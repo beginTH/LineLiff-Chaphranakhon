@@ -108,6 +108,18 @@
         };
       }
 
+      function tokenExpiresAt(token) {
+        try {
+          const encodedPayload = token.split('.')[1] || '';
+          const normalized = encodedPayload.replace(/-/g, '+').replace(/_/g, '/');
+          const padded = normalized.padEnd(Math.ceil(normalized.length / 4) * 4, '=');
+          const payload = JSON.parse(atob(padded));
+          return Number(payload.exp || 0) * 1000;
+        } catch {
+          return 0;
+        }
+      }
+
       async function initialize() {
         try {
           await liff.init({ liffId: LIFF_ID });
@@ -118,6 +130,14 @@
 
           idToken = liff.getIDToken() || '';
           if (!idToken) throw new Error('ไม่พบ LINE ID token กรุณาปิดแล้วเปิดจาก LINE ใหม่');
+          const expiresAt = tokenExpiresAt(idToken);
+          if (expiresAt && expiresAt <= Date.now() + 60_000) {
+            show('LINE token หมดอายุ กำลังพาเข้าสู่ระบบใหม่…');
+            idToken = '';
+            liff.logout();
+            liff.login({ redirectUri: location.href });
+            return;
+          }
 
           const profile = await liff.getProfile();
           show(`พร้อมสำรอง P002 ในฐานะ ${profile.displayName || 'ผู้ดูแล'}`, 'success');
