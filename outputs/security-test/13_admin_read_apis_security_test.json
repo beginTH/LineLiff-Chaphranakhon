@@ -1,0 +1,857 @@
+{
+  "name": "13 TEST - Admin Read APIs (LINE ID Token)",
+  "active": false,
+  "settings": {},
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "GET",
+        "path": "admin-orders-security-test",
+        "responseMode": "lastNode",
+        "options": {
+          "allowedOrigins": "https://beginth.github.io"
+        }
+      },
+      "id": "wh-orders",
+      "name": "GET /admin-orders",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1aKwY4KOo8uGCRrHASD539Habt5Obam8meacRO-ir0Ks",
+          "mode": "list",
+          "cachedResultName": "Chaphranakhon_DB"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Admins",
+          "mode": "name",
+          "cachedResultName": "Admins"
+        },
+        "options": {}
+      },
+      "id": "admins-orders",
+      "name": "Read Admins for Orders",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        660,
+        0
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "ZPODlcDmX45WFVuM",
+          "name": "Google Sheets account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1aKwY4KOo8uGCRrHASD539Habt5Obam8meacRO-ir0Ks",
+          "mode": "list",
+          "cachedResultName": "Chaphranakhon_DB"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Orders",
+          "mode": "name",
+          "cachedResultName": "Orders"
+        },
+        "options": {}
+      },
+      "id": "orders-read",
+      "name": "Read All Orders",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        880,
+        0
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "ZPODlcDmX45WFVuM",
+          "name": "Google Sheets account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const uid=String($node['Verify LINE Token for Orders'].json.sub||'').trim(); const admins=$items('Read Admins for Orders').map(i=>i.json); const ok=admins.some(a=>String(a.LINE_UID||'').trim()===uid&&String(a.Status||'').trim().toLowerCase()==='active'); if(!uid||!ok) throw new Error('Active admin UID is required'); const branchMap=Object.fromEntries($input.all().map(i=>[String(i.json.LINE_UID||'').trim(),i.json.Branch_Name||i.json.Display_Name||''])); const orders=$items('Read All Orders').map(i=>i.json).map(r=>({orderId:r.Order_ID||'',timestamp:r.Timestamp||'',lineUid:r.LINE_UID||'',branchName:branchMap[String(r.LINE_UID||'').trim()]||'ไม่ระบุสาขา',status:r.Status||'',totalAmount:Number(r.Total_Amount||0),paymentStatus:r.Payment_Status||'',poUrl:r.PO_PDF_URL||'',paymentProofUrl:r.Payment_Proof_URL||''})).sort((a,b)=>new Date(b.timestamp||0)-new Date(a.timestamp||0)); return [{json:{success:true,orders}}];"
+      },
+      "id": "orders-response",
+      "name": "Format Admin Orders",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1320,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "GET",
+        "path": "admin-payments-security-test",
+        "responseMode": "lastNode",
+        "options": {
+          "allowedOrigins": "https://beginth.github.io"
+        }
+      },
+      "id": "wh-payments",
+      "name": "GET /admin-payments",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        260
+      ]
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1aKwY4KOo8uGCRrHASD539Habt5Obam8meacRO-ir0Ks",
+          "mode": "list",
+          "cachedResultName": "Chaphranakhon_DB"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Admins",
+          "mode": "name",
+          "cachedResultName": "Admins"
+        },
+        "options": {}
+      },
+      "id": "admins-payments",
+      "name": "Read Admins for Payments",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        660,
+        260
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "ZPODlcDmX45WFVuM",
+          "name": "Google Sheets account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1aKwY4KOo8uGCRrHASD539Habt5Obam8meacRO-ir0Ks",
+          "mode": "list",
+          "cachedResultName": "Chaphranakhon_DB"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Orders",
+          "mode": "name",
+          "cachedResultName": "Orders"
+        },
+        "options": {}
+      },
+      "id": "payments-read",
+      "name": "Read Orders for Payments",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        880,
+        260
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "ZPODlcDmX45WFVuM",
+          "name": "Google Sheets account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const uid=String($node['Verify LINE Token for Payments'].json.sub||'').trim(); const admins=$items('Read Admins for Payments').map(i=>i.json); const ok=admins.some(a=>String(a.LINE_UID||'').trim()===uid&&String(a.Status||'').trim().toLowerCase()==='active'); if(!uid||!ok) throw new Error('Active admin UID is required'); const branchMap=Object.fromEntries($input.all().map(i=>[String(i.json.LINE_UID||'').trim(),i.json.Branch_Name||i.json.Display_Name||''])); const payments=$items('Read Orders for Payments').map(i=>i.json).map(r=>({orderId:r.Order_ID||'',timestamp:r.Timestamp||'',lineUid:r.LINE_UID||'',branchName:branchMap[String(r.LINE_UID||'').trim()]||'ไม่ระบุสาขา',totalAmount:Number(r.Total_Amount||0),paymentStatus:r.Payment_Status||'',submittedAt:r.Payment_Submitted_At||'',proofUrl:r.Payment_Proof_URL||'',status:r.Status||''})).sort((a,b)=>new Date(b.timestamp||0)-new Date(a.timestamp||0)); return [{json:{success:true,payments}}];"
+      },
+      "id": "payments-response",
+      "name": "Format Admin Payments",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1320,
+        260
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "GET",
+        "path": "admin-products-security-test",
+        "responseMode": "lastNode",
+        "options": {
+          "allowedOrigins": "https://beginth.github.io"
+        }
+      },
+      "id": "wh-products",
+      "name": "GET /admin-products",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        520
+      ]
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1aKwY4KOo8uGCRrHASD539Habt5Obam8meacRO-ir0Ks",
+          "mode": "list",
+          "cachedResultName": "Chaphranakhon_DB"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Admins",
+          "mode": "name",
+          "cachedResultName": "Admins"
+        },
+        "options": {}
+      },
+      "id": "admins-products",
+      "name": "Read Admins for Products",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        660,
+        520
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "ZPODlcDmX45WFVuM",
+          "name": "Google Sheets account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1aKwY4KOo8uGCRrHASD539Habt5Obam8meacRO-ir0Ks",
+          "mode": "list",
+          "cachedResultName": "Chaphranakhon_DB"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Products",
+          "mode": "name",
+          "cachedResultName": "Products"
+        },
+        "options": {}
+      },
+      "id": "products-read",
+      "name": "Read All Products",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        880,
+        520
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "ZPODlcDmX45WFVuM",
+          "name": "Google Sheets account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const uid=String($node['Verify LINE Token for Products'].json.sub||'').trim(); const admins=$items('Read Admins for Products').map(i=>i.json); const ok=admins.some(a=>String(a.LINE_UID||'').trim()===uid&&String(a.Status||'').trim().toLowerCase()==='active'); if(!uid||!ok) throw new Error('Active admin UID is required'); const products=$input.all().map(i=>i.json).map(r=>({productId:r.Product_ID||r.ID||'',name:r.Product_Name||r.Name||'',unit:r.Unit||'',price:Number(r.Price||0),imageUrl:r.Image_URL||'',status:r.Status||'',customerType:r.Customer_Type||''})); return [{json:{success:true,products}}];"
+      },
+      "id": "products-response",
+      "name": "Format Admin Products",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1100,
+        520
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "GET",
+        "path": "admin-users-security-test",
+        "responseMode": "lastNode",
+        "options": {
+          "allowedOrigins": "https://beginth.github.io"
+        }
+      },
+      "id": "wh-users",
+      "name": "GET /admin-users",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        780
+      ]
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1aKwY4KOo8uGCRrHASD539Habt5Obam8meacRO-ir0Ks",
+          "mode": "list",
+          "cachedResultName": "Chaphranakhon_DB"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Admins",
+          "mode": "name",
+          "cachedResultName": "Admins"
+        },
+        "options": {}
+      },
+      "id": "admins-users",
+      "name": "Read Admins for Users",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        660,
+        780
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "ZPODlcDmX45WFVuM",
+          "name": "Google Sheets account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1aKwY4KOo8uGCRrHASD539Habt5Obam8meacRO-ir0Ks",
+          "mode": "list",
+          "cachedResultName": "Chaphranakhon_DB"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Users",
+          "mode": "name",
+          "cachedResultName": "Users"
+        },
+        "options": {}
+      },
+      "id": "users-read",
+      "name": "Read All Users",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        880,
+        780
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "ZPODlcDmX45WFVuM",
+          "name": "Google Sheets account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const uid=String($node['Verify LINE Token for Users'].json.sub||'').trim(); const admins=$items('Read Admins for Users').map(i=>i.json); const ok=admins.some(a=>String(a.LINE_UID||'').trim()===uid&&String(a.Status||'').trim().toLowerCase()==='active'); if(!uid||!ok) throw new Error('Active admin UID is required'); const users=$input.all().map(i=>i.json).map(r=>({lineUid:r.LINE_UID||'',displayName:r.Display_Name||'',role:r.Role||'customer',friendStatus:r.Friend_Status||'',updatedAt:r.Updated_At||''})); return [{json:{success:true,users}}];"
+      },
+      "id": "users-response",
+      "name": "Format Admin Users",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1100,
+        780
+      ]
+    },
+    {
+      "parameters": {
+        "sheetName": {
+          "mode": "name",
+          "__rl": true,
+          "cachedResultName": "Users_Addresses",
+          "value": "Users_Addresses"
+        },
+        "documentId": {
+          "mode": "list",
+          "__rl": true,
+          "cachedResultName": "Chaphranakhon_DB",
+          "value": "1aKwY4KOo8uGCRrHASD539Habt5Obam8meacRO-ir0Ks"
+        },
+        "options": {}
+      },
+      "id": "branches-orders",
+      "name": "Read Branches for Orders",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        1100,
+        0
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "ZPODlcDmX45WFVuM",
+          "name": "Google Sheets account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sheetName": {
+          "mode": "name",
+          "__rl": true,
+          "cachedResultName": "Users_Addresses",
+          "value": "Users_Addresses"
+        },
+        "documentId": {
+          "mode": "list",
+          "__rl": true,
+          "cachedResultName": "Chaphranakhon_DB",
+          "value": "1aKwY4KOo8uGCRrHASD539Habt5Obam8meacRO-ir0Ks"
+        },
+        "options": {}
+      },
+      "id": "branches-payments",
+      "name": "Read Branches for Payments",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        1100,
+        260
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "ZPODlcDmX45WFVuM",
+          "name": "Google Sheets account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const headers=$json.headers||{}; const authorization=String(headers.authorization||headers.Authorization||'').trim(); const match=authorization.match(/^Bearer\\s+(.+)$/i); if(!match||!match[1]) throw new Error('Missing LINE ID token'); const idToken=match[1].trim(); if(idToken.length<100||idToken.length>5000) throw new Error('Invalid LINE ID token format'); return [{json:{idToken}}];"
+      },
+      "id": "extract-line-token-orders",
+      "name": "Extract LINE Token for Orders",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        220,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.line.me/oauth2/v2.1/verify",
+        "sendBody": true,
+        "contentType": "form-urlencoded",
+        "specifyBody": "keypair",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "id_token",
+              "value": "={{ $json.idToken }}"
+            },
+            {
+              "name": "client_id",
+              "value": "2010570929"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "verify-line-token-orders",
+      "name": "Verify LINE Token for Orders",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        440,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const headers=$json.headers||{}; const authorization=String(headers.authorization||headers.Authorization||'').trim(); const match=authorization.match(/^Bearer\\s+(.+)$/i); if(!match||!match[1]) throw new Error('Missing LINE ID token'); const idToken=match[1].trim(); if(idToken.length<100||idToken.length>5000) throw new Error('Invalid LINE ID token format'); return [{json:{idToken}}];"
+      },
+      "id": "extract-line-token-payments",
+      "name": "Extract LINE Token for Payments",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        220,
+        260
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.line.me/oauth2/v2.1/verify",
+        "sendBody": true,
+        "contentType": "form-urlencoded",
+        "specifyBody": "keypair",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "id_token",
+              "value": "={{ $json.idToken }}"
+            },
+            {
+              "name": "client_id",
+              "value": "2010570929"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "verify-line-token-payments",
+      "name": "Verify LINE Token for Payments",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        440,
+        260
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const headers=$json.headers||{}; const authorization=String(headers.authorization||headers.Authorization||'').trim(); const match=authorization.match(/^Bearer\\s+(.+)$/i); if(!match||!match[1]) throw new Error('Missing LINE ID token'); const idToken=match[1].trim(); if(idToken.length<100||idToken.length>5000) throw new Error('Invalid LINE ID token format'); return [{json:{idToken}}];"
+      },
+      "id": "extract-line-token-products",
+      "name": "Extract LINE Token for Products",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        220,
+        520
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.line.me/oauth2/v2.1/verify",
+        "sendBody": true,
+        "contentType": "form-urlencoded",
+        "specifyBody": "keypair",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "id_token",
+              "value": "={{ $json.idToken }}"
+            },
+            {
+              "name": "client_id",
+              "value": "2010570929"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "verify-line-token-products",
+      "name": "Verify LINE Token for Products",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        440,
+        520
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const headers=$json.headers||{}; const authorization=String(headers.authorization||headers.Authorization||'').trim(); const match=authorization.match(/^Bearer\\s+(.+)$/i); if(!match||!match[1]) throw new Error('Missing LINE ID token'); const idToken=match[1].trim(); if(idToken.length<100||idToken.length>5000) throw new Error('Invalid LINE ID token format'); return [{json:{idToken}}];"
+      },
+      "id": "extract-line-token-users",
+      "name": "Extract LINE Token for Users",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        220,
+        780
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.line.me/oauth2/v2.1/verify",
+        "sendBody": true,
+        "contentType": "form-urlencoded",
+        "specifyBody": "keypair",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "id_token",
+              "value": "={{ $json.idToken }}"
+            },
+            {
+              "name": "client_id",
+              "value": "2010570929"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "verify-line-token-users",
+      "name": "Verify LINE Token for Users",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        440,
+        780
+      ]
+    }
+  ],
+  "connections": {
+    "GET /admin-orders": {
+      "main": [
+        [
+          {
+            "node": "Extract LINE Token for Orders",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Admins for Orders": {
+      "main": [
+        [
+          {
+            "node": "Read All Orders",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read All Orders": {
+      "main": [
+        [
+          {
+            "node": "Read Branches for Orders",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GET /admin-payments": {
+      "main": [
+        [
+          {
+            "node": "Extract LINE Token for Payments",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Admins for Payments": {
+      "main": [
+        [
+          {
+            "node": "Read Orders for Payments",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Orders for Payments": {
+      "main": [
+        [
+          {
+            "node": "Read Branches for Payments",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GET /admin-products": {
+      "main": [
+        [
+          {
+            "node": "Extract LINE Token for Products",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Admins for Products": {
+      "main": [
+        [
+          {
+            "node": "Read All Products",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read All Products": {
+      "main": [
+        [
+          {
+            "node": "Format Admin Products",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GET /admin-users": {
+      "main": [
+        [
+          {
+            "node": "Extract LINE Token for Users",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Admins for Users": {
+      "main": [
+        [
+          {
+            "node": "Read All Users",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read All Users": {
+      "main": [
+        [
+          {
+            "node": "Format Admin Users",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Branches for Orders": {
+      "main": [
+        [
+          {
+            "node": "Format Admin Orders",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Branches for Payments": {
+      "main": [
+        [
+          {
+            "node": "Format Admin Payments",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract LINE Token for Orders": {
+      "main": [
+        [
+          {
+            "node": "Verify LINE Token for Orders",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify LINE Token for Orders": {
+      "main": [
+        [
+          {
+            "node": "Read Admins for Orders",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract LINE Token for Payments": {
+      "main": [
+        [
+          {
+            "node": "Verify LINE Token for Payments",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify LINE Token for Payments": {
+      "main": [
+        [
+          {
+            "node": "Read Admins for Payments",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract LINE Token for Products": {
+      "main": [
+        [
+          {
+            "node": "Verify LINE Token for Products",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify LINE Token for Products": {
+      "main": [
+        [
+          {
+            "node": "Read Admins for Products",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract LINE Token for Users": {
+      "main": [
+        [
+          {
+            "node": "Verify LINE Token for Users",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify LINE Token for Users": {
+      "main": [
+        [
+          {
+            "node": "Read Admins for Users",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}
