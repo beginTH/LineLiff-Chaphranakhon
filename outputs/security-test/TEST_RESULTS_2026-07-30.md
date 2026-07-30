@@ -49,10 +49,22 @@ the configured client ID `2010570929`. LINE returned HTTP 400 with
 `invalid_request` and `JWS format error`, confirming that the external verifier
 rejects the malformed token.
 
+## n8n test-mode results
+
+The imported inactive TEST workflows were exercised through `/webhook-test/`:
+
+- Workflow 13 rejected a missing token at `Extract LINE Token for Orders` before any Google Sheets node.
+- Workflow 13 rejected a fake token at `Verify LINE Token for Orders` before any Google Sheets node.
+- Workflow 14 rejected fake tokens in both Product Update and Role Update branches before reading Admins or reaching an Update node.
+- Workflow 13 accepted a valid LIFF ID token, read Admins, authorized the active Admin, and only then read Orders and Branches. The request completed with HTTP 200.
+- Workflow 14 accepted a valid LIFF ID token and read Admins, but exposed an operational Role-name mismatch: the sheet uses `approve`, while the draft allowed only `owner` and `approver`.
+
+The Role-name mismatch was remediated in both canonical and TEST Workflow 14 files. Product update authorization now accepts exact active roles `owner`, `approve`, or `approver`; all other roles remain denied. Local regression tests confirmed that an active `approve` reaches payload validation while the intentionally invalid test payload stops before `Update Product`.
+
 ## End-to-end tests still required
 
-- Import both TEST workflows into n8n while keeping them inactive.
-- Run the `/webhook-test/` endpoints with a real LIFF ID token.
+- Re-import the updated Workflow 14 TEST file into the existing inactive TEST workflow.
+- Re-run Product Update with a real LIFF ID token and the intentionally invalid payload; confirm `Invalid product data` before `Update Product`.
 - Confirm execution stops at the expected node for inactive and non-Admin
   accounts.
 - Confirm an active Admin can read all four Admin datasets.

@@ -42,7 +42,7 @@ CORS preflight was verified against the production n8n host on 2026-07-30. `admi
 | Operation | Required authorization |
 |---|---|
 | Admin read APIs | UID exists in `Admins` and `Status=active`; authorization completes before reading Orders, Payments, Products or Users |
-| Product update | Active Admin with exact Role `owner` or `approver` |
+| Product update | Active Admin with exact Role `owner`, `approve` or `approver` |
 | User Role update | Active Admin with exact Role `owner` |
 | Change own Role | Denied |
 
