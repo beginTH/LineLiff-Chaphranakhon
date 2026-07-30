@@ -17,7 +17,7 @@ const pageCopy = {
 const pageLinks = { orders: 'orders.html', payments: 'payments.html', products: 'inventory.html', users: 'members.html' };
 const pageLabels = { orders: 'Order', payments: 'ชำระเงิน', products: 'วัตถุดิบ', users: 'สมาชิก' };
 const roles = ['customer', 'branch', 'owner', 'admin', 'superadmin'];
-const productStatuses = ['active', 'inactive', 'cancelled'];
+const productStatuses = ['พร้อม', 'active', 'inactive', 'ยกเลิก', 'cancelled', 'ปิด'];
 const esc = value => String(value ?? '').replace(/[&<>"']/g, char => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[char]));
 const money = value => `฿${Number(value || 0).toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 const dateTime = value => { const parsed = new Date(value); return !value || Number.isNaN(parsed.getTime()) ? (value ? String(value).replace('T', ' ').replace('.000Z', '') : '—') : parsed.toLocaleString('th-TH', { dateStyle: 'medium', timeStyle: 'short' }); };
