@@ -8,7 +8,7 @@ Status: local, external token-rejection, and selected n8n end-to-end tests passe
 - 0 local workflow tests failed after remediation.
 - A fake token was rejected by LINE with HTTP 400 and `JWS format error`.
 - Two isolated TEST workflows were imported into n8n and kept inactive; neither was published.
-- Google Sheets reads occurred only in valid-token test-mode executions. Two authorized Product writes ran: the reversible P002 price test and its restoration.
+- Google Sheets reads occurred only in valid-token test-mode executions. Two authorized Product writes and two authorized User Role writes ran: one reversible test and its restoration for each target.
 - No production webhook, Admin frontend or production workflow was deployed; the temporary LIFF test page was removed after testing.
 
 ## Tests passed
@@ -70,12 +70,11 @@ A production-data compatibility mismatch was then found before the write test: P
 
 The active `approve` account then updated P002 from THB 490.00 to THB 490.01 through the full Product Update path and received HTTP 200. A second authorized execution restored the original price, unit and status. A fresh Workflow 13 read confirmed P002 at THB 490.00, unit `ถุง` and status `พร้อม`.
 
+The user explicitly designated AD001 as the active `owner` in the Admins sheet before the Role-write test. A real valid token for inactive AD002 was rejected at `Authorize Active Admin for Users` before the Users sheet was read. AD001 then changed ExtraSkill from `branch` to `customer` through the full User Role Update path and received HTTP 200. A second owner-authorized execution restored `branch`, and a fresh Workflow 13 read confirmed the restored Role.
+
 ## End-to-end tests still required
 
-- If suitable accounts are available, confirm real valid-token executions for inactive and non-Admin users stop at `Authorize Active Admin`.
-
-- Use an active `owner` account and a disposable member record before testing a successful user-Role write.
-
+- If a suitable account is available, confirm a real non-Admin valid token stops at `Authorize Active Admin`.
 
 Browser and Windows UI automation could not connect in this session because the
 Windows sandbox stopped the automation runtime before it opened n8n. This did
