@@ -539,7 +539,7 @@ function bootAdminApp() {
         const reason = (document.getElementById('payment-rejection-reason')?.value || '').trim();
         if (!reason) { alert('กรุณาระบุเหตุผลที่ไม่อนุมัติ'); return; }
         rejectBtn.disabled = true;
-        try { const admin = await ensureAdminProfile(); await apiRejectPayment({ orderId: state.orderId, adminUid: admin.uid, adminName: admin.displayName, reason }); alert('ส่งผลการตรวจสอบกลับไปยังสาขาแล้ว'); goTo('screen-success'); }
+        try { const admin = await ensureAdminProfile(); await apiRejectPayment({ orderId: state.orderId, adminUid: admin.uid, adminName: admin.displayName, rejectionReason: reason }); alert('ส่งผลการตรวจสอบกลับไปยังสาขาแล้ว'); goTo('screen-success'); }
         catch (err) { alert('ปฏิเสธหลักฐานไม่สำเร็จ\n' + err.message); rejectBtn.disabled = false; }
     });
 
