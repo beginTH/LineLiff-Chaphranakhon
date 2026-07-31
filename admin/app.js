@@ -100,6 +100,7 @@ const state = {
     otherFee: 0,      // ค่าใช้จ่ายอื่นที่แอดมินกรอก
     adjustedItems: [], // รายการหลัง Admin ปรับลดจำนวน
     liffReady: false,
+    idToken: '',
     adminProfilePromise: null,
     mode: getQueryParam('mode') || getLiffStateParam('mode') || 'order',
 };
@@ -225,7 +226,7 @@ async function apiApproveOrder(payload) {
         `${CONFIG.N8N_BASE_URL}${CONFIG.WEBHOOK.ADMIN_APPROVE}`,
         {
             method:  'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: authHeaders({ 'Content-Type': 'application/json' }),
             body:    JSON.stringify(payload),
         }
     );
@@ -234,13 +235,13 @@ async function apiApproveOrder(payload) {
 }
 
 async function apiVerifyPayment(payload) {
-    const res = await fetch(`${CONFIG.N8N_BASE_URL}${CONFIG.WEBHOOK.ADMIN_VERIFY_PAYMENT}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+    const res = await fetch(`${CONFIG.N8N_BASE_URL}${CONFIG.WEBHOOK.ADMIN_VERIFY_PAYMENT}`, { method: 'POST', headers: authHeaders({ 'Content-Type': 'application/json' }), body: JSON.stringify(payload) });
     if (!res.ok) throw new Error(`Payment verification failed: ${res.status}`);
     return res.json();
 }
 
 async function apiRejectPayment(payload) {
-    const res = await fetch(`${CONFIG.N8N_BASE_URL}${CONFIG.WEBHOOK.ADMIN_REJECT_PAYMENT}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+    const res = await fetch(`${CONFIG.N8N_BASE_URL}${CONFIG.WEBHOOK.ADMIN_REJECT_PAYMENT}`, { method: 'POST', headers: authHeaders({ 'Content-Type': 'application/json' }), body: JSON.stringify(payload) });
     if (!res.ok) throw new Error(`Payment rejection failed: ${res.status}`);
     return res.json();
 }
@@ -440,10 +441,13 @@ async function ensureAdminProfile() {
         }
 
         const profile = await withTimeout(liff.getProfile(), 5000, 'LIFF profile timeout');
+        const idToken = liff.getIDToken() || '';
         if (!profile?.userId) {
             throw new Error('ไม่สามารถอ่าน LINE User ID ได้ กรุณาเปิดผ่านแอป LINE อีกครั้ง');
         }
 
+        if (!idToken) throw new Error('ไม่สามารถรับ LINE ID token ได้ กรุณาเปิดหน้า Admin ผ่าน LINE อีกครั้ง');
+        state.idToken = idToken;
         state.admin = { uid: profile.userId, displayName: profile.displayName || 'Admin' };
         return state.admin;
     })();
@@ -453,6 +457,11 @@ async function ensureAdminProfile() {
     } finally {
         state.adminProfilePromise = null;
     }
+}
+
+function authHeaders(extra = {}) {
+    if (!state.idToken) throw new Error('ไม่พบเซสชัน LINE กรุณาเปิดหน้า Admin ใหม่จาก LINE');
+    return { ...extra, Authorization: `Bearer ${state.idToken}` };
 }
 
 /** แสดง banner แจ้งว่ากำลังทดสอบจาก browser */
