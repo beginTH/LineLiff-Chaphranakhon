@@ -469,7 +469,7 @@ function showBrowserTestBanner(orderId) {
 // 🎮 EVENT LISTENERS
 // =====================================================
 
-document.addEventListener('DOMContentLoaded', () => {
+function bootAdminApp() {
 
     // ─────────────────────────────────────────────
     // Real-time shipping cost calculation
@@ -647,4 +647,10 @@ document.addEventListener('DOMContentLoaded', () => {
     // START
     // ─────────────────────────────────────────────
     initApp();
-});
+}
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', bootAdminApp);
+} else {
+    bootAdminApp();
+}
