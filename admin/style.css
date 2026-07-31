@@ -762,3 +762,6 @@ body {
 .qty-adjust-btn { width:32px; height:32px; border:1px solid var(--border-light); border-radius:8px; background:var(--admin-bg); color:var(--admin-light); font-size:20px; }
 .approved-qty-input { width:64px; height:32px; text-align:center; border:1px solid var(--border-light); border-radius:8px; background:var(--bg-primary); color:var(--text-primary); }
 .oi-unit { font-size:11px; color:var(--text-muted); }
+
+.payment-action-status { display:flex; align-items:center; justify-content:center; gap:10px; margin:12px 0; padding:12px; border:1px solid rgba(177,18,38,.22); border-radius:12px; background:rgba(177,18,38,.06); color:var(--admin-light); font-size:14px; font-weight:700; }
+.payment-action-spinner { width:18px; height:18px; border:2px solid rgba(177,18,38,.2); border-top-color:var(--admin-light); border-radius:50%; animation:spin .7s linear infinite; }

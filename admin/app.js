@@ -465,6 +465,17 @@ function authHeaders(extra = {}) {
 }
 
 /** แสดง banner แจ้งว่ากำลังทดสอบจาก browser */
+function setPaymentActionLoading(message, active) {
+    const status = document.getElementById('payment-action-status');
+    const statusText = document.getElementById('payment-action-status-text');
+    const verifyBtn = document.getElementById('btn-verify-payment');
+    const rejectBtn = document.getElementById('btn-reject-payment');
+    const reason = document.getElementById('payment-rejection-reason');
+    if (statusText) statusText.textContent = message;
+    if (status) status.classList.toggle('hidden', !active);
+    [verifyBtn, rejectBtn, reason].forEach(el => { if (el) el.disabled = active; });
+}
+
 function showBrowserTestBanner(orderId) {
     const banner = document.createElement('div');
     banner.style.cssText = [
@@ -530,17 +541,17 @@ function bootAdminApp() {
     // ─────────────────────────────────────────────
     const verifyBtn = document.getElementById('btn-verify-payment');
     if (verifyBtn) verifyBtn.addEventListener('click', async () => {
-        verifyBtn.disabled = true;
+        setPaymentActionLoading('กำลังยืนยันการชำระเงินและสร้างใบเสร็จ...', true);
         try { const admin = await ensureAdminProfile(); await apiVerifyPayment({ orderId: state.orderId, adminUid: admin.uid, adminName: admin.displayName }); alert('ยืนยันการชำระเงินและสร้างใบเสร็จเรียบร้อยแล้ว'); goTo('screen-success'); }
-        catch (err) { alert('ยืนยันการชำระเงินไม่สำเร็จ\n' + err.message); verifyBtn.disabled = false; }
+        catch (err) { alert('ยืนยันการชำระเงินไม่สำเร็จ\n' + err.message); setPaymentActionLoading('', false); }
     });
     const rejectBtn = document.getElementById('btn-reject-payment');
     if (rejectBtn) rejectBtn.addEventListener('click', async () => {
         const reason = (document.getElementById('payment-rejection-reason')?.value || '').trim();
         if (!reason) { alert('กรุณาระบุเหตุผลที่ไม่อนุมัติ'); return; }
-        rejectBtn.disabled = true;
+        setPaymentActionLoading('กำลังบันทึกผลและแจ้งเหตุผลให้สาขา...', true);
         try { const admin = await ensureAdminProfile(); await apiRejectPayment({ orderId: state.orderId, adminUid: admin.uid, adminName: admin.displayName, rejectionReason: reason }); alert('ส่งผลการตรวจสอบกลับไปยังสาขาแล้ว'); goTo('screen-success'); }
-        catch (err) { alert('ปฏิเสธหลักฐานไม่สำเร็จ\n' + err.message); rejectBtn.disabled = false; }
+        catch (err) { alert('ปฏิเสธหลักฐานไม่สำเร็จ\n' + err.message); setPaymentActionLoading('', false); }
     });
 
     document.getElementById('btn-approve-order').addEventListener('click', async () => {

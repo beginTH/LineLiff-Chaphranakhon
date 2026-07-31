@@ -231,6 +231,10 @@
             <img id="payment-proof-image" class="hidden" style="width:100%;max-height:420px;object-fit:contain;border-radius:12px;margin:12px 0" alt="หลักฐานการชำระเงิน">
             <a id="payment-proof-link" class="btn-close hidden" target="_blank" rel="noopener">เปิดรูปหลักฐาน</a>
             <textarea id="payment-rejection-reason" class="admin-note-input" rows="3" placeholder="เหตุผลกรณีไม่อนุมัติ เช่น ยอดไม่ตรง หรือไม่พบยอดโอน"></textarea>
+            <div id="payment-action-status" class="payment-action-status hidden" role="status" aria-live="polite">
+                <span class="payment-action-spinner" aria-hidden="true"></span>
+                <span id="payment-action-status-text">กำลังดำเนินการ...</span>
+            </div>
             <button class="btn-approve btn-full" id="btn-verify-payment">อนุมัติการชำระเงิน</button>
             <button class="btn-full btn-close" id="btn-reject-payment">ไม่อนุมัติและแจ้งกลับสาขา</button>
         </div>
@@ -345,7 +349,7 @@
             console.warn('LIFF routing skipped:', error);
         }
         const legacyApp = document.createElement('script');
-        legacyApp.src = 'app.js?v=20260731-rejection-reason';
+        legacyApp.src = 'app.js?v=20260731-payment-loading';
         document.body.appendChild(legacyApp);
     }());
     </script>
