@@ -1,0 +1,260 @@
+{
+  "name": "00 - LINE Users Sync",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "line-users-events",
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "id": "a28f1492-9d31-4a88-bada-a4a028769613",
+      "name": "POST LINE Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [0, 0],
+      "webhookId": "50e284db-2176-40cd-987e-eeb4014fa558",
+      "notesInFlow": true,
+      "notes": "นำ Production URL ไปใส่ใน LINE Developers > Messaging API > Webhook URL"
+    },
+    {
+      "parameters": {
+        "jsCode": "const request = $input.first().json;\nconst body = request.body || request;\nconst events = Array.isArray(body.events) ? body.events : [];\nconst supported = new Set(['follow', 'message', 'postback', 'unfollow']);\nconst latestByUid = new Map();\n\nfor (const event of events) {\n  const uid = String(event?.source?.userId || '').trim();\n  if (!uid || !supported.has(event.type)) continue;\n  const timestamp = Number(event.timestamp || Date.now());\n  const current = latestByUid.get(uid);\n  if (!current || timestamp >= current.timestamp) {\n    latestByUid.set(uid, {\n      LINE_UID: uid,\n      Event_Type: event.type,\n      Event_ID: String(event.webhookEventId || ''),\n      timestamp,\n      Event_At: new Date(timestamp).toISOString(),\n      Is_Active: event.type !== 'unfollow',\n    });\n  }\n}\n\nreturn [...latestByUid.values()].map(json => ({ json }));"
+      },
+      "id": "2ad5c198-9488-42f3-9329-e56c419a05fd",
+      "name": "Extract User Events",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [240, 0],
+      "notesInFlow": true,
+      "notes": "รองรับ follow, message, postback และ unfollow; รวม event ซ้ำของ UID เดียวกันในคำขอเดียว"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1aKwY4KOo8uGCRrHASD539Habt5Obam8meacRO-ir0Ks",
+          "mode": "list",
+          "cachedResultName": "Chaphranakhon_DB",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1aKwY4KOo8uGCRrHASD539Habt5Obam8meacRO-ir0Ks/edit"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Users",
+          "mode": "name"
+        },
+        "options": {}
+      },
+      "id": "0d4b9574-49ca-4e88-bd2d-1e22c7217f9d",
+      "name": "Read Existing Users",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [480, 0],
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "ZPODlcDmX45WFVuM",
+          "name": "Google Sheets account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const existingRows = $input.all().map(item => item.json).filter(row => row.LINE_UID);\nconst existingByUid = new Map(existingRows.map(row => [String(row.LINE_UID).trim(), row]));\nconst events = $items('Extract User Events').map(item => item.json);\n\nreturn events.map(event => {\n  const old = existingByUid.get(event.LINE_UID) || {};\n  const firstAddedAt = old.First_Added_At || (event.Event_Type === 'follow' ? event.Event_At : event.Event_At);\n  return { json: {\n    ...event,\n    Display_Name: old.Display_Name || '',\n    Picture_URL: old.Picture_URL || '',\n    Language: old.Language || '',\n    Role: old.Role || 'customer',\n    Friend_Status: event.Is_Active ? 'active' : 'blocked',\n    First_Added_At: firstAddedAt,\n    Last_Interaction: event.Is_Active ? event.Event_At : (old.Last_Interaction || ''),\n    Registered_At: old.Registered_At || '',\n    Updated_At: event.Event_At,\n  } };\n});"
+      },
+      "id": "d67df1c5-acde-44bc-86f3-13c131760d5e",
+      "name": "Merge Existing User Data",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [720, 0]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.Is_Active }}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "id": "7695832d-acd1-43bb-8278-31fca36d0ea4",
+      "name": "Is Active Friend?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [960, 0]
+    },
+    {
+      "parameters": {
+        "url": "=https://api.line.me/v2/bot/profile/{{ $json.LINE_UID }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer REPLACE_WITH_LINE_CHANNEL_ACCESS_TOKEN"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "e437be8d-7e0a-4da1-9533-6149ce0a58f4",
+      "name": "Get LINE Profile",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1200, -120],
+      "continueOnFail": true,
+      "notesInFlow": true,
+      "notes": "ก่อนเปิดใช้งาน ให้เปลี่ยน REPLACE_WITH_LINE_CHANNEL_ACCESS_TOKEN หรือใช้ Header Auth credential ที่เก็บ token อย่างปลอดภัย"
+    },
+    {
+      "parameters": {
+        "jsCode": "const base = $('Merge Existing User Data').item.json;\nconst profile = $json || {};\nconst profileOk = !profile.error && !profile.errorCode && (profile.displayName || profile.userId);\nreturn [{ json: {\n  ...base,\n  Display_Name: profileOk ? (profile.displayName || base.Display_Name) : base.Display_Name,\n  Picture_URL: profileOk ? (profile.pictureUrl || base.Picture_URL) : base.Picture_URL,\n  Language: profileOk ? (profile.language || base.Language) : base.Language,\n} }];"
+      },
+      "id": "61cb87b7-6772-4006-a96b-e6bb10db1a97",
+      "name": "Apply LINE Profile",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1440, -120]
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "1aKwY4KOo8uGCRrHASD539Habt5Obam8meacRO-ir0Ks",
+          "mode": "list",
+          "cachedResultName": "Chaphranakhon_DB",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1aKwY4KOo8uGCRrHASD539Habt5Obam8meacRO-ir0Ks/edit"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Users",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "LINE_UID": "={{ $json.LINE_UID }}",
+            "Display_Name": "={{ $json.Display_Name }}",
+            "Picture_URL": "={{ $json.Picture_URL }}",
+            "Language": "={{ $json.Language }}",
+            "Role": "={{ $json.Role }}",
+            "Friend_Status": "={{ $json.Friend_Status }}",
+            "First_Added_At": "={{ $json.First_Added_At }}",
+            "Last_Interaction": "={{ $json.Last_Interaction }}",
+            "Registered_At": "={{ $json.Registered_At }}",
+            "Updated_At": "={{ $json.Updated_At }}"
+          },
+          "matchingColumns": ["LINE_UID"],
+          "schema": [
+            {"id":"LINE_UID","displayName":"LINE_UID","required":false,"defaultMatch":false,"display":true,"type":"string","canBeUsedToMatch":true},
+            {"id":"Display_Name","displayName":"Display_Name","required":false,"defaultMatch":false,"display":true,"type":"string","canBeUsedToMatch":true},
+            {"id":"Picture_URL","displayName":"Picture_URL","required":false,"defaultMatch":false,"display":true,"type":"string","canBeUsedToMatch":true},
+            {"id":"Language","displayName":"Language","required":false,"defaultMatch":false,"display":true,"type":"string","canBeUsedToMatch":true},
+            {"id":"Role","displayName":"Role","required":false,"defaultMatch":false,"display":true,"type":"string","canBeUsedToMatch":true},
+            {"id":"Friend_Status","displayName":"Friend_Status","required":false,"defaultMatch":false,"display":true,"type":"string","canBeUsedToMatch":true},
+            {"id":"First_Added_At","displayName":"First_Added_At","required":false,"defaultMatch":false,"display":true,"type":"string","canBeUsedToMatch":true},
+            {"id":"Last_Interaction","displayName":"Last_Interaction","required":false,"defaultMatch":false,"display":true,"type":"string","canBeUsedToMatch":true},
+            {"id":"Registered_At","displayName":"Registered_At","required":false,"defaultMatch":false,"display":true,"type":"string","canBeUsedToMatch":true},
+            {"id":"Updated_At","displayName":"Updated_At","required":false,"defaultMatch":false,"display":true,"type":"string","canBeUsedToMatch":true}
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "id": "c3b840de-adbe-4e5d-b50a-e6d739508487",
+      "name": "Upsert Active User",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [1680, -120],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "ZPODlcDmX45WFVuM",
+          "name": "Google Sheets account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "1aKwY4KOo8uGCRrHASD539Habt5Obam8meacRO-ir0Ks",
+          "mode": "list",
+          "cachedResultName": "Chaphranakhon_DB",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1aKwY4KOo8uGCRrHASD539Habt5Obam8meacRO-ir0Ks/edit"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Users",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "LINE_UID": "={{ $json.LINE_UID }}",
+            "Display_Name": "={{ $json.Display_Name }}",
+            "Picture_URL": "={{ $json.Picture_URL }}",
+            "Language": "={{ $json.Language }}",
+            "Role": "={{ $json.Role }}",
+            "Friend_Status": "blocked",
+            "First_Added_At": "={{ $json.First_Added_At }}",
+            "Last_Interaction": "={{ $json.Last_Interaction }}",
+            "Registered_At": "={{ $json.Registered_At }}",
+            "Updated_At": "={{ $json.Updated_At }}"
+          },
+          "matchingColumns": ["LINE_UID"],
+          "schema": [
+            {"id":"LINE_UID","displayName":"LINE_UID","required":false,"defaultMatch":false,"display":true,"type":"string","canBeUsedToMatch":true},
+            {"id":"Display_Name","displayName":"Display_Name","required":false,"defaultMatch":false,"display":true,"type":"string","canBeUsedToMatch":true},
+            {"id":"Picture_URL","displayName":"Picture_URL","required":false,"defaultMatch":false,"display":true,"type":"string","canBeUsedToMatch":true},
+            {"id":"Language","displayName":"Language","required":false,"defaultMatch":false,"display":true,"type":"string","canBeUsedToMatch":true},
+            {"id":"Role","displayName":"Role","required":false,"defaultMatch":false,"display":true,"type":"string","canBeUsedToMatch":true},
+            {"id":"Friend_Status","displayName":"Friend_Status","required":false,"defaultMatch":false,"display":true,"type":"string","canBeUsedToMatch":true},
+            {"id":"First_Added_At","displayName":"First_Added_At","required":false,"defaultMatch":false,"display":true,"type":"string","canBeUsedToMatch":true},
+            {"id":"Last_Interaction","displayName":"Last_Interaction","required":false,"defaultMatch":false,"display":true,"type":"string","canBeUsedToMatch":true},
+            {"id":"Registered_At","displayName":"Registered_At","required":false,"defaultMatch":false,"display":true,"type":"string","canBeUsedToMatch":true},
+            {"id":"Updated_At","displayName":"Updated_At","required":false,"defaultMatch":false,"display":true,"type":"string","canBeUsedToMatch":true}
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "id": "32c0938d-cab3-4879-8b13-71b58c2d7bd3",
+      "name": "Upsert Blocked User",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [1200, 120],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "ZPODlcDmX45WFVuM",
+          "name": "Google Sheets account 2"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "POST LINE Webhook": {"main":[[{"node":"Extract User Events","type":"main","index":0}]]},
+    "Extract User Events": {"main":[[{"node":"Read Existing Users","type":"main","index":0}]]},
+    "Read Existing Users": {"main":[[{"node":"Merge Existing User Data","type":"main","index":0}]]},
+    "Merge Existing User Data": {"main":[[{"node":"Is Active Friend?","type":"main","index":0}]]},
+    "Is Active Friend?": {"main":[[{"node":"Get LINE Profile","type":"main","index":0}],[{"node":"Upsert Blocked User","type":"main","index":0}]]},
+    "Get LINE Profile": {"main":[[{"node":"Apply LINE Profile","type":"main","index":0}]]},
+    "Apply LINE Profile": {"main":[[{"node":"Upsert Active User","type":"main","index":0}]]}
+  },
+  "pinData": {},
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Asia/Bangkok"
+  },
+  "versionId": "fbd2bad8-e764-4da1-a202-566f82c3ca8c",
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "tags": []
+}

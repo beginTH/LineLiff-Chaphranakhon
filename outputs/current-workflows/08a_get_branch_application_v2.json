@@ -1,0 +1,225 @@
+{
+  "name": "08a - Get Branch Application v2",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "GET",
+        "path": "get-branch-application",
+        "responseMode": "lastNode",
+        "options": {
+          "allowedOrigins": "https://beginth.github.io"
+        }
+      },
+      "id": "get-branch-webhook",
+      "name": "GET /get-branch-application",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        0,
+        220
+      ]
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1aKwY4KOo8uGCRrHASD539Habt5Obam8meacRO-ir0Ks",
+          "mode": "list",
+          "cachedResultName": "Chaphranakhon_DB"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Branch_Applications",
+          "mode": "name",
+          "cachedResultName": "Branch_Applications"
+        },
+        "options": {}
+      },
+      "id": "read-branch-applications",
+      "name": "Read Branch Applications",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        230,
+        220
+      ],
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "ZPODlcDmX45WFVuM",
+          "name": "Google Sheets account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const request = $node['GET /get-branch-application'].json;\nconst applicationId = String(request.query?.applicationId || '').trim();\nif (!applicationId) return [{ json: { success: false, message: 'Missing application ID' } }];\nconst rows = $input.all().map(item => item.json);\nconst application = rows.find(row => String(row.Application_ID || '').trim() === applicationId);\nif (!application) return [{ json: { success: false, message: 'Application not found' } }];\nreturn [{ json: { success: true, application } }];"
+      },
+      "id": "build-application-response",
+      "name": "Build Application Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        470,
+        220
+      ]
+    },
+    {
+      "id": "get-branch-extract-token",
+      "name": "Extract LINE ID Token for Branch Application Read",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        220,
+        -180
+      ],
+      "parameters": {
+        "jsCode": "const h=$json.headers||{};const v=String(h.authorization||h.Authorization||'').trim();const m=v.match(/^Bearer\\s+(.+)$/i);if(!m||!m[1])throw new Error('Missing LINE ID token');return[{json:{idToken:m[1].trim()}}];"
+      }
+    },
+    {
+      "id": "get-branch-verify-token",
+      "name": "Verify LINE ID Token for Branch Application Read",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        440,
+        -180
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.line.me/oauth2/v2.1/verify",
+        "sendBody": true,
+        "contentType": "form-urlencoded",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "id_token",
+              "value": "={{ $json.idToken }}"
+            },
+            {
+              "name": "client_id",
+              "value": "2010570929"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "get-branch-read-admins",
+      "name": "Read Admins For Branch Application Read",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        660,
+        -180
+      ],
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1aKwY4KOo8uGCRrHASD539Habt5Obam8meacRO-ir0Ks",
+          "mode": "list",
+          "cachedResultName": "Chaphranakhon_DB"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Admins",
+          "mode": "name"
+        },
+        "options": {}
+      },
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "ZPODlcDmX45WFVuM",
+          "name": "Google Sheets account 2"
+        }
+      }
+    },
+    {
+      "id": "get-branch-authorize",
+      "name": "Authorize Branch Application Read",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        880,
+        -180
+      ],
+      "parameters": {
+        "jsCode": "const uid=String($node['Verify LINE ID Token for Branch Application Read'].json.sub||'').trim();const admin=$input.all().map(i=>i.json).find(a=>String(a.LINE_UID||a.lineUid||'').trim()===uid&&String(a.Status||'').trim().toLowerCase()==='active'&&['owner','approve','approver'].includes(String(a.Role||'').trim().toLowerCase()));if(!admin)throw new Error('Only an active approver may read branch applications');return[{json:{uid}}];"
+      }
+    }
+  ],
+  "connections": {
+    "GET /get-branch-application": {
+      "main": [
+        [
+          {
+            "node": "Extract LINE ID Token for Branch Application Read",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Branch Applications": {
+      "main": [
+        [
+          {
+            "node": "Build Application Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract LINE ID Token for Branch Application Read": {
+      "main": [
+        [
+          {
+            "node": "Verify LINE ID Token for Branch Application Read",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify LINE ID Token for Branch Application Read": {
+      "main": [
+        [
+          {
+            "node": "Read Admins For Branch Application Read",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Admins For Branch Application Read": {
+      "main": [
+        [
+          {
+            "node": "Authorize Branch Application Read",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Authorize Branch Application Read": {
+      "main": [
+        [
+          {
+            "node": "Read Branch Applications",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

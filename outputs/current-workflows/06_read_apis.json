@@ -1,0 +1,416 @@
+{
+  "name": "Chaphranakhon - 06_read_apis",
+  "nodes": [
+    {
+      "parameters": {
+        "path": "get-user-profile",
+        "responseMode": "lastNode",
+        "options": {
+          "allowedOrigins": "https://beginth.github.io"
+        }
+      },
+      "id": "661e9c2b-41a1-4624-980c-04e954351b39",
+      "name": "GET /get-user-profile",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        28976,
+        8832
+      ],
+      "notesInFlow": true,
+      "notes": "GET ?uid=LINE_UID เนเธฅเนเธงเธเธทเธเธเนเธญเธกเธนเธฅเธชเธฒเธเธฒเนเธฅเธฐ addresses เนเธซเน LIFF"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1aKwY4KOo8uGCRrHASD539Habt5Obam8meacRO-ir0Ks",
+          "mode": "list",
+          "cachedResultName": "Chaphranakhon_DB",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1aKwY4KOo8uGCRrHASD539Habt5Obam8meacRO-ir0Ks/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1341263323,
+          "mode": "list",
+          "cachedResultName": "Users_Addresses",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1aKwY4KOo8uGCRrHASD539Habt5Obam8meacRO-ir0Ks/edit#gid=1341263323"
+        },
+        "options": {}
+      },
+      "id": "106d7743-549e-44bf-86d9-5e115173c91d",
+      "name": "Read Users_Addresses",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        29248,
+        8832
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "ZPODlcDmX45WFVuM",
+          "name": "Google Sheets account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const uid = String($node['GET /get-user-profile'].json.query?.uid || '').trim();\nconst rows = $input.all().map(item => item.json);\nconst row = rows.find(item => String(item.LINE_UID || '').trim() === uid);\nif (!row) return [{ json: { uid, displayName: '', addresses: [] } }];\nconst addresses = [1,2,3,4,5].map(num => ({\n  id: 'addr-' + num,\n  label: row['Address_Label_' + num] || row.Branch_Name || ('เธ—เธตเนเธญเธขเธนเน ' + num),\n  text: row['Address_' + num] || '',\n  contactName: row['Contact_Name_' + num] || row.Contact_Name || row.Display_Name || '',\n  tel: row.Tel || '',\n})).filter(item => item.text);\nreturn [{ json: { uid, displayName: row.Display_Name || row.Branch_Name || '', branchName: row.Branch_Name || '', isBranch: Boolean(row.Branch_Name), addresses } }];"
+      },
+      "id": "04681653-50eb-481f-87e3-8ee861b11975",
+      "name": "Format Profile Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        29504,
+        8832
+      ]
+    },
+    {
+      "parameters": {
+        "path": "get-order",
+        "responseMode": "lastNode",
+        "options": {
+          "allowedOrigins": "https://beginth.github.io"
+        }
+      },
+      "id": "69ac270d-641d-4ef2-a4fd-9ed4ccb60cdc",
+      "name": "GET /get-order",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        28976,
+        9360
+      ],
+      "notesInFlow": true,
+      "notes": "GET ?orderId=PO-... เนเธฅเนเธงเธเธทเธเธเนเธญเธกเธนเธฅเธชเธณเธซเธฃเธฑเธเธซเธเนเธฒ admin"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1aKwY4KOo8uGCRrHASD539Habt5Obam8meacRO-ir0Ks",
+          "mode": "list",
+          "cachedResultName": "Chaphranakhon_DB",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1aKwY4KOo8uGCRrHASD539Habt5Obam8meacRO-ir0Ks/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Orders",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1aKwY4KOo8uGCRrHASD539Habt5Obam8meacRO-ir0Ks/edit#gid=0"
+        },
+        "options": {}
+      },
+      "id": "9a7c9d64-3856-46d3-98d8-26e083babbea",
+      "name": "Read Orders",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        29248,
+        9360
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "ZPODlcDmX45WFVuM",
+          "name": "Google Sheets account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "function parseJson(v,f){try{return v?JSON.parse(v):f}catch{return f}}\nconst orderId=String($node['GET /get-order'].json.query?.orderId||'').trim();\nconst row=$input.all().map(i=>i.json).find(r=>String(r.Order_ID||'').trim()===orderId);\nif(!row)return[{json:{success:false,message:'Order not found',orderId}}];\nconst deliveryAddress=parseJson(row.Delivery_Address,{}),details=parseJson(row.Order_Details,{});\nreturn[{json:{orderId:row.Order_ID,timestamp:row.Timestamp,status:row.Status||'Pending',branchInfo:{uid:row.LINE_UID||'',displayName:details.displayName||row.LINE_UID||''},deliveryAddress,orderItems:details.orderItems||[],subtotal:Number(row.Subtotal||0),shippingCost:Number(row.Shipping_Cost||0),discount:Number(row.Discount||0),otherFee:Number(row.Other_Fee||0),vatAmount:Number(row.VAT_Amount||0),totalAmount:Number(row.Total_Amount||0),note:details.note||'',adjustmentReason:row.Adjustment_Reason||'',approvalHistory:parseJson(row.Approval_History,[]),approvedBy:row.Approved_By||'',approvedAt:row.Approved_At||''}}];"
+      },
+      "id": "b29179f6-da9a-4968-9c07-29390e11740a",
+      "name": "Format Order Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        29504,
+        9360
+      ]
+    },
+    {
+      "parameters": {
+        "path": "get-products",
+        "responseMode": "lastNode",
+        "options": {
+          "allowedOrigins": "https://beginth.github.io"
+        }
+      },
+      "id": "4f7f5a7e-e59a-4bbd-8062-81eae8ab1a20",
+      "name": "GET /get-products",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        28976,
+        9872
+      ]
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1aKwY4KOo8uGCRrHASD539Habt5Obam8meacRO-ir0Ks",
+          "mode": "list",
+          "cachedResultName": "Chaphranakhon_DB",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1aKwY4KOo8uGCRrHASD539Habt5Obam8meacRO-ir0Ks/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1323666545,
+          "mode": "list",
+          "cachedResultName": "Products",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1aKwY4KOo8uGCRrHASD539Habt5Obam8meacRO-ir0Ks/edit#gid=1323666545"
+        },
+        "options": {}
+      },
+      "id": "41af2a64-5544-45d9-bf91-c2da89e04d89",
+      "name": "Read Products",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        29248,
+        9872
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "ZPODlcDmX45WFVuM",
+          "name": "Google Sheets account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "function normalizeStatus(status) { return String(status || '').trim().toLowerCase(); }\nfunction isHiddenStatus(status) { return ['ยกเลิก','cancelled','canceled','inactive','disabled','ปิด'].includes(normalizeStatus(status)); }\nconst query = $node['GET /get-products'].json.query || {};\nconst customerType = String(query.customerType || 'branch').toLowerCase();\nconst rows = $input.all().map(item => item.json);\nconst products = rows.map((row, index) => {\n  const productId = row.Product_ID || row.productId || row.ID || row.id || ('P' + String(index + 1).padStart(3, '0'));\n  const productName = row.Product_Name || row.productName || row.Name || row.name || '';\n  const price = Number(row.Price || row.price || 0);\n  const unit = row.Unit || row.unit || '';\n  const imageUrl = row.Image_URL || row.imageUrl || row.Image || row.image || '';\n  const status = row.Status || row.status || '';\n  const audience = String(row.Customer_Type || row.customerType || row.Audience || 'all').trim().toLowerCase();\n  const branchOnly = ['branch','สาขา','branch-only','branch_only'].includes(audience);\n  return { productId, productName, price, unit, imageUrl, status, customerType: audience };\n}).filter(product => product.productName && product.price > 0 && !isHiddenStatus(product.status) && (customerType === 'branch' || product.customerType === 'all' || product.customerType === 'general' || product.customerType === 'ทั่วไป'));\nreturn [{ json: { success: true, customerType, products } }];"
+      },
+      "id": "89a52dd0-3c52-433e-8ced-8c4f1c58f924",
+      "name": "Format Products Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        29504,
+        9872
+      ]
+    },
+    {
+      "id": "8d8bccdb-97b4-4d50-9461-cae581090358",
+      "name": "GET /get-order-history",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -980,
+        -180
+      ],
+      "parameters": {
+        "httpMethod": "GET",
+        "path": "get-order-history",
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "https://beginth.github.io"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1aKwY4KOo8uGCRrHASD539Habt5Obam8meacRO-ir0Ks",
+          "mode": "list",
+          "cachedResultName": "Chaphranakhon_DB",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1aKwY4KOo8uGCRrHASD539Habt5Obam8meacRO-ir0Ks/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Orders",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1aKwY4KOo8uGCRrHASD539Habt5Obam8meacRO-ir0Ks/edit#gid=0"
+        },
+        "options": {}
+      },
+      "id": "50e08794-79bb-4007-ad0a-4db236f4d917",
+      "name": "Read Orders For Branch History",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        -760,
+        -180
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "ZPODlcDmX45WFVuM",
+          "name": "Google Sheets account 2"
+        }
+      }
+    },
+    {
+      "id": "9b591cfa-f7a0-47b7-94be-20c6b06b6258",
+      "name": "Build Branch Order History",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -520,
+        -180
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "language": "javaScript",
+        "jsCode": "\nfunction parseJson(value, fallback) { try { return value ? JSON.parse(value) : fallback; } catch { return fallback; } }\nconst uid = String($node['GET /get-order-history'].json.query?.uid || '').trim();\nif (!uid) throw new Error('uid is required');\nconst paymentLabel = (value) => { const key = String(value || '').trim().toLowerCase(); if (['credit pending','pending','unpaid'].includes(key)) return '\\u0e23\\u0e2d\\u0e0a\\u0e33\\u0e23\\u0e30\\u0e40\\u0e07\\u0e34\\u0e19'; if (key === 'submitted') return '\\u0e23\\u0e2d\\u0e15\\u0e23\\u0e27\\u0e08\\u0e2a\\u0e2d\\u0e1a\\u0e01\\u0e32\\u0e23\\u0e0a\\u0e33\\u0e23\\u0e30\\u0e40\\u0e07\\u0e34\\u0e19'; if (['verified','paid'].includes(key)) return '\\u0e0a\\u0e33\\u0e23\\u0e30\\u0e40\\u0e07\\u0e34\\u0e19\\u0e41\\u0e25\\u0e49\\u0e27'; if (key === 'rejected') return '\\u0e2b\\u0e25\\u0e31\\u0e01\\u0e10\\u0e32\\u0e19\\u0e01\\u0e32\\u0e23\\u0e0a\\u0e33\\u0e23\\u0e30\\u0e40\\u0e07\\u0e34\\u0e19\\u0e44\\u0e21\\u0e48\\u0e1c\\u0e48\\u0e32\\u0e19'; return '\\u0e22\\u0e31\\u0e07\\u0e44\\u0e21\\u0e48\\u0e0a\\u0e33\\u0e23\\u0e30\\u0e40\\u0e07\\u0e34\\u0e19'; };\nconst orders = $input.all().map(item => item.json)\n  .filter(row => String(row.LINE_UID || '').trim() === uid)\n  .map(row => ({\n    orderId: row.Order_ID || '', timestamp: row.Timestamp || '', status: row.Status || 'Pending',\n    totalAmount: Number(row.Total_Amount || 0), paymentStatus: paymentLabel(row.Payment_Status), paymentStatusRaw: row.Payment_Status || '',\n    paymentSubmittedAt: row.Payment_Submitted_At || '', paymentProofUrl: row.Payment_Proof_URL || '',\n    pdfUrl: String(row.PO_PDF_URL || '').split(/\\n|,/).map(value => value.trim()).find(Boolean) || '',\n    adjustmentReason: row.Adjustment_Reason || '', orderDetails: parseJson(row.Order_Details, {}),\n  }))\n  .sort((a, b) => new Date(b.timestamp || 0) - new Date(a.timestamp || 0));\nreturn [{ json: { success: true, uid, orders } }];"
+      }
+    },
+    {
+      "id": "fe516782-5ca7-4cc3-bc6f-72171a362c57",
+      "name": "Respond Order History",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        -280,
+        -180
+      ],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json) }}",
+        "options": {}
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "GET /get-user-profile": {
+      "main": [
+        [
+          {
+            "node": "Read Users_Addresses",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Users_Addresses": {
+      "main": [
+        [
+          {
+            "node": "Format Profile Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GET /get-order": {
+      "main": [
+        [
+          {
+            "node": "Read Orders",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Orders": {
+      "main": [
+        [
+          {
+            "node": "Format Order Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GET /get-products": {
+      "main": [
+        [
+          {
+            "node": "Read Products",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Products": {
+      "main": [
+        [
+          {
+            "node": "Format Products Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GET /get-order-history": {
+      "main": [
+        [
+          {
+            "node": "Read Orders For Branch History",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Orders For Branch History": {
+      "main": [
+        [
+          {
+            "node": "Build Branch Order History",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Branch Order History": {
+      "main": [
+        [
+          {
+            "node": "Respond Order History",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": null,
+  "meta": {
+    "deliveryNoteVersion": "V9 HIDE ZERO QUANTITY CLEAN IMPORT",
+    "generatedAt": "2026-07-19T14:09:22.778Z",
+    "templateFileId": "1FYHjC9DjMpYJmc4fLo_sr6mOE-kKfp6OVQnrAqer8KY",
+    "sheetId": 906132224,
+    "itemsPerPage": 20,
+    "itemFontSize": "10pt",
+    "itemRowHeight": "17px",
+    "pdfExport": "A4 portrait fit-to-page, margins=0",
+    "columnWidthsPx": [
+      18,
+      42,
+      58,
+      58,
+      118,
+      118,
+      66,
+      58,
+      88,
+      96
+    ],
+    "signatureRows": "Row 53=24px, Row 54=4px, Rows 55-57=25px each, Row 58=4px, Row 59=18px",
+    "zeroQuantityRule": "Items with approved quantity less than or equal to zero are excluded from the Delivery Note before pagination.",
+    "documentType": "Delivery Note / Tax Invoice",
+    "outputFolderId": "1IBbwvnGB157SfL-766gvHNQqIljH5sfa",
+    "creditTermsDays": 7
+  },
+  "tags": []
+}

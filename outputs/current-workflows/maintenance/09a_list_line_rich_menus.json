@@ -1,0 +1,10 @@
+{
+  "name": "09a - List LINE Rich Menus",
+  "nodes": [
+    {"parameters": {}, "id": "manual-trigger", "name": "When clicking Execute workflow", "type": "n8n-nodes-base.manualTrigger", "typeVersion": 1, "position": [0, 220]},
+    {"parameters": {"url": "https://api.line.me/v2/bot/richmenu/list", "authentication": "genericCredentialType", "genericAuthType": "httpHeaderAuth", "options": {}}, "id": "list-rich-menus", "name": "List LINE Rich Menus", "type": "n8n-nodes-base.httpRequest", "typeVersion": 4.2, "position": [240, 220], "notesInFlow": true, "notes": "เลือก Header Auth credential เดียวกับ node Get LINE Profile"}
+  ],
+  "connections": {"When clicking Execute workflow": {"main": [[{"node": "List LINE Rich Menus", "type": "main", "index": 0}]]}},
+  "active": false,
+  "settings": {"executionOrder": "v1"}
+}

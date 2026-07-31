@@ -1,0 +1,704 @@
+{
+  "name": "08 - Branch Approval Review v5 (LINE Token Required)",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "review-branch-application",
+        "responseMode": "lastNode",
+        "options": {
+          "allowedOrigins": "https://beginth.github.io"
+        }
+      },
+      "id": "review-webhook",
+      "name": "POST /review-branch-application",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        0,
+        220
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const b=$json; const action=String(b.action||'').trim(); if(!['Approved','Rejected'].includes(action)) throw new Error('Invalid action'); if(!b.applicationId||!b.adminUid) throw new Error('Missing application or admin'); if(action==='Rejected'&&!String(b.reason||'').trim()) throw new Error('Reject reason required'); return [{json:{Application_ID:String(b.applicationId),Status:action,Reviewed_At:new Date().toISOString(),Reviewed_By_UID:String(b.adminUid),Reviewed_By_Name:String(b.adminName||''),Reject_Reason:action==='Rejected'?String(b.reason||'').trim():'',action}}];"
+      },
+      "id": "validate-review",
+      "name": "Validate Review",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        220,
+        220
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "1aKwY4KOo8uGCRrHASD539Habt5Obam8meacRO-ir0Ks",
+          "mode": "list",
+          "cachedResultName": "Chaphranakhon_DB"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Branch_Applications",
+          "mode": "name",
+          "cachedResultName": "Branch_Applications"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [
+            "Application_ID"
+          ],
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "update-application",
+      "name": "Update Branch Application Status",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        1080,
+        220
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "ZPODlcDmX45WFVuM",
+          "name": "Google Sheets account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "approved",
+              "leftValue": "={{ $node['Validate Review'].json.action }}",
+              "rightValue": "Approved",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "id": "approved",
+      "name": "Is Approved?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        1300,
+        220
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const r=$node['Validate Review'].json; return [{json:{success:true,status:r.action,applicationId:r.Application_ID,message:r.action==='Approved'?'เน€เธโฌเน€เธยเน€เธยเน€เธโฌเน€เธยเธขยเน€เธโฌเน€เธยเน€เธยเน€เธโฌเน€เธยเน€เธยเน€เธโฌเน€เธยเน€เธโ€เน€เธโฌเน€เธยเนโฌเธเน€เธโฌเน€เธยเน€เธโ€เน€เธโฌเน€เธยเน€เธยเน€เธโฌเน€เธยเน€เธโ€เน€เธโฌเน€เธยเธขยเน€เธโฌเน€เธยเน€เธโ€เน€เธโฌเน€เธยเนยเธเน€เธโฌเน€เธยเน€เธยเน€เธโฌเน€เธยเน€เธโ€ขเน€เธโฌเน€เธยเน€เธยเน€เธโฌเน€เธยเธขยเน€เธโฌเน€เธยเน€เธยเน€เธโฌเน€เธยเธขยเน€เธโฌเน€เธยเน€เธยเน€เธโฌเน€เธยเน€เธย':'เน€เธโฌเน€เธยเธขยเน€เธโฌเน€เธยเธขยเน€เธโฌเน€เธยเน€เธโ€เน€เธโฌเน€เธยเนยเธเน€เธโฌเน€เธยเน€เธยเน€เธโฌเน€เธยเธขยเน€เธโฌเน€เธยเธขยเน€เธโฌเน€เธยเน€เธโ€เน€เธโฌเน€เธยเธขยเน€เธโฌเน€เธยเน€เธยเน€เธโฌเน€เธยเนยเธเน€เธโฌเน€เธยเน€เธยเน€เธโฌเน€เธยเน€เธโ€ขเน€เธโฌเน€เธยเน€เธยเน€เธโฌเน€เธยเธขยเน€เธโฌเน€เธยเน€เธยเน€เธโฌเน€เธยเธขยเน€เธโฌเน€เธยเน€เธยเน€เธโฌเน€เธยเน€เธย'}}];"
+      },
+      "id": "response",
+      "name": "Build Review Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        900,
+        330
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const source = $node['Find Application For Review'].json;\nreturn [{ json: { Application_ID: source.Application_ID, Status: source.Status, Reviewed_At: source.Reviewed_At, Reviewed_By_UID: source.Reviewed_By_UID, Reviewed_By_Name: source.Reviewed_By_Name, Reject_Reason: source.Reject_Reason } }];"
+      },
+      "id": "prepare-review-sheet-update",
+      "name": "Prepare Review Sheet Update",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        860,
+        220
+      ]
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1aKwY4KOo8uGCRrHASD539Habt5Obam8meacRO-ir0Ks",
+          "mode": "list",
+          "cachedResultName": "Chaphranakhon_DB"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Branch_Applications",
+          "mode": "name",
+          "cachedResultName": "Branch_Applications"
+        },
+        "options": {}
+      },
+      "id": "read-app-for-review",
+      "name": "Read Application For Review",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        430,
+        80
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "ZPODlcDmX45WFVuM",
+          "name": "Google Sheets account 2"
+        }
+      },
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const review = $node['Validate Review'].json;\nconst application = $input.all().map(item => item.json).find(row => String(row.Application_ID || '').trim() === review.Application_ID);\nif (!application) throw new Error('Application not found');\nreturn [{ json: { ...application, ...review } }];"
+      },
+      "id": "find-app-for-review",
+      "name": "Find Application For Review",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        650,
+        80
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const a = $node['Find Application For Review'].json;\nreturn [{ json: { LINE_UID: a.LINE_UID, Display_Name: a.LINE_Display_Name, Branch_Name: a.Branch_Name, Opening: 'TRUE', Tel: a.Tel, Contact_Name: a.Owner_Name, Address_1: [a.Address, a.Subdistrict, a.District, a.Province, a.Postal_Code].filter(Boolean).join(' '), Address_Label_1: a.Branch_Name, Contact_Name_1: a.Owner_Name } }];"
+      },
+      "id": "prepare-branch-address",
+      "name": "Prepare Branch Address",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1520,
+        80
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "1aKwY4KOo8uGCRrHASD539Habt5Obam8meacRO-ir0Ks",
+          "mode": "list",
+          "cachedResultName": "Chaphranakhon_DB"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1341263323,
+          "mode": "list",
+          "cachedResultName": "Users_Addresses"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [
+            "LINE_UID"
+          ],
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "upsert-users-address",
+      "name": "Upsert Users Address",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        1740,
+        80
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "ZPODlcDmX45WFVuM",
+          "name": "Google Sheets account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const a = $node['Find Application For Review'].json; return [{ json: { LINE_UID: a.LINE_UID, Role: 'branch', Updated_At: new Date().toISOString() } }];"
+      },
+      "id": "prepare-branch-role",
+      "name": "Prepare Branch Role",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1960,
+        80
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "1aKwY4KOo8uGCRrHASD539Habt5Obam8meacRO-ir0Ks",
+          "mode": "list",
+          "cachedResultName": "Chaphranakhon_DB"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Users",
+          "mode": "name",
+          "cachedResultName": "Users"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [
+            "LINE_UID"
+          ],
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "upsert-user-role",
+      "name": "Upsert User Role",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        2180,
+        80
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "ZPODlcDmX45WFVuM",
+          "name": "Google Sheets account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const a = $node['Find Application For Review'].json;\nreturn [{ json: { to: a.LINE_UID, text: '\\u0e04\\u0e33\\u0e02\\u0e2d\\u0e2a\\u0e21\\u0e31\\u0e04\\u0e23\\u0e2a\\u0e32\\u0e02\\u0e32\\u0e02\\u0e2d\\u0e07\\u0e04\\u0e38\\u0e13\\u0e44\\u0e14\\u0e49\\u0e23\\u0e31\\u0e1a\\u0e01\\u0e32\\u0e23\\u0e2d\\u0e19\\u0e38\\u0e21\\u0e31\\u0e15\\u0e34\\u0e41\\u0e25\\u0e49\\u0e27\\n\\u0e2a\\u0e32\\u0e02\\u0e32: ' + a.Branch_Name + '\\n\\u0e23\\u0e30\\u0e1a\\u0e1a\\u0e40\\u0e1b\\u0e34\\u0e14\\u0e43\\u0e0a\\u0e49\\u0e07\\u0e32\\u0e19\\u0e1a\\u0e31\\u0e0d\\u0e0a\\u0e35\\u0e2a\\u0e32\\u0e02\\u0e32\\u0e40\\u0e23\\u0e35\\u0e22\\u0e1a\\u0e23\\u0e49\\u0e2d\\u0e22' } }];"
+      },
+      "id": "build-approved-notice",
+      "name": "Build Applicant Approved Notice",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2660,
+        80
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "send",
+        "to": "={{ $json.to }}",
+        "messages": {
+          "values": [
+            {
+              "text": "={{ $json.text }}"
+            }
+          ]
+        }
+      },
+      "id": "send-approved-notice",
+      "name": "Send Applicant Approved Notice",
+      "type": "@aotoki/n8n-nodes-line-messaging.lineMessaging",
+      "typeVersion": 1,
+      "position": [
+        2920,
+        80
+      ],
+      "credentials": {
+        "lineMessagingApi": {
+          "id": "4YlidIdv3s5ML4GE",
+          "name": "Line Messaging rkitja2523"
+        }
+      },
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const a = $node['Find Application For Review'].json;\nreturn [{ json: { to: a.LINE_UID, text: '\\u0e04\\u0e33\\u0e02\\u0e2d\\u0e2a\\u0e21\\u0e31\\u0e04\\u0e23\\u0e2a\\u0e32\\u0e02\\u0e32\\u0e02\\u0e2d\\u0e07\\u0e04\\u0e38\\u0e13\\u0e22\\u0e31\\u0e07\\u0e44\\u0e21\\u0e48\\u0e44\\u0e14\\u0e49\\u0e23\\u0e31\\u0e1a\\u0e01\\u0e32\\u0e23\\u0e2d\\u0e19\\u0e38\\u0e21\\u0e31\\u0e15\\u0e34\\n\\u0e2a\\u0e32\\u0e02\\u0e32: ' + a.Branch_Name + '\\n\\u0e40\\u0e2b\\u0e15\\u0e38\\u0e1c\\u0e25: ' + (a.Reject_Reason || '-') } }];"
+      },
+      "id": "build-rejected-notice",
+      "name": "Build Applicant Rejected Notice",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1520,
+        380
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "send",
+        "to": "={{ $json.to }}",
+        "messages": {
+          "values": [
+            {
+              "text": "={{ $json.text }}"
+            }
+          ]
+        }
+      },
+      "id": "send-rejected-notice",
+      "name": "Send Applicant Rejected Notice",
+      "type": "@aotoki/n8n-nodes-line-messaging.lineMessaging",
+      "typeVersion": 1,
+      "position": [
+        1740,
+        380
+      ],
+      "credentials": {
+        "lineMessagingApi": {
+          "id": "4YlidIdv3s5ML4GE",
+          "name": "Line Messaging rkitja2523"
+        }
+      },
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://api.line.me/v2/bot/user/{{ $('Prepare Branch Role').item.json.LINE_UID }}/richmenu/richmenu-9e24dce8c6b1bc140f5d3f0c4c05ee75",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {}
+      },
+      "id": "link-branch-rich-menu",
+      "name": "Link Branch Rich Menu",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2400,
+        80
+      ],
+      "notesInFlow": true,
+      "notes": "เลือก Header Auth credential เดิม: LINE Messaging API rkitja2523 HeaderAuth"
+    },
+    {
+      "id": "branch-review-extract",
+      "name": "Extract LINE ID Token for Branch Review",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        220,
+        -180
+      ],
+      "parameters": {
+        "jsCode": "const headers=$json.headers||{}; const value=String(headers.authorization||headers.Authorization||'').trim(); const match=value.match(/^Bearer\\s+(.+)$/i); if(!match||!match[1]) throw new Error('Missing LINE ID token'); const idToken=match[1].trim(); if(idToken.length<100||idToken.length>5000) throw new Error('Invalid LINE ID token format'); return [{json:{idToken}}];"
+      }
+    },
+    {
+      "id": "branch-review-verify",
+      "name": "Verify LINE ID Token for Branch Review",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        460,
+        -180
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.line.me/oauth2/v2.1/verify",
+        "sendBody": true,
+        "contentType": "form-urlencoded",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "id_token",
+              "value": "={{ $json.idToken }}"
+            },
+            {
+              "name": "client_id",
+              "value": "2010570929"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "branch-review-admins",
+      "name": "Read Admins For Branch Review",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        700,
+        -180
+      ],
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1aKwY4KOo8uGCRrHASD539Habt5Obam8meacRO-ir0Ks",
+          "mode": "list",
+          "cachedResultName": "Chaphranakhon_DB"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Admins",
+          "mode": "name"
+        },
+        "options": {}
+      },
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "ZPODlcDmX45WFVuM",
+          "name": "Google Sheets account 2"
+        }
+      }
+    },
+    {
+      "id": "branch-review-authorize",
+      "name": "Authorize Branch Review",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        940,
+        -180
+      ],
+      "parameters": {
+        "jsCode": "const body=$node['POST /review-branch-application'].json.body||$node['POST /review-branch-application'].json; const uid=String($node['Verify LINE ID Token for Branch Review'].json.sub||'').trim(); const admin=$input.all().map(i=>i.json).find(a=>String(a.LINE_UID||a.lineUid||'').trim()===uid&&String(a.Status||'').trim().toLowerCase()==='active'&&['owner','approve','approver'].includes(String(a.Role||'').trim().toLowerCase())); if(!admin) throw new Error('Only an active approver may review applications'); return [{json:{...body,adminUid:uid,adminName:admin.Display_Name||admin.Admin_ID||uid}}];"
+      }
+    }
+  ],
+  "connections": {
+    "POST /review-branch-application": {
+      "main": [
+        [
+          {
+            "node": "Extract LINE ID Token for Branch Review",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Review": {
+      "main": [
+        [
+          {
+            "node": "Read Application For Review",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Branch Application Status": {
+      "main": [
+        [
+          {
+            "node": "Is Approved?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Approved?": {
+      "main": [
+        [
+          {
+            "node": "Prepare Branch Address",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Build Applicant Rejected Notice",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Review Sheet Update": {
+      "main": [
+        [
+          {
+            "node": "Update Branch Application Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Application For Review": {
+      "main": [
+        [
+          {
+            "node": "Find Application For Review",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Find Application For Review": {
+      "main": [
+        [
+          {
+            "node": "Prepare Review Sheet Update",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Branch Address": {
+      "main": [
+        [
+          {
+            "node": "Upsert Users Address",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upsert Users Address": {
+      "main": [
+        [
+          {
+            "node": "Prepare Branch Role",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Branch Role": {
+      "main": [
+        [
+          {
+            "node": "Upsert User Role",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upsert User Role": {
+      "main": [
+        [
+          {
+            "node": "Link Branch Rich Menu",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Applicant Approved Notice": {
+      "main": [
+        [
+          {
+            "node": "Send Applicant Approved Notice",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Applicant Approved Notice": {
+      "main": [
+        [
+          {
+            "node": "Build Review Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Applicant Rejected Notice": {
+      "main": [
+        [
+          {
+            "node": "Send Applicant Rejected Notice",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Applicant Rejected Notice": {
+      "main": [
+        [
+          {
+            "node": "Build Review Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Link Branch Rich Menu": {
+      "main": [
+        [
+          {
+            "node": "Build Applicant Approved Notice",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract LINE ID Token for Branch Review": {
+      "main": [
+        [
+          {
+            "node": "Verify LINE ID Token for Branch Review",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify LINE ID Token for Branch Review": {
+      "main": [
+        [
+          {
+            "node": "Read Admins For Branch Review",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Admins For Branch Review": {
+      "main": [
+        [
+          {
+            "node": "Authorize Branch Review",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Authorize Branch Review": {
+      "main": [
+        [
+          {
+            "node": "Validate Review",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  }
+}
