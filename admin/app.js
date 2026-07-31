@@ -245,9 +245,13 @@ async function apiRejectPayment(payload) {
     return res.json();
 }
 
+function getBranchName(order) {
+    return order?.deliveryAddress?.label || order?.branchInfo?.branchName || order?.branchInfo?.displayName || order?.branchName || '—';
+}
+
 function renderPaymentReview(order) {
     setText('payment-review-order-id', order.orderId || order.Order_ID || state.orderId);
-    setText('payment-review-branch', order.branchInfo?.displayName || order.branchName || order.LINE_UID || '-');
+    setText('payment-review-branch', getBranchName(order));
     setText('payment-review-expected', fmt(order.totalAmount ?? order.Total_Amount ?? 0));
     setText('payment-review-submitted', fmt(order.paymentAmount ?? order.Payment_Amount ?? 0));
     setText('payment-review-status', order.paymentStatus || order.Payment_Status || 'Submitted');
@@ -279,8 +283,7 @@ function renderOrder(order) {
     }
 
     // Branch
-    setText('branch-name', order.branchInfo?.displayName || '—');
-    setText('branch-uid',  order.branchInfo?.uid         || '—');
+    setText('branch-name', getBranchName(order));
 
     // Delivery address
     setText('delivery-label',   order.deliveryAddress?.label || '—');
@@ -561,7 +564,7 @@ function bootAdminApp() {
         const confirmed  = confirm(
             `ยืนยันการอนุมัติออเดอร์?\n\n` +
             `รหัส: ${state.orderId}\n` +
-            `สาขา: ${state.order?.branchInfo?.displayName}\n` +
+            `สาขา: ${getBranchName(state.order)}\n` +
             `ค่าขนส่ง: ${fmt(shippingCost)}\n` +
             `ส่วนลด: ${fmt(discount)}\n` +
             `ค่าใช้จ่ายอื่น: ${fmt(otherFee)}\n` +
@@ -584,7 +587,7 @@ function bootAdminApp() {
             // Build payload ตาม spec ของ n8n webhook POST /webhook/admin-approve
             const payload = {
                 orderId:      state.orderId,
-                branchDisplayName: state.order?.branchInfo?.displayName || '',
+                branchDisplayName: getBranchName(state.order) || '',
                 orderNote: state.order?.note || '',
                 adminUid:     admin.uid,
                 adminName:    admin.displayName,
@@ -611,7 +614,7 @@ function bootAdminApp() {
 
             // Success — อัปเดตหน้า Success
             setText('success-order-id',    state.orderId);
-            setText('success-branch',      state.order?.branchInfo?.displayName || '—');
+            setText('success-branch',      getBranchName(state.order) || '—');
             setText('success-subtotal',    fmt(subtotal));
             setText('success-shipping',    fmt(shippingCost));
             setText('success-grand-total', fmt(totalAmount));

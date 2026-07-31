@@ -72,10 +72,6 @@
                     <span class="info-label">ชื่อสาขา</span>
                     <span class="info-value" id="branch-name">—</span>
                 </div>
-                <div class="info-row">
-                    <span class="info-label">LINE UID</span>
-                    <span class="info-value info-uid" id="branch-uid">—</span>
-                </div>
             </div>
 
             <!-- Delivery Address -->
@@ -349,7 +345,7 @@
             console.warn('LIFF routing skipped:', error);
         }
         const legacyApp = document.createElement('script');
-        legacyApp.src = 'app.js?v=20260731-boot-fix';
+        legacyApp.src = 'app.js?v=20260731-branch-name';
         document.body.appendChild(legacyApp);
     }());
     </script>
