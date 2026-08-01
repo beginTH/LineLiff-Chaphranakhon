@@ -263,6 +263,24 @@ function renderPaymentReview(order) {
     if (link) { link.href = proof || '#'; link.classList.toggle('hidden', !proof); }
 }
 
+function renderPaymentResult(kind, rejectionReason = '') {
+    const order = state.order || {};
+    const rejected = kind === 'payment-rejected';
+    setText('success-title', rejected ? 'ดำเนินการปฏิเสธสำเร็จ' : 'ยืนยันการชำระเงินสำเร็จ!');
+    setText('success-subtitle', rejected
+        ? 'ระบบบันทึกผลและแจ้งเหตุผลให้สาขาผ่าน LINE แล้ว'
+        : 'ระบบบันทึกการชำระเงินและออกใบเสร็จเรียบร้อยแล้ว');
+    setText('success-order-id', order.orderId || order.Order_ID || state.orderId || '—');
+    setText('success-branch', getBranchName(order));
+    setText('success-subtotal', fmt(order.subtotal ?? order.Subtotal ?? 0));
+    setText('success-shipping', fmt(order.shippingCost ?? order.Shipping_Cost ?? 0));
+    setText('success-grand-total', fmt(order.totalAmount ?? order.Total_Amount ?? 0));
+    const rejectionRow = document.getElementById('success-rejection-row');
+    if (rejectionRow) rejectionRow.classList.toggle('hidden', !rejected);
+    if (rejected) setText('success-rejection-reason', rejectionReason || '—');
+    document.getElementById('success-auto-tasks')?.classList.add('hidden');
+}
+
 // =====================================================
 // 🖼️ RENDER
 // =====================================================
@@ -543,7 +561,7 @@ function bootAdminApp() {
     const verifyBtn = document.getElementById('btn-verify-payment');
     if (verifyBtn) verifyBtn.addEventListener('click', async () => {
         setPaymentActionLoading('กำลังยืนยันการชำระเงินและสร้างใบเสร็จ...', true);
-        try { const admin = await ensureAdminProfile(); await apiVerifyPayment({ orderId: state.orderId, adminUid: admin.uid, adminName: admin.displayName }); alert('ยืนยันการชำระเงินและสร้างใบเสร็จเรียบร้อยแล้ว'); goTo('screen-success'); }
+        try { const admin = await ensureAdminProfile(); await apiVerifyPayment({ orderId: state.orderId, adminUid: admin.uid, adminName: admin.displayName }); renderPaymentResult('payment-approved'); goTo('screen-success'); }
         catch (err) { alert('ยืนยันการชำระเงินไม่สำเร็จ\n' + err.message); setPaymentActionLoading('', false); }
     });
     const rejectBtn = document.getElementById('btn-reject-payment');
@@ -551,7 +569,7 @@ function bootAdminApp() {
         const reason = (document.getElementById('payment-rejection-reason')?.value || '').trim();
         if (!reason) { alert('กรุณาระบุเหตุผลที่ไม่อนุมัติ'); return; }
         setPaymentActionLoading('กำลังบันทึกผลและแจ้งเหตุผลให้สาขา...', true);
-        try { const admin = await ensureAdminProfile(); await apiRejectPayment({ orderId: state.orderId, adminUid: admin.uid, adminName: admin.displayName, rejectionReason: reason }); alert('ส่งผลการตรวจสอบกลับไปยังสาขาแล้ว'); goTo('screen-success'); }
+        try { const admin = await ensureAdminProfile(); await apiRejectPayment({ orderId: state.orderId, adminUid: admin.uid, adminName: admin.displayName, rejectionReason: reason }); renderPaymentResult('payment-rejected', reason); goTo('screen-success'); }
         catch (err) { alert('ปฏิเสธหลักฐานไม่สำเร็จ\n' + err.message); setPaymentActionLoading('', false); }
     });
 
