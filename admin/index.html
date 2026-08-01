@@ -275,10 +275,10 @@
                 <div class="success-ring success-ring-1"></div>
                 <div class="success-ring success-ring-2"></div>
             </div>
-            <h2 class="success-title">อนุมัติสำเร็จ!</h2>
-            <p class="success-subtitle">ระบบกำลังออกเอกสารและแจ้งเตือนสาขาอัตโนมัติ</p>
+            <h2 class="success-title" id="success-title">อนุมัติสำเร็จ!</h2>
+            <p class="success-subtitle" id="success-subtitle">ระบบกำลังออกเอกสารและแจ้งเตือนสาขาอัตโนมัติ</p>
 
-            <div class="success-summary-card">
+            <div class="success-summary-card" id="success-summary-card">
                 <div class="success-summary-row">
                     <span class="ss-label">รหัสออเดอร์</span>
                     <span class="ss-value" id="success-order-id">—</span>
@@ -286,6 +286,10 @@
                 <div class="success-summary-row">
                     <span class="ss-label">สาขา</span>
                     <span class="ss-value" id="success-branch">—</span>
+                </div>
+                <div class="success-summary-row hidden" id="success-rejection-row">
+                    <span class="ss-label">เหตุผลที่ปฏิเสธ</span>
+                    <span class="ss-value" id="success-rejection-reason">—</span>
                 </div>
                 <div class="success-summary-divider"></div>
                 <div class="success-summary-row">
@@ -302,7 +306,7 @@
                 </div>
             </div>
 
-            <div class="auto-tasks">
+            <div class="auto-tasks" id="success-auto-tasks">
                 <p class="auto-tasks-title">📬 ระบบดำเนินการอัตโนมัติ</p>
                 <div class="auto-task-item">
                     <span class="auto-task-icon">📄</span>
@@ -349,7 +353,7 @@
             console.warn('LIFF routing skipped:', error);
         }
         const legacyApp = document.createElement('script');
-        legacyApp.src = 'app.js?v=20260801-admin-order-token';
+        legacyApp.src = 'app.js?v=20260801-payment-result';
         document.body.appendChild(legacyApp);
     }());
     </script>
