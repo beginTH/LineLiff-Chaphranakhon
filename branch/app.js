@@ -714,8 +714,9 @@ async function initApp() {
             state.products = await apiGetProducts();
             if (state.products.length === 0) throw new Error('Products response is empty');
         } catch (productErr) {
-            console.warn('[Products] fallback to mock products:', productErr);
-            state.products = MOCK_PRODUCTS;
+            console.error('[Products] unable to load authorized catalog:', productErr);
+            state.products = [];
+            throw productErr;
         }
 
         // 4️⃣ อัปเดต greeting
