@@ -205,7 +205,7 @@ async function apiGetOrder(orderId) {
 
     const res = await fetch(
         `${CONFIG.N8N_BASE_URL}${CONFIG.WEBHOOK.GET_ORDER}?orderId=${encodeURIComponent(orderId)}`,
-        { method: 'GET', headers: { 'Content-Type': 'application/json' } }
+        { method: 'GET', headers: authHeaders({ 'Content-Type': 'application/json' }) }
     );
     if (!res.ok) throw new Error(`GET Order failed: ${res.status}`);
     return res.json();
@@ -360,6 +360,7 @@ async function initApp() {
 
         // 2️⃣ ดึงข้อมูลออเดอร์ก่อน เพื่อไม่ให้หน้า Admin ค้างรอ LIFF auth
         loadingText.textContent = `กำลังโหลดออเดอร์ ${state.orderId}...`;
+        if (!CONFIG.IS_DEV_MODE) await ensureAdminProfile();
         const order = await apiGetOrder(state.orderId);
         state.order = order;
         state.adjustedItems = (order.orderItems || []).map(item => ({
