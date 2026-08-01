@@ -17,7 +17,13 @@ const pageCopy = {
 const pageLinks = { orders: 'orders.html', payments: 'payments.html', products: 'inventory.html', users: 'members.html' };
 const pageLabels = { orders: 'Order', payments: 'ชำระเงิน', products: 'วัตถุดิบ', users: 'สมาชิก' };
 const roles = ['general', 'customer', 'branch', 'owner', 'admin', 'superadmin'];
-const productStatuses = ['พร้อม', 'active', 'inactive', 'ยกเลิก', 'cancelled', 'ปิด'];
+const productStatuses = ['พร้อม', 'ปิด', 'ยกเลิก'];
+const normalizeProductStatus = value => {
+  const status = String(value || '').trim().toLowerCase();
+  if (['inactive', 'disabled', 'ปิด'].includes(status)) return 'ปิด';
+  if (['cancelled', 'canceled', 'ยกเลิก'].includes(status)) return 'ยกเลิก';
+  return 'พร้อม';
+};
 const esc = value => String(value ?? '').replace(/[&<>"']/g, char => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[char]));
 const money = value => `฿${Number(value || 0).toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 const dateTime = value => { const parsed = new Date(value); return !value || Number.isNaN(parsed.getTime()) ? (value ? String(value).replace('T', ' ').replace('.000Z', '') : '—') : parsed.toLocaleString('th-TH', { dateStyle: 'medium', timeStyle: 'short' }); };
@@ -55,6 +61,7 @@ function renderControls(items) {
 }
 function productEditor(item) {
   const audience = String(item.customerType || 'all').toLowerCase() === 'branch_only' ? 'branch_only' : 'all';
+  const status = normalizeProductStatus(item.status);
   const preview = item.imageUrl ? `<img class="admin-product-preview" src="${esc(item.imageUrl)}" alt="รูป ${esc(item.name)}">` : '<div class="admin-product-preview admin-product-preview--empty">ยังไม่มีรูป</div>';
   return `<form class="admin-edit-form admin-edit-form--product" data-product-id="${esc(item.productId)}" hidden>
     <label class="admin-image-field">รูปสินค้า<div class="admin-product-image-picker">${preview}<div><input name="imageFile" type="file" accept="image/jpeg,image/png,image/webp"><small>รองรับ JPG, PNG, WebP ไม่เกิน 8 MB ระบบจะย่อรูปก่อนอัปโหลด</small></div></div></label>
@@ -63,7 +70,7 @@ function productEditor(item) {
     <label>ราคา<input name="price" type="number" min="0" step="0.01" value="${esc(item.price)}" required></label>
     <label>หน่วย<input name="unit" value="${esc(item.unit)}" required></label>
     <label>กลุ่มที่มองเห็น<select name="customerType"><option value="all" ${audience === 'all' ? 'selected' : ''}>ทุกคน — สาขาและลูกค้าทั่วไป</option><option value="branch_only" ${audience === 'branch_only' ? 'selected' : ''}>เฉพาะสาขา</option></select></label>
-    <label>สถานะ<select name="status">${productStatuses.map(status => `<option ${status === String(item.status).toLowerCase() ? 'selected' : ''}>${status}</option>`).join('')}</select></label>
+    <label>สถานะ<select name="status">${productStatuses.map(option => `<option ${option === status ? 'selected' : ''}>${option}</option>`).join('')}</select></label>
     <div class="admin-form-actions"><button type="button" data-cancel>ยกเลิก</button><button type="submit">บันทึกสินค้า</button></div><p class="admin-form-message" aria-live="polite"></p>
   </form>`;
 }
