@@ -91,6 +91,7 @@ const MOCK_USER = {
 // =====================================================
 const state = {
     user:            null,   // { uid, displayName }
+    idToken:         '',     // Verified LINE ID token for authenticated API requests
     addresses:       [],     // [{ id, label, text, isNew? }]
     selectedAddress: null,   // address object ที่เลือก
     products:        [],     // รายการสินค้าทั้งหมด
@@ -170,16 +171,21 @@ function bumpBadge() {
  * ดึงข้อมูล User + ที่อยู่จาก n8n
  * Dev mode: คืน Mock Data
  */
-async function apiGetProfile(uid) {
+function authHeaders(extra = {}) {
+    if (!state.idToken) throw new Error('LINE session is unavailable. Please reopen this page from LINE.');
+    return { ...extra, Authorization: `Bearer ${state.idToken}` };
+}
+
+async function apiGetProfile() {
     if (CONFIG.IS_DEV_MODE) {
-        console.log('[DEV] apiGetProfile uid:', uid);
+        console.log('[DEV] apiGetProfile');
         await delay(900);
         return MOCK_USER;
     }
 
     const res = await fetch(
-        `${CONFIG.N8N_BASE_URL}${CONFIG.WEBHOOK.GET_PROFILE}?uid=${encodeURIComponent(uid)}`,
-        { method: 'GET', headers: { 'Content-Type': 'application/json' } }
+        `${CONFIG.N8N_BASE_URL}${CONFIG.WEBHOOK.GET_PROFILE}`,
+        { method: 'GET', headers: authHeaders({ 'Content-Type': 'application/json' }) }
     );
     if (!res.ok) throw new Error(`GET Profile failed: ${res.status}`);
     return res.json();
@@ -195,7 +201,7 @@ async function apiGetProducts() {
 
     const res = await fetch(
         `${CONFIG.N8N_BASE_URL}${CONFIG.WEBHOOK.GET_PRODUCTS}`,
-        { method: 'GET', headers: { 'Content-Type': 'application/json' } }
+        { method: 'GET', headers: authHeaders({ 'Content-Type': 'application/json' }) }
     );
     if (!res.ok) throw new Error(`GET Products failed: ${res.status}`);
     return normalizeProducts(await res.json());
@@ -216,7 +222,7 @@ async function apiSubmitOrder(payload) {
         `${CONFIG.N8N_BASE_URL}${CONFIG.WEBHOOK.SUBMIT_ORDER}`,
         {
             method:  'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: authHeaders({ 'Content-Type': 'application/json' }),
             body:    JSON.stringify(payload),
         }
     );
@@ -676,9 +682,7 @@ async function initApp() {
         } else if (!liffLoaded) {
             // 🌐 Browser mode: LIFF SDK โหลดไม่สำเร็จภายในเวลาที่กำหนด
             console.warn(`[BROWSER] LIFF SDK unavailable after wait. UA: ${navigator.userAgent}`);
-            const testUid = new URLSearchParams(window.location.search).get('uid') || CONFIG.TEST_UID;
-            state.user = { uid: testUid, displayName: `Browser Test (${testUid.slice(-6)})` };
-            showBrowserTestBanner(testUid, isLineUA);
+            throw new Error('LINE SDK is unavailable. Please reopen this page from LINE.');
 
         } else {
             // 📱 LINE mode: LIFF จริง
@@ -691,12 +695,14 @@ async function initApp() {
                 return;
             }
             const profile = await liff.getProfile();
+            state.idToken = liff.getIDToken() || '';
+            if (!state.idToken) throw new Error('LINE session is unavailable. Please reopen this page from LINE.');
             state.user = { uid: profile.userId, displayName: profile.displayName };
         }
 
         // 2️⃣ ดึงข้อมูลสาขา (เรียก webhook จริงเสมอ ยกเว้น Dev mode)
         loadingText.textContent = 'กำลังดึงข้อมูลสาขา...';
-        const userData = normalizeProfile(await apiGetProfile(state.user.uid));
+        const userData = normalizeProfile(await apiGetProfile());
 
         // 3️⃣ Set state
         if (userData.displayName) state.user.displayName = userData.displayName;
@@ -862,7 +868,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Build payload ตาม spec ของ n8n webhook POST /webhook/submit-order
             const payload = {
-                lineUid:         state.user.uid,
                 displayName:     state.user.displayName,
                 deliveryAddress: {
                     id:    state.selectedAddress.id,

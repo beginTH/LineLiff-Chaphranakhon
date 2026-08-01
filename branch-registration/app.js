@@ -94,8 +94,8 @@ $('#application-form').addEventListener('submit', async (event) => {
   button.disabled = true; button.textContent = 'กำลังส่งคำขอ…';
   try {
     const response = await fetch(`${CONFIG.N8N_BASE_URL}${CONFIG.SUBMIT_PATH}`, {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...data, tel, lineUid: lineProfile.userId, lineDisplayName: lineProfile.displayName || '', submittedAt: new Date().toISOString() }),
+      method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${liff.getIDToken() || ''}` },
+      body: JSON.stringify({ ...data, tel, lineDisplayName: lineProfile.displayName || '', submittedAt: new Date().toISOString() }),
     });
     const result = await response.json().catch(() => ({}));
     if (!response.ok || !result.success) throw new Error(result.message || 'ไม่สามารถบันทึกคำขอได้');
