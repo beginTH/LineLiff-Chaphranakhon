@@ -341,12 +341,11 @@ function normalizeStatus(status) {
 }
 
 function isProductHidden(status) {
-    return ['ยกเลิก', 'cancelled', 'canceled', 'inactive', 'disabled', 'ปิด'].includes(normalizeStatus(status));
+    return ['cancelled', 'canceled', '\u0e22\u0e01\u0e40\u0e25\u0e34\u0e01'].includes(normalizeStatus(status));
 }
 
 function isProductAvailable(status) {
-    const value = normalizeStatus(status);
-    return value === '' || ['พร้อม', 'active', 'available', 'in stock'].includes(value);
+    return !['inactive', 'disabled', '\u0e1b\u0e34\u0e14'].includes(normalizeStatus(status));
 }
 
 function normalizeProducts(raw) {
@@ -549,7 +548,7 @@ function renderProducts() {
     grid.innerHTML = state.products.map(p => {
         const qty = state.cart[p.id] || 0;
         const available = isProductAvailable(p.status);
-        const statusBadge = available ? '' : '<span class="product-status-badge">หมด</span>';
+        const statusBadge = available ? '' : '<span class="product-status-badge">\u0e2b\u0e21\u0e14\u0e0a\u0e31\u0e48\u0e27\u0e04\u0e23\u0e32\u0e27</span>';
         const visual = p.imageUrl
             ? `<img class="product-image" src="${escapeHtml(p.imageUrl)}" alt="${escapeHtml(p.name)}" loading="lazy" onerror="this.classList.add('is-hidden');this.nextElementSibling.classList.remove('is-hidden');"><span class="product-emoji is-hidden">${p.emoji}</span>`
             : `<span class="product-emoji">${p.emoji}</span>`;
