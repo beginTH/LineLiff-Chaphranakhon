@@ -32,7 +32,7 @@ const liffState = liffUrlParams.get('liff.state') || '';
 const liffStateParams = new URLSearchParams(liffState.replace(/^\?/, ''));
 const requestedScreen = liffUrlParams.get('screen') || liffStateParams.get('screen');
 if (requestedScreen === 'history' || requestedScreen === 'payment-proof') {
-    const target = requestedScreen === 'history' ? 'history.html' : 'payment-proof.html';
+    const target = requestedScreen === 'history' ? 'history.html' : 'payment-proof.html?v=20260802-payment-success';
     window.location.replace(`${target}${window.location.search}`);
 }
 const isLiffAvailable = () => typeof liff !== 'undefined';
