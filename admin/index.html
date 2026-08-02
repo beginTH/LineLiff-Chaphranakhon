@@ -291,14 +291,14 @@
                 </div>
                 <div class="success-summary-divider"></div>
                 <div class="success-summary-row">
-                    <span class="ss-label">ค่าวัตถุดิบ</span>
+                    <span class="ss-label" id="success-subtotal-label">ค่าวัตถุดิบ</span>
                     <span class="ss-value" id="success-subtotal">—</span>
                 </div>
                 <div class="success-summary-row">
-                    <span class="ss-label">ค่าขนส่ง</span>
+                    <span class="ss-label" id="success-shipping-label">ค่าขนส่ง</span>
                     <span class="ss-value" id="success-shipping">—</span>
                 </div>
-                <div class="success-summary-row success-total-row">
+                <div class="success-summary-row success-total-row" id="success-grand-total-row">
                     <span class="ss-label ss-label-total">ยอดรวมทั้งสิ้น</span>
                     <span class="ss-value ss-total" id="success-grand-total">—</span>
                 </div>
@@ -351,7 +351,7 @@
             console.warn('LIFF routing skipped:', error);
         }
         const legacyApp = document.createElement('script');
-        legacyApp.src = 'app.js?v=20260802-order-rejection';
+        legacyApp.src = 'app.js?v=20260802-order-rejection-fix';
         document.body.appendChild(legacyApp);
     }());
     </script>

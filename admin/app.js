@@ -246,7 +246,7 @@ async function apiRejectOrder(payload) {
         method: 'POST', headers: authHeaders({ 'Content-Type': 'application/json' }), body: JSON.stringify(payload),
     });
     const data = await res.json().catch(() => ({}));
-    if (!res.ok || data.success === false) throw new Error(data.message || `Reject order failed: ${res.status}`);
+    if (!res.ok || data.success !== true) throw new Error(data.message || `Reject order failed: ${res.status}`);
     return data;
 }
 async function apiVerifyPayment(payload) {
@@ -265,6 +265,20 @@ function getBranchName(order) {
     return order?.deliveryAddress?.label || order?.branchInfo?.branchName || order?.branchInfo?.displayName || order?.branchName || '—';
 }
 
+function showRejectedOrderResult(reason) {
+    const screen = document.getElementById('screen-success');
+    screen.querySelector('.success-title').textContent = 'ปฏิเสธ Order แล้ว';
+    screen.querySelector('.success-subtitle').textContent = 'ระบบบันทึกผลและแจ้งสาขาเรียบร้อยแล้ว';
+    setText('success-order-id', state.orderId || '—');
+    setText('success-branch', state.order?.branchInfo?.displayName || state.order?.branchName || '—');
+    document.getElementById('success-subtotal-label').textContent = 'สถานะ';
+    setText('success-subtotal', 'ปฏิเสธแล้ว');
+    document.getElementById('success-shipping-label').textContent = 'เหตุผล';
+    setText('success-shipping', reason);
+    document.getElementById('success-grand-total-row').hidden = true;
+    screen.querySelector('.auto-tasks').hidden = true;
+    goTo('screen-success');
+}
 function renderPaymentReview(order) {
     setText('payment-review-order-id', order.orderId || order.Order_ID || state.orderId);
     setText('payment-review-branch', getBranchName(order));
@@ -593,8 +607,7 @@ function bootAdminApp() {
         try {
             const admin = await ensureAdminProfile();
             await apiRejectOrder({ orderId: state.orderId, adminUid: admin.uid, adminName: admin.displayName, reason, rejectedAt: new Date().toISOString(), branchUid: state.order?.branchInfo?.uid });
-            alert('ปฏิเสธออเดอร์และแจ้งกลับสาขาเรียบร้อยแล้ว');
-            goTo('screen-success');
+            showRejectedOrderResult(reason);
         } catch (err) {
             console.error('[Reject Order Error]', err);
             alert(`ปฏิเสธออเดอร์ไม่สำเร็จ\n${err.message}`);
