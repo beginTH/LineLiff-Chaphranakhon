@@ -155,6 +155,12 @@ function countItems() {
     return Object.values(state.cart).reduce((s, q) => s + q, 0);
 }
 
+const MAX_ORDER_LINES = 15;
+const ORDER_LINE_LIMIT_MESSAGE = '\u0e2a\u0e31\u0e48\u0e07\u0e0b\u0e37\u0e49\u0e2d\u0e44\u0e14\u0e49\u0e44\u0e21\u0e48\u0e40\u0e01\u0e34\u0e19 15 \u0e23\u0e32\u0e22\u0e01\u0e32\u0e23\u0e2a\u0e34\u0e19\u0e04\u0e49\u0e32 \u0e15\u0e48\u0e2d 1 Order';
+function countOrderLines() {
+    return Object.values(state.cart).filter(qty => qty > 0).length;
+}
+
 /** Bump animation บน badge */
 function bumpBadge() {
     const el = document.getElementById('cart-count');
@@ -576,6 +582,10 @@ function changeQty(pid, delta) {
     if (!product || !isProductAvailable(product.status)) return;
 
     const cur = state.cart[pid] || 0;
+    if (delta > 0 && cur === 0 && countOrderLines() >= MAX_ORDER_LINES) {
+        alert(ORDER_LINE_LIMIT_MESSAGE);
+        return;
+    }
     const nxt = Math.max(0, cur + delta);
 
     if (nxt === 0) delete state.cart[pid];
@@ -595,10 +605,11 @@ function changeQty(pid, delta) {
 /** Sync ข้อมูลตะกร้าทุก element */
 function syncCartUI() {
     const total = countItems();
+    const lines = countOrderLines();
     const sub   = calcSubtotal();
 
     document.getElementById('cart-count').textContent      = total;
-    document.getElementById('cart-items-count').textContent = `${total} รายการ`;
+    document.getElementById('cart-items-count').textContent = `${lines}/${MAX_ORDER_LINES} \u0e23\u0e32\u0e22\u0e01\u0e32\u0e23\u0e2a\u0e34\u0e19\u0e04\u0e49\u0e32`;
     document.getElementById('cart-total-price').textContent  = fmt(sub);
 
     const bar = document.getElementById('cart-action-bar');
@@ -835,6 +846,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('btn-submit-order').addEventListener('click', async () => {
         if (!state.selectedAddress) { alert('กรุณาเลือกที่อยู่จัดส่ง'); return; }
         if (countItems() === 0)     { alert('กรุณาเลือกสินค้าอย่างน้อย 1 รายการ'); return; }
+        if (countOrderLines() > MAX_ORDER_LINES) { alert(ORDER_LINE_LIMIT_MESSAGE); return; }
 
         const btn     = document.getElementById('btn-submit-order');
         const btnText = document.getElementById('submit-btn-text');
