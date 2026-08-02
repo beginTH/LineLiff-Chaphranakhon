@@ -32,6 +32,7 @@ const CONFIG = {
     WEBHOOK: {
         GET_ORDER:     '/webhook/get-order',            // GET  ?orderId=xxx  (ดึงออเดอร์จาก sheet)
         ADMIN_APPROVE: '/webhook/admin-approve',        // POST → Update Shipping & Status
+        ADMIN_REJECT_ORDER: '/webhook/admin-reject-order',
         ADMIN_VERIFY_PAYMENT: '/webhook/admin-verify-payment',
         ADMIN_REJECT_PAYMENT: '/webhook/admin-reject-payment',
     },
@@ -234,6 +235,20 @@ async function apiApproveOrder(payload) {
     return res.json();
 }
 
+
+async function apiRejectOrder(payload) {
+    if (CONFIG.IS_DEV_MODE) {
+        console.log('[DEV] apiRejectOrder payload:', JSON.stringify(payload, null, 2));
+        await delay(800);
+        return { success: true };
+    }
+    const res = await fetch(`${CONFIG.N8N_BASE_URL}${CONFIG.WEBHOOK.ADMIN_REJECT_ORDER}`, {
+        method: 'POST', headers: authHeaders({ 'Content-Type': 'application/json' }), body: JSON.stringify(payload),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || data.success === false) throw new Error(data.message || `Reject order failed: ${res.status}`);
+    return data;
+}
 async function apiVerifyPayment(payload) {
     const res = await fetch(`${CONFIG.N8N_BASE_URL}${CONFIG.WEBHOOK.ADMIN_VERIFY_PAYMENT}`, { method: 'POST', headers: authHeaders({ 'Content-Type': 'application/json' }), body: JSON.stringify(payload) });
     if (!res.ok) throw new Error(`Payment verification failed: ${res.status}`);
@@ -388,12 +403,9 @@ async function initApp() {
             lineTotal: Number(item.pricePerUnit || 0) * Number(item.quantity || 0),
         }));
 
-        state.admin = { uid: 'admin-pending', displayName: 'Admin' };
-
         if (state.mode === 'payment') {
             renderPaymentReview(order);
             goTo('screen-payment-review');
-            initAdminProfileInBackground(state.orderId);
             return;
         }
 
@@ -402,8 +414,6 @@ async function initApp() {
             console.log('[DEV] orderId:', state.orderId);
             state.admin = { uid: 'admin-uid-dev', displayName: 'แอดมิน (Dev)' };
 
-        } else {
-            initAdminProfileInBackground(state.orderId);
         }
 
         // 3️⃣ เช็คว่าออเดอร์นี้อนุมัติแล้วหรือยัง
@@ -571,6 +581,25 @@ function bootAdminApp() {
         setPaymentActionLoading('กำลังบันทึกผลและแจ้งเหตุผลให้สาขา...', true);
         try { const admin = await ensureAdminProfile(); await apiRejectPayment({ orderId: state.orderId, adminUid: admin.uid, adminName: admin.displayName, rejectionReason: reason }); renderPaymentResult('payment-rejected', reason); goTo('screen-success'); }
         catch (err) { alert('ปฏิเสธหลักฐานไม่สำเร็จ\n' + err.message); setPaymentActionLoading('', false); }
+    });
+
+    const rejectOrderBtn = document.getElementById('btn-reject-order');
+    if (rejectOrderBtn) rejectOrderBtn.addEventListener('click', async () => {
+        const reasonInput = document.getElementById('input-rejection-reason');
+        const reason = reasonInput.value.trim();
+        if (!reason) { alert('กรุณาระบุเหตุผลที่ปฏิเสธออเดอร์'); reasonInput.focus(); return; }
+        if (!confirm(`ยืนยันปฏิเสธออเดอร์ ${state.orderId}?\n\nเหตุผล: ${reason}`)) return;
+        rejectOrderBtn.disabled = true;
+        try {
+            const admin = await ensureAdminProfile();
+            await apiRejectOrder({ orderId: state.orderId, adminUid: admin.uid, adminName: admin.displayName, reason, rejectedAt: new Date().toISOString(), branchUid: state.order?.branchInfo?.uid });
+            alert('ปฏิเสธออเดอร์และแจ้งกลับสาขาเรียบร้อยแล้ว');
+            goTo('screen-success');
+        } catch (err) {
+            console.error('[Reject Order Error]', err);
+            alert(`ปฏิเสธออเดอร์ไม่สำเร็จ\n${err.message}`);
+            rejectOrderBtn.disabled = false;
+        }
     });
 
     document.getElementById('btn-approve-order').addEventListener('click', async () => {

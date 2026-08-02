@@ -43,6 +43,13 @@ function setState(kind, title, detail = '', retry = false) {
 function field(label, value, extraClass = '') { return `<div><div class="admin-field-label">${esc(label)}</div><div class="admin-field-value ${extraClass}">${esc(value || '—')}</div></div>`; }
 function safeUrl(value) { try { const url = new URL(value); return ['http:', 'https:'].includes(url.protocol) ? url.href : ''; } catch { return ''; } }
 function linkActions(actions = []) { return actions.filter(action => safeUrl(action.url)).map(action => `<a class="admin-record-link" href="${esc(safeUrl(action.url))}" target="_blank" rel="noopener noreferrer">${esc(action.label)} <span aria-hidden="true">↗</span></a>`).join(''); }
+function isPendingOrder(item) { return /^(pending|รอดำเนินการ|รออนุมัติ|submit|review)$/i.test(String(item.status || '').trim()); }
+function orderApprovalAction(item) {
+  if (!isPendingOrder(item) || !item.orderId) return '';
+  const url = new URL('index.html', window.location.href);
+  url.searchParams.set('orderId', item.orderId);
+  return `<a class="admin-record-link admin-record-link--approve" href="${esc(url.href)}">ตรวจสอบและอนุมัติ <span aria-hidden="true">→</span></a>`;
+}
 function record(title, meta, badge, fields, actions = '', edit = '') { return `<article class="admin-record"><div class="admin-record-top"><div><div class="admin-record-title">${esc(title || '—')}</div>${meta ? `<div class="admin-record-meta">${esc(meta)}</div>` : ''}</div>${badge ? `<span class="admin-badge ${statusClass(badge)}">${esc(badge)}</span>` : ''}</div><div class="admin-fields">${fields.join('')}</div>${actions ? `<div class="admin-record-actions">${actions}</div>` : ''}${edit}</article>`; }
 function isUnpaid(item) { const status = String(item.paymentStatus || '').trim().toLowerCase(); return !status || /^(unpaid|not paid|pending payment|pending_payment|ยังไม่ชำระ|รอชำระ|รอการชำระเงิน|-)$/.test(status); }
 function itemStatus(item) { if (pageView === 'payments') return isUnpaid(item) ? 'ยังไม่ชำระ' : item.paymentStatus; return String(pageView === 'products' ? item.status : pageView === 'users' ? (item.role || item.friendStatus) : (item.paymentStatus || item.status) || 'ไม่ระบุ'); }
@@ -89,7 +96,7 @@ function userEditor(item) {
   </form>`;
 }
 function renderer(item) {
-  if (pageView === 'orders') return record(item.orderId, dateTime(item.timestamp), item.status, [field('สาขา', item.branchName), field('ยอดรวม', money(item.totalAmount)), field('สถานะชำระเงิน', item.paymentStatus || 'ยังไม่ชำระ'), field('LINE UID', item.lineUid, 'admin-field-value--uid')], linkActions([{ label: 'เปิดใบสั่งซื้อ', url: item.poUrl }, { label: 'ดูหลักฐาน', url: item.paymentProofUrl }]));
+  if (pageView === 'orders') return record(item.orderId, dateTime(item.timestamp), item.status, [field('สาขา', item.branchName), field('ยอดรวม', money(item.totalAmount)), field('สถานะชำระเงิน', item.paymentStatus || 'ยังไม่ชำระ'), field('LINE UID', item.lineUid, 'admin-field-value--uid')], `${orderApprovalAction(item)}${linkActions([{ label: 'เปิดใบสั่งซื้อ', url: item.poUrl }, { label: 'ดูหลักฐาน', url: item.paymentProofUrl }])}`);
   if (pageView === 'payments') return record(item.orderId, `สั่งซื้อ ${orderAge(item.timestamp)} · ${dateTime(item.timestamp)}`, item.paymentStatus || 'ยังไม่ชำระ', [field('สาขา', item.branchName), field('ยอดชำระ', money(item.totalAmount)), field('ส่งหลักฐาน', dateTime(item.submittedAt)), field('สถานะ Order', item.status)], linkActions([{ label: 'ดูหลักฐานชำระเงิน', url: item.proofUrl }]));
   if (pageView === 'products') { const audienceLabel = String(item.customerType).toLowerCase() === 'branch_only' ? 'เฉพาะสาขา' : 'ทุกคน'; return record(item.name, item.productId, item.status, [field('หน่วย', item.unit), field('ราคา', money(item.price)), field('กลุ่มที่มองเห็น', audienceLabel), field('รูปสินค้า', item.imageUrl ? 'อัปโหลดแล้ว' : 'ยังไม่มีรูป')], `<button class="admin-edit-toggle" type="button">แก้ไขวัตถุดิบ</button>`, productEditor(item)); }
   return record(item.displayName, item.lineUid, item.friendStatus, [field('Role', item.role), field('หมายเหตุ', item.note || '—'), field('อัปเดตล่าสุด', dateTime(item.updatedAt)), field('LINE UID', item.lineUid, 'admin-field-value--uid')], `<button class="admin-edit-toggle" type="button">จัดการสมาชิก</button>`, userEditor(item));

@@ -72,6 +72,10 @@
                     <span class="info-label">ชื่อสาขา</span>
                     <span class="info-value" id="branch-name">—</span>
                 </div>
+                <div class="info-row">
+                    <span class="info-label">LINE UID</span>
+                    <span class="info-value info-uid" id="branch-uid">—</span>
+                </div>
             </div>
 
             <!-- Delivery Address -->
@@ -218,6 +222,8 @@
                     <div class="submit-spinner hidden" id="approve-spinner"></div>
                 </button>
                 <p class="approve-note">เมื่ออนุมัติแล้ว ระบบจะส่งแจ้งเตือนไปยังสาขาอัตโนมัติ</p>
+                <textarea id="input-rejection-reason" class="admin-note-input" rows="3" placeholder="เหตุผลกรณีปฏิเสธออเดอร์ (จำเป็นเมื่อปฏิเสธ)"></textarea>
+                <button class="btn-full btn-close" id="btn-reject-order" type="button">ปฏิเสธออเดอร์และแจ้งกลับสาขา</button>
             </div>
 
         </div>
@@ -231,10 +237,6 @@
             <img id="payment-proof-image" class="hidden" style="width:100%;max-height:420px;object-fit:contain;border-radius:12px;margin:12px 0" alt="หลักฐานการชำระเงิน">
             <a id="payment-proof-link" class="btn-close hidden" target="_blank" rel="noopener">เปิดรูปหลักฐาน</a>
             <textarea id="payment-rejection-reason" class="admin-note-input" rows="3" placeholder="เหตุผลกรณีไม่อนุมัติ เช่น ยอดไม่ตรง หรือไม่พบยอดโอน"></textarea>
-            <div id="payment-action-status" class="payment-action-status hidden" role="status" aria-live="polite">
-                <span class="payment-action-spinner" aria-hidden="true"></span>
-                <span id="payment-action-status-text">กำลังดำเนินการ...</span>
-            </div>
             <button class="btn-approve btn-full" id="btn-verify-payment">อนุมัติการชำระเงิน</button>
             <button class="btn-full btn-close" id="btn-reject-payment">ไม่อนุมัติและแจ้งกลับสาขา</button>
         </div>
@@ -275,10 +277,10 @@
                 <div class="success-ring success-ring-1"></div>
                 <div class="success-ring success-ring-2"></div>
             </div>
-            <h2 class="success-title" id="success-title">อนุมัติสำเร็จ!</h2>
-            <p class="success-subtitle" id="success-subtitle">ระบบกำลังออกเอกสารและแจ้งเตือนสาขาอัตโนมัติ</p>
+            <h2 class="success-title">อนุมัติสำเร็จ!</h2>
+            <p class="success-subtitle">ระบบกำลังออกเอกสารและแจ้งเตือนสาขาอัตโนมัติ</p>
 
-            <div class="success-summary-card" id="success-summary-card">
+            <div class="success-summary-card">
                 <div class="success-summary-row">
                     <span class="ss-label">รหัสออเดอร์</span>
                     <span class="ss-value" id="success-order-id">—</span>
@@ -286,10 +288,6 @@
                 <div class="success-summary-row">
                     <span class="ss-label">สาขา</span>
                     <span class="ss-value" id="success-branch">—</span>
-                </div>
-                <div class="success-summary-row hidden" id="success-rejection-row">
-                    <span class="ss-label">เหตุผลที่ปฏิเสธ</span>
-                    <span class="ss-value" id="success-rejection-reason">—</span>
                 </div>
                 <div class="success-summary-divider"></div>
                 <div class="success-summary-row">
@@ -306,7 +304,7 @@
                 </div>
             </div>
 
-            <div class="auto-tasks" id="success-auto-tasks">
+            <div class="auto-tasks">
                 <p class="auto-tasks-title">📬 ระบบดำเนินการอัตโนมัติ</p>
                 <div class="auto-task-item">
                     <span class="auto-task-icon">📄</span>
@@ -353,7 +351,7 @@
             console.warn('LIFF routing skipped:', error);
         }
         const legacyApp = document.createElement('script');
-        legacyApp.src = 'app.js?v=20260801-payment-result';
+        legacyApp.src = 'app.js?v=20260802-order-rejection';
         document.body.appendChild(legacyApp);
     }());
     </script>

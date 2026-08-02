@@ -91,7 +91,7 @@ const MOCK_USER = {
 // =====================================================
 const state = {
     user:            null,   // { uid, displayName }
-    idToken:         '',     // Verified LINE ID token for authenticated API requests
+    idToken:         '',     // LINE ID token for authorized API calls
     addresses:       [],     // [{ id, label, text, isNew? }]
     selectedAddress: null,   // address object ที่เลือก
     products:        [],     // รายการสินค้าทั้งหมด
@@ -171,14 +171,11 @@ function bumpBadge() {
  * ดึงข้อมูล User + ที่อยู่จาก n8n
  * Dev mode: คืน Mock Data
  */
-function authHeaders(extra = {}) {
-    if (!state.idToken) throw new Error('LINE session is unavailable. Please reopen this page from LINE.');
-    return { ...extra, Authorization: `Bearer ${state.idToken}` };
-}
+function authHeaders(extra = {}) { if (!state.idToken) throw new Error('LINE session is unavailable.'); return { ...extra, Authorization: `Bearer ${state.idToken}` }; }
 
 async function apiGetProfile() {
     if (CONFIG.IS_DEV_MODE) {
-        console.log('[DEV] apiGetProfile');
+        console.log('[DEV] apiGetProfile uid:', uid);
         await delay(900);
         return MOCK_USER;
     }
@@ -867,8 +864,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
 
             // Build payload ตาม spec ของ n8n webhook POST /webhook/submit-order
-            const payload = {
-                displayName:     state.user.displayName,
+            const payload = {                displayName:     state.user.displayName,
                 deliveryAddress: {
                     id:    state.selectedAddress.id,
                     label: state.selectedAddress.label,
