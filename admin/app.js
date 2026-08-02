@@ -585,8 +585,10 @@ function bootAdminApp() {
     const verifyBtn = document.getElementById('btn-verify-payment');
     if (verifyBtn) verifyBtn.addEventListener('click', async () => {
         setPaymentActionLoading('กำลังยืนยันการชำระเงินและสร้างใบเสร็จ...', true);
+        document.getElementById('loading-text').textContent = 'กำลังยืนยันการชำระเงิน และสร้างใบเสร็จ…';
+        goTo('screen-loading');
         try { const admin = await ensureAdminProfile(); await apiVerifyPayment({ orderId: state.orderId, adminUid: admin.uid, adminName: admin.displayName }); renderPaymentResult('payment-approved'); goTo('screen-success'); }
-        catch (err) { alert('ยืนยันการชำระเงินไม่สำเร็จ\n' + err.message); setPaymentActionLoading('', false); }
+        catch (err) { alert('ยืนยันการชำระเงินไม่สำเร็จ\n' + err.message); setPaymentActionLoading('', false); goTo('screen-payment-review'); }
     });
     const rejectBtn = document.getElementById('btn-reject-payment');
     if (rejectBtn) rejectBtn.addEventListener('click', async () => {
