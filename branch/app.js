@@ -814,19 +814,18 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     /** ไปหน้าสรุปคำสั่งซื้อ */
-    document.getElementById('btn-next-to-summary').addEventListener('click', () => {
+    /** Open the order summary from either summary control. */
+    function openOrderSummary() {
         if (countItems() === 0) {
             alert('กรุณาเลือกสินค้าอย่างน้อย 1 รายการ');
             return;
         }
         renderSummary();
         goTo('screen-summary');
-    });
+    }
 
-    // Open the same order summary from the cart shortcut.
-    document.getElementById('btn-view-cart').addEventListener('click', () => {
-        document.getElementById('btn-next-to-summary').click();
-    });
+    document.getElementById('btn-next-to-summary').addEventListener('click', openOrderSummary);
+    document.getElementById('btn-view-cart').addEventListener('click', openOrderSummary);
 
     // ─────────────────────────────────────────────
     // SCREEN 3: SUMMARY
