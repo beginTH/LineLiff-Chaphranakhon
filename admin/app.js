@@ -384,8 +384,9 @@ function updatePriceDisplay() {
 
 /** Helper setText */
 function getAdjustmentReason() {
-    const input = document.getElementById('input-adjustment-reason');
-    const reason = String(input?.value ?? state.adjustmentReason ?? '').replace(/\u00a0/g, ' ').trim();
+    const adjustmentInput = document.getElementById('input-adjustment-reason');
+    const adminNoteInput = document.getElementById('input-admin-note');
+    const reason = String(adjustmentInput?.value || adminNoteInput?.value || state.adjustmentReason || '').replace(/\u00a0/g, ' ').trim();
     state.adjustmentReason = reason;
     return reason;
 }
@@ -647,7 +648,7 @@ function bootAdminApp() {
         }
 
         if (hasReduction && !adjustmentReason) {
-            alert('กรุณาระบุสาเหตุการปรับลดจำนวนสินค้า');
+            alert('กรุณาระบุสาเหตุการปรับลดจำนวนสินค้า หรือกรอก Comment ของแอดมิน');
             document.getElementById('input-adjustment-reason').focus();
             return;
         }
