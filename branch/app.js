@@ -823,6 +823,11 @@ document.addEventListener('DOMContentLoaded', () => {
         goTo('screen-summary');
     });
 
+    // Open the same order summary from the cart shortcut.
+    document.getElementById('btn-view-cart').addEventListener('click', () => {
+        document.getElementById('btn-next-to-summary').click();
+    });
+
     // ─────────────────────────────────────────────
     // SCREEN 3: SUMMARY
     // ─────────────────────────────────────────────
