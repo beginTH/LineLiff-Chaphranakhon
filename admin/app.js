@@ -100,6 +100,7 @@ const state = {
     discount: 0,      // ส่วนลดที่แอดมินกรอก
     otherFee: 0,      // ค่าใช้จ่ายอื่นที่แอดมินกรอก
     adjustedItems: [], // รายการหลัง Admin ปรับลดจำนวน
+    adjustmentReason: '', // สาเหตุการปรับลดจำนวน
     liffReady: false,
     idToken: '',
     adminProfilePromise: null,
@@ -382,6 +383,12 @@ function updatePriceDisplay() {
 }
 
 /** Helper setText */
+function getAdjustmentReason() {
+    const input = document.getElementById('input-adjustment-reason');
+    const reason = String(input?.value ?? state.adjustmentReason ?? '').replace(/\u00a0/g, ' ').trim();
+    state.adjustmentReason = reason;
+    return reason;
+}
 function setText(id, text) {
     const el = document.getElementById(id);
     if (el) el.textContent = text;
@@ -546,6 +553,12 @@ function bootAdminApp() {
         updatePriceDisplay();
     });
 
+    const adjustmentReasonInput = document.getElementById('input-adjustment-reason');
+    if (adjustmentReasonInput) {
+        adjustmentReasonInput.addEventListener('input', () => {
+            state.adjustmentReason = adjustmentReasonInput.value;
+        });
+    }
     document.getElementById('input-discount').addEventListener('input', (e) => {
         const val = parseFloat(e.target.value) || 0;
         state.discount = Math.max(0, val);
@@ -624,7 +637,7 @@ function bootAdminApp() {
         const discount      = Math.max(0, parseFloat(document.getElementById('input-discount').value) || 0);
         const otherFee      = Math.max(0, parseFloat(document.getElementById('input-other-fee').value) || 0);
         const adminNote     = document.getElementById('input-admin-note').value.trim();
-        const adjustmentReason = document.getElementById('input-adjustment-reason').value.trim();
+        const adjustmentReason = getAdjustmentReason();
         const hasReduction = state.adjustedItems.some(item => item.quantity < item.originalQuantity);
 
         if (isNaN(shippingCost) || shippingCost < 0) {
