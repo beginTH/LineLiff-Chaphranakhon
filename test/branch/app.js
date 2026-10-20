@@ -1,0 +1,937 @@
+/* ===================================================
+   ชาพระนคร — LIFF Branch App (สาขา)
+   Version: 1.0.0
+
+   📋 สิ่งที่ต้องทำก่อน Deploy จริง:
+   1. เปลี่ยน CONFIG.LIFF_ID เป็น LIFF ID จริงจาก LINE Developers
+   2. เปลี่ยน CONFIG.N8N_BASE_URL เป็น URL ของ n8n จริง
+   3. เปลี่ยน CONFIG.IS_DEV_MODE เป็น false
+   4. (Optional) ลบ MOCK_PRODUCTS และเชื่อมต่อ API ดึงสินค้าจริง
+=================================================== */
+
+'use strict';
+
+// =====================================================
+// ⚙️ CONFIGURATION
+// =====================================================
+const CONFIG = {
+    LIFF_ID:      '2012121676-qnHpfUNk',                    // ✅ LIFF ID: สั่งซื้อวัตถุดิบ (สาขา)
+    N8N_BASE_URL: 'https://n8n.n8n-kokujapan.org',          // ✅ n8n instance URL
+    WEBHOOK: {
+        GET_PROFILE:  '/webhook/get-user-profile',     // GET  ?uid=xxx  → Lookup Address sheet
+        GET_PRODUCTS: '/webhook/get-products',         // GET           → Lookup Products sheet
+        SUBMIT_ORDER: '/webhook/submit-order',         // POST           → Save New Order sheet
+    },
+    IS_DEV_MODE: false, // ✅ Production mode
+    TEST_UID: 'id-001',                                     // UID สำหรับทดสอบจาก browser (ต้องตรงกับ Users_Addresses)
+};
+
+/** ตรวจสอบว่าอยู่ใน LINE environment หรือเปล่า */
+const liffUrlParams = new URLSearchParams(window.location.search);
+const liffState = liffUrlParams.get('liff.state') || '';
+const liffStateParams = new URLSearchParams(liffState.replace(/^\?/, ''));
+const requestedScreen = liffUrlParams.get('screen') || liffStateParams.get('screen');
+if (requestedScreen === 'history' || requestedScreen === 'payment-proof') {
+    const target = requestedScreen === 'history' ? 'history.html' : 'payment-proof.html?v=20260802-payment-success';
+    window.location.replace(`${target}${window.location.search}`);
+}
+const isLiffAvailable = () => typeof liff !== 'undefined';
+
+/**
+ * รอ LIFF SDK โหลดสูงสุด maxMs มิลลิวินาที
+ * ป้องกัน race condition ใน LINE WebView ที่ SDK อาจโหลดช้ากว่า app.js
+ */
+async function waitForLiff(maxMs = 10000) {
+    const interval = 100;
+    let elapsed = 0;
+    while (typeof liff === 'undefined' && elapsed < maxMs) {
+        await new Promise(r => setTimeout(r, interval));
+        elapsed += interval;
+    }
+    return typeof liff !== 'undefined';
+}
+
+// =====================================================
+// 🗄️ MOCK DATA (ใช้ขณะ Dev — ลบออกเมื่อ API พร้อม)
+// =====================================================
+
+/** TODO: แทนที่ด้วยการดึงข้อมูลจาก Google Sheets ผ่าน n8n */
+const MOCK_PRODUCTS = [
+    { id: 'RM001', name: 'ชาผง CTC (สำหรับชานม)', unit: 'กิโลกรัม', price: 220, emoji: '🍂', status: 'active' },
+    { id: 'RM002', name: 'นมข้นหวานตรานกอินทรีย์', unit: 'กระป๋อง', price: 25,  emoji: '🥛', status: 'active' },
+    { id: 'RM003', name: 'น้ำตาลทราย',              unit: 'กิโลกรัม', price: 22,  emoji: '🍬', status: 'active' },
+    { id: 'RM004', name: 'น้ำเชื่อมน้ำตาลไหม้',     unit: 'ลิตร',      price: 85,  emoji: '🍯', status: 'active' },
+    { id: 'RM005', name: 'นมสดพาสเจอร์ไรส์',       unit: 'ลิตร',      price: 45,  emoji: '🐄', status: 'active' },
+    { id: 'RM006', name: 'ถ้วยกระดาษ 16oz',        unit: 'แพ็ค (50ใบ)',price: 75,  emoji: '☕', status: 'active' },
+    { id: 'RM007', name: 'หลอดดูดกระดาษ',           unit: 'แพ็ค (100อัน)', price: 35, emoji: '🥤', status: 'active' },
+    { id: 'RM008', name: 'ถุงหิ้วกระดาษพิมพ์โลโก้', unit: 'แพ็ค (50ใบ)',price: 65,  emoji: '🛍️', status: 'active' },
+];
+
+/** TODO: แทนที่ด้วยข้อมูลจริงจาก n8n GET /webhook/get-user-profile */
+const MOCK_USER = {
+    uid:         'Ud1a2b3c4d5e6f7g8h9i0j',
+    displayName: 'สาขาทดสอบ',
+    pictureUrl:  '',
+    addresses: [
+        {
+            id:   'addr1',
+            label: 'สาขาสีลม (หลัก)',
+            text: '123/45 ถ.สีลม แขวงสีลม เขตบางรัก กรุงเทพฯ 10500',
+        },
+        {
+            id:   'addr2',
+            label: 'สาขาสุขุมวิท',
+            text: '67/8 ถ.สุขุมวิท 11 แขวงคลองเตยเหนือ เขตวัฒนา กรุงเทพฯ 10110',
+        },
+    ],
+};
+
+// =====================================================
+// 🏪 APP STATE
+// =====================================================
+const state = {
+    user:            null,   // { uid, displayName }
+    idToken:         '',     // LINE ID token for authorized API calls
+    addresses:       [],     // [{ id, label, text, isNew? }]
+    selectedAddress: null,   // address object ที่เลือก
+    products:        [],     // รายการสินค้าทั้งหมด
+    cart:            {},     // { [productId]: qty }
+    orderId:         null,   // รหัสออเดอร์หลัง submit
+};
+
+// =====================================================
+// 🔧 UTILITY
+// =====================================================
+
+/**
+ * สลับ screen พร้อม animation
+ * @param {string} nextId - element id ของ screen ที่จะแสดง
+ */
+function goTo(nextId) {
+    const current = document.querySelector('.screen.is-active');
+    const next    = document.getElementById(nextId);
+
+    if (!next || current === next) return;
+
+    // ออก
+    if (current) {
+        current.classList.add('is-leaving');
+        setTimeout(() => {
+            current.classList.remove('is-visible', 'is-active', 'is-leaving');
+            current.style.display = '';
+        }, 360);
+    }
+
+    // เข้า
+    setTimeout(() => {
+        next.classList.add('is-visible');
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => next.classList.add('is-active'));
+        });
+    }, current ? 160 : 0);
+}
+
+/** Format ราคา */
+const fmt = (n) => `฿${Number(n).toLocaleString('th-TH', { minimumFractionDigits: 2 })}`;
+
+/** สร้าง Order ID */
+function genOrderId() {
+    const d = new Date();
+    const date  = d.toISOString().slice(0,10).replace(/-/g,'');
+    const rand  = String(Math.floor(Math.random()*1000)).padStart(3,'0');
+    return `PO-${date}-${rand}`;
+}
+
+/** ยอดรวมวัตถุดิบ */
+function calcSubtotal() {
+    return Object.entries(state.cart).reduce((sum, [id, qty]) => {
+        const p = state.products.find(p => p.id === id);
+        return sum + (p ? p.price * qty : 0);
+    }, 0);
+}
+
+/** จำนวนรายการในตะกร้า */
+function countItems() {
+    return Object.values(state.cart).reduce((s, q) => s + q, 0);
+}
+
+const MAX_ORDER_LINES = 15;
+function countOrderLines() {
+    return Object.values(state.cart).filter(qty => qty > 0).length;
+}
+
+/** Bump animation บน badge */
+function bumpBadge() {
+    const el = document.getElementById('cart-count');
+    el.classList.remove('bump');
+    void el.offsetWidth; // reflow
+    el.classList.add('bump');
+}
+
+// =====================================================
+// 🔌 API
+// =====================================================
+
+/**
+ * ดึงข้อมูล User + ที่อยู่จาก n8n
+ * Dev mode: คืน Mock Data
+ */
+function authHeaders(extra = {}) { if (!state.idToken) throw new Error('LINE session is unavailable.'); return { ...extra, Authorization: `Bearer ${state.idToken}` }; }
+
+async function apiGetProfile() {
+    if (CONFIG.IS_DEV_MODE) {
+        console.log('[DEV] apiGetProfile uid:', uid);
+        await delay(900);
+        return MOCK_USER;
+    }
+
+    const res = await fetch(
+        `${CONFIG.N8N_BASE_URL}${CONFIG.WEBHOOK.GET_PROFILE}`,
+        { method: 'GET', headers: authHeaders({ 'Content-Type': 'application/json' }) }
+    );
+    if (!res.ok) throw new Error(`GET Profile failed: ${res.status}`);
+    return res.json();
+}
+
+/** ดึงรายการสินค้าจาก n8n */
+async function apiGetProducts() {
+    if (CONFIG.IS_DEV_MODE) {
+        console.log('[DEV] apiGetProducts');
+        await delay(500);
+        return MOCK_PRODUCTS;
+    }
+
+    const res = await fetch(
+        `${CONFIG.N8N_BASE_URL}${CONFIG.WEBHOOK.GET_PRODUCTS}`,
+        { method: 'GET', headers: authHeaders({ 'Content-Type': 'application/json' }) }
+    );
+    if (!res.ok) throw new Error(`GET Products failed: ${res.status}`);
+    return normalizeProducts(await res.json());
+}
+
+/**
+ * ส่งคำสั่งซื้อไปยัง n8n
+ * Dev mode: log และคืน success
+ */
+async function apiSubmitOrder(payload) {
+    if (CONFIG.IS_DEV_MODE) {
+        console.log('[DEV] apiSubmitOrder payload:', JSON.stringify(payload, null, 2));
+        await delay(1600);
+        return { success: true, orderId: genOrderId() };
+    }
+
+    const res = await fetch(
+        `${CONFIG.N8N_BASE_URL}${CONFIG.WEBHOOK.SUBMIT_ORDER}`,
+        {
+            method:  'POST',
+            headers: authHeaders({ 'Content-Type': 'application/json' }),
+            body:    JSON.stringify(payload),
+        }
+    );
+    if (!res.ok) throw new Error(`Submit order failed: ${res.status}`);
+    return res.json();
+}
+
+/** Sleep helper */
+const delay = (ms) => new Promise(r => setTimeout(r, ms));
+
+function unwrapProfileResponse(raw) {
+    if (Array.isArray(raw)) return raw[0] || {};
+    if (!raw || typeof raw !== 'object') return {};
+
+    const keys = ['body', 'data', 'json', 'user', 'profile', 'result'];
+    for (const key of keys) {
+        const value = raw[key];
+        if (Array.isArray(value)) return value[0] || {};
+        if (value && typeof value === 'object') return value;
+    }
+
+    return raw;
+}
+
+function pickFirst(obj, keys) {
+    for (const key of keys) {
+        const value = obj?.[key];
+        if (value !== undefined && value !== null && String(value).trim() !== '') {
+            return String(value).trim();
+        }
+    }
+    return '';
+}
+
+function unwrapProductResponse(raw) {
+    if (Array.isArray(raw)) return raw;
+    if (!raw || typeof raw !== 'object') return [];
+
+    const keys = ['products', 'data', 'items', 'rows', 'body', 'result'];
+    for (const key of keys) {
+        const value = raw[key];
+        if (Array.isArray(value)) return value;
+        if (value && typeof value === 'object') {
+            const nested = unwrapProductResponse(value);
+            if (nested.length > 0) return nested;
+        }
+    }
+
+    return [raw];
+}
+
+function pickProductEmoji(name, index) {
+    const text = String(name || '');
+    if (text.includes('ชา')) return '🍂';
+    if (text.includes('นม')) return '🥛';
+    if (text.includes('น้ำตาล')) return '🍬';
+    if (text.includes('ไซรัป') || text.includes('เชื่อม')) return '🍯';
+    if (text.includes('แก้ว') || text.includes('ถ้วย')) return '☕';
+    if (text.includes('หลอด')) return '🥤';
+    if (text.includes('ถุง')) return '🛍️';
+    return ['📦', '🧾', '🥄', '🫙'][index % 4];
+}
+
+const PRODUCT_IMAGE_BY_INDEX = [
+    'assets/products/P001-red-thai-tea.png',
+    'assets/products/P002-green-tea.png',
+    'assets/products/P003-traditional-coffee.png',
+    'assets/products/P004-cocoa.png',
+    'assets/products/P005-fresh-coffee-powder.png',
+    'assets/products/P006-creamer.png',
+    'assets/products/P007-rose-tea.png',
+    'assets/products/P008-butterfly-pea-tea.png',
+    'assets/products/P009-jasmine-tea.png',
+    'assets/products/P010-taiwan-milk-tea.png',
+    'assets/products/P011-fruit-green-tea.png',
+    'assets/products/P012-hong-kong-tea.png',
+    'assets/products/P013-premium-cup-set.png',
+    'assets/products/P014-6mm-straws.png',
+    'assets/products/P015-8mm-straws.png',
+    'assets/products/P016-pearl-straws.png',
+    'assets/products/P017-smoothie-powder.png',
+    'assets/products/P018-standee-sign.png',
+    'assets/products/P019-menu-a4.png',
+    'assets/products/P020-menu-a3.png',
+    'assets/products/P021-large-tea-pot.png',
+    'assets/products/P022-140ml-measuring-cup.png',
+    'assets/products/P023-45ml-milk-cup.png',
+    'assets/products/P024-hot-water-scoop.png',
+    'assets/products/P025-stainless-spoons.png',
+    'assets/products/P026-long-spoon.png',
+    'assets/products/P027-spoon-and-jar.png',
+    'assets/products/P028-double-cup-bag.png',
+    'assets/products/P029-single-cup-bag.png',
+    'assets/products/P030-honey.png',
+    'assets/products/P031-stainless-pitcher.png',
+    'assets/products/P032-milk-can-punch.png',
+    'assets/products/P033-tea-filter-cloths.png',
+    'assets/products/P034-ingredient-jars.png',
+    'assets/products/P035-lemon-squeezer.png',
+    'assets/products/P036-milk-frother-machine.png',
+    'assets/products/P037-frother-rod.png',
+    'assets/products/P038-fruit-squeeze-bottle.png',
+    'assets/products/P039-bag-sealing-clip.png',
+    'assets/products/P040-small-tea-filter-bag.png',
+    'assets/products/P041-smoothie-blender.png',
+];
+
+function localProductImage(id, index) {
+    const match = String(id || '').match(/^P(\d{3})$/i);
+    const byIdIndex = match ? Number(match[1]) - 1 : -1;
+    return PRODUCT_IMAGE_BY_INDEX[byIdIndex] || PRODUCT_IMAGE_BY_INDEX[index] || '';
+}
+
+function normalizeStatus(status) {
+    return String(status || '').trim().toLowerCase();
+}
+
+function isProductHidden(status) {
+    return ['cancelled', 'canceled', '\u0e22\u0e01\u0e40\u0e25\u0e34\u0e01'].includes(normalizeStatus(status));
+}
+
+function isProductAvailable(status) {
+    return !['inactive', 'disabled', '\u0e1b\u0e34\u0e14'].includes(normalizeStatus(status));
+}
+
+function normalizeProducts(raw) {
+    return unwrapProductResponse(raw)
+        .map((row, index) => {
+            const source = unwrapProfileResponse(row);
+            const name = pickFirst(source, [
+                'Product_Name', 'productName', 'product_name', 'Name', 'name',
+            ]);
+            const price = Number(pickFirst(source, [
+                'Price', 'price', 'Unit_Price', 'unitPrice', 'pricePerUnit',
+            ]) || 0);
+            const status = pickFirst(source, ['Status', 'status']) || 'active';
+            const id = pickFirst(source, [
+                'Product_ID', 'productId', 'product_id', 'ID', 'id',
+            ]) || `P${String(index + 1).padStart(3, '0')}`;
+
+            return {
+                id,
+                name,
+                unit: pickFirst(source, ['Unit', 'unit', 'UOM', 'uom']) || '-',
+                price,
+                emoji: pickFirst(source, ['Emoji', 'emoji']) || pickProductEmoji(name, index),
+                imageUrl: pickFirst(source, ['Image_URL', 'imageUrl', 'image_url', 'Image', 'image'])
+                    || localProductImage(id, index),
+                status,
+            };
+        })
+        .filter(product => {
+            return product.name && product.price > 0 && !isProductHidden(product.status);
+        });
+}
+
+function normalizeAddressRecord(item, index, fallbackLabel = '') {
+    if (typeof item === 'string') {
+        const text = item.trim();
+        return text ? { id: `addr-${index + 1}`, label: fallbackLabel || `ที่อยู่ ${index + 1}`, text } : null;
+    }
+
+    if (!item || typeof item !== 'object') return null;
+
+    const label = pickFirst(item, [
+        'label', 'name', 'branchName', 'branch_name', 'Branch_Name',
+        'branch', 'title', 'Address_Label', 'addressLabel',
+    ]) || fallbackLabel || `ที่อยู่ ${index + 1}`;
+
+    const text = pickFirst(item, [
+        'text', 'address', 'fullAddress', 'full_address', 'Address',
+        'Delivery_Address', 'deliveryAddress', 'value',
+    ]);
+    const contactName = pickFirst(item, ['contactName', 'contact_name', 'Contact_Name', 'contact', 'Contact']);
+    const tel = pickFirst(item, [
+        'tel', 'phone', 'mobile', 'contactTel', 'contact_tel',
+        'Tel', 'TEL', 'Phone', 'Mobile',
+    ]);
+
+    if (!text) return null;
+
+    return {
+        id: pickFirst(item, ['id', 'addressId', 'address_id', 'Address_ID']) || `addr-${index + 1}`,
+        label,
+        text,
+        contactName: contactName || '',
+        tel: tel || '',
+    };
+}
+
+function normalizeAddressSheetRow(row) {
+    if (!row || typeof row !== 'object') return [];
+
+    const branchName = pickFirst(row, [
+        'Branch_Name', 'branchName', 'branch_name', 'Branch', 'branch',
+        'Display_Name', 'displayName', 'display_name',
+    ]);
+    const tel = pickFirst(row, [
+        'Tel', 'TEL', 'tel', 'Phone', 'phone', 'Mobile', 'mobile',
+    ]) || '';
+    const defaultContactName = pickFirst(row, ['Contact_Name', 'contactName', 'contact_name', 'Display_Name']) || '';
+
+    return [1, 2, 3, 4, 5]
+        .map((num) => {
+            const text = pickFirst(row, [
+                `Address_${num}`, `address_${num}`, `address${num}`,
+                `Address ${num}`, `address ${num}`,
+            ]);
+            if (!text) return null;
+
+            const label = pickFirst(row, [
+                `Address_Label_${num}`, `address_label_${num}`, `Label_${num}`, `label_${num}`,
+            ]) || (branchName ? (num === 1 ? branchName : `${branchName} (${num})`) : `ที่อยู่ ${num}`);
+
+            const contactName = pickFirst(row, [`Contact_Name_${num}`, `contact_name_${num}`]) || defaultContactName;
+            return { id: `addr-${num}`, label, text, contactName, tel };
+        })
+        .filter(Boolean);
+}
+
+function normalizeProfile(raw) {
+    const source = unwrapProfileResponse(raw);
+    const rawAddresses = source.addresses || source.Addresses || source.addressList || source.address_list;
+    const displayName = pickFirst(source, ['displayName', 'display_name', 'Display_Name', 'name']);
+    const uid = pickFirst(source, ['uid', 'lineUid', 'line_uid', 'LINE_UID', 'userId']);
+
+    let addresses = [];
+    if (Array.isArray(rawAddresses)) {
+        addresses = rawAddresses
+            .map((addr, index) => normalizeAddressRecord(addr, index, displayName))
+            .filter(Boolean);
+    } else if (rawAddresses && typeof rawAddresses === 'object') {
+        addresses = normalizeAddressSheetRow(rawAddresses);
+        if (addresses.length === 0) {
+            const normalized = normalizeAddressRecord(rawAddresses, 0, displayName);
+            if (normalized) addresses = [normalized];
+        }
+    } else if (Array.isArray(raw)) {
+        addresses = raw.flatMap((row, rowIndex) => {
+            const unwrapped = unwrapProfileResponse(row);
+            const fromRow = normalizeAddressSheetRow(unwrapped);
+            if (fromRow.length > 0) return fromRow;
+            const normalized = normalizeAddressRecord(unwrapped, rowIndex, displayName);
+            return normalized ? [normalized] : [];
+        });
+    } else {
+        addresses = normalizeAddressSheetRow(source);
+        if (addresses.length === 0) {
+            const normalized = normalizeAddressRecord(source, 0, displayName);
+            if (normalized) addresses = [normalized];
+        }
+    }
+
+    const seen = new Set();
+    addresses = addresses.filter(addr => {
+        const key = `${addr.label}|${addr.text}`.toLowerCase();
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+    });
+
+    return { uid, displayName, addresses };
+}
+
+// =====================================================
+// 🖼️ RENDER
+// =====================================================
+
+/** Render รายการที่อยู่ในหน้า Address */
+function renderAddressList() {
+    const container = document.getElementById('address-list');
+
+    if (state.addresses.length === 0) {
+        container.innerHTML = `
+            <div class="no-address-state">
+                <span class="no-address-icon">📍</span>
+                <p>ยังไม่มีที่อยู่ที่บันทึกไว้<br>กรุณาเพิ่มที่อยู่ใหม่ด้านล่าง</p>
+            </div>`;
+        document.getElementById('new-address-form').classList.remove('hidden');
+        return;
+    }
+
+    container.innerHTML = state.addresses.map(addr => `
+        <div class="address-card${state.selectedAddress?.id === addr.id ? ' selected' : ''}"
+             id="addr-card-${addr.id}"
+             data-addr-id="${addr.id}"
+             role="radio"
+             aria-checked="${state.selectedAddress?.id === addr.id}"
+             tabindex="0">
+            <div class="address-radio"></div>
+            <div class="address-info">
+                <span class="address-tag">${escapeHtml(addr.label)}</span>
+                <p class="address-detail">${escapeHtml(addr.text)}</p>
+                ${addr.contactName ? `<p class="address-contact">ผู้ติดต่อ: ${escapeHtml(addr.contactName)}${addr.tel ? ` · ${escapeHtml(addr.tel)}` : ""}</p>` : ""}
+            </div>
+        </div>
+    `).join('');
+
+    container.querySelectorAll('.address-card').forEach(card => {
+        const pick = () => selectAddress(card.dataset.addrId);
+        card.addEventListener('click', pick);
+        card.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') pick(); });
+    });
+}
+
+/** เลือกที่อยู่ */
+function selectAddress(id) {
+    state.selectedAddress = state.addresses.find(a => a.id === id) || null;
+
+    document.querySelectorAll('.address-card').forEach(c => {
+        const sel = c.dataset.addrId === id;
+        c.classList.toggle('selected', sel);
+        c.setAttribute('aria-checked', sel);
+    });
+
+    document.getElementById('btn-next-to-products').disabled = !state.selectedAddress;
+    document.getElementById('new-address-form').classList.add('hidden');
+}
+
+/** Render Product Grid */
+function renderProducts() {
+    const grid = document.getElementById('product-grid');
+    grid.innerHTML = state.products.map(p => {
+        const qty = state.cart[p.id] || 0;
+        const available = isProductAvailable(p.status);
+        const statusBadge = available ? '' : '<span class="product-status-badge">\u0e2b\u0e21\u0e14\u0e0a\u0e31\u0e48\u0e27\u0e04\u0e23\u0e32\u0e27</span>';
+        const visual = p.imageUrl
+            ? `<img class="product-image" src="${escapeHtml(p.imageUrl)}" alt="${escapeHtml(p.name)}" loading="lazy" onerror="this.classList.add('is-hidden');this.nextElementSibling.classList.remove('is-hidden');"><span class="product-emoji is-hidden">${p.emoji}</span>`
+            : `<span class="product-emoji">${p.emoji}</span>`;
+        return `
+            <div class="product-card${qty > 0 ? ' in-cart' : ''}${available ? '' : ' is-unavailable'}" id="prod-${p.id}">
+                <div class="product-visual">${visual}${statusBadge}</div>
+                <div>
+                    <p class="product-name">${escapeHtml(p.name)}</p>
+                    <p class="product-unit">/ ${escapeHtml(p.unit)}</p>
+                </div>
+                <p class="product-price">${fmt(p.price)}</p>
+                <div class="qty-control">
+                    <button class="qty-btn dec" data-pid="${p.id}" aria-label="ลด" ${available ? '' : 'disabled'}>−</button>
+                    <span class="qty-value" id="qty-${p.id}">${qty}</span>
+                    <button class="qty-btn inc" data-pid="${p.id}" aria-label="เพิ่ม" ${available ? '' : 'disabled'}>+</button>
+                </div>
+            </div>`;
+    }).join('');
+
+    grid.querySelectorAll('.qty-btn').forEach(btn => {
+        btn.addEventListener('click', () => changeQty(btn.dataset.pid, btn.classList.contains('inc') ? 1 : -1));
+    });
+}
+
+/** เปลี่ยนจำนวนสินค้าในตะกร้า */
+function changeQty(pid, delta) {
+    const product = state.products.find(p => p.id === pid);
+    if (!product || !isProductAvailable(product.status)) return;
+
+    const cur = state.cart[pid] || 0;
+    if (delta > 0 && cur === 0 && countOrderLines() >= MAX_ORDER_LINES) {
+        alert(`?????????????????? ${MAX_ORDER_LINES} ???????????? ??? 1 Order`);
+        return;
+    }
+    const nxt = Math.max(0, cur + delta);
+
+    if (nxt === 0) delete state.cart[pid];
+    else state.cart[pid] = nxt;
+
+    // Update DOM
+    const qtyEl = document.getElementById(`qty-${pid}`);
+    if (qtyEl) qtyEl.textContent = nxt;
+
+    const card = document.getElementById(`prod-${pid}`);
+    if (card) card.classList.toggle('in-cart', nxt > 0);
+
+    syncCartUI();
+    if (delta > 0) bumpBadge();
+}
+
+/** Sync ข้อมูลตะกร้าทุก element */
+function syncCartUI() {
+    const total = countItems();
+    const lines = countOrderLines();
+    const sub   = calcSubtotal();
+
+    document.getElementById('cart-count').textContent      = total;
+    document.getElementById('cart-items-count').textContent = `${total} รายการ`;
+    document.getElementById('cart-total-price').textContent  = fmt(sub);
+
+    const bar = document.getElementById('cart-action-bar');
+    bar.style.display = total > 0 ? 'block' : 'none';
+}
+
+/** Render Summary */
+function renderSummary() {
+    // Address
+    const addrEl = document.getElementById('summary-address-text');
+    if (state.selectedAddress) {
+        const contactLine = state.selectedAddress.contactName || state.selectedAddress.tel
+            ? `<br><span>ผู้ติดต่อ: ${escapeHtml(state.selectedAddress.contactName || '-')}${state.selectedAddress.tel ? ` · Tel. ${escapeHtml(state.selectedAddress.tel)}` : ''}</span>`
+            : '';
+        addrEl.innerHTML = `<strong style="color:var(--text-primary)">${escapeHtml(state.selectedAddress.label)}</strong><br>${escapeHtml(state.selectedAddress.text)}${contactLine}`;
+    }
+
+    // Items
+    const list = document.getElementById('summary-items-list');
+    const items = Object.entries(state.cart).filter(([,q]) => q > 0);
+    list.innerHTML = items.map(([id, qty]) => {
+        const p = state.products.find(x => x.id === id);
+        return `
+            <div class="summary-item">
+                <span class="summary-item-name">${p.emoji} ${escapeHtml(p.name)}</span>
+                <span class="summary-item-qty">×${qty} ${escapeHtml(p.unit)}</span>
+                <span class="summary-item-price">${fmt(p.price * qty)}</span>
+            </div>`;
+    }).join('');
+
+    // Price
+    const sub = calcSubtotal();
+    document.getElementById('summary-subtotal').textContent = fmt(sub);
+    document.getElementById('summary-total').textContent    = fmt(sub);
+}
+
+/** XSS guard */
+function escapeHtml(s) {
+    return String(s)
+        .replace(/&/g,'&amp;')
+        .replace(/</g,'&lt;')
+        .replace(/>/g,'&gt;')
+        .replace(/"/g,'&quot;');
+}
+
+// =====================================================
+// 🚀 INIT
+// =====================================================
+
+async function initApp() {
+    const loadingText = document.getElementById('loading-text');
+
+    // แสดง loading screen ทันที
+    const loadingScreen = document.getElementById('screen-loading');
+    loadingScreen.classList.add('is-visible');
+    requestAnimationFrame(() => requestAnimationFrame(() => loadingScreen.classList.add('is-active')));
+
+    try {
+        // 1️⃣ Init LIFF (หรือ fallback เมื่อเปิดจาก browser)
+        loadingText.textContent = 'กำลังเชื่อมต่อ LINE...';
+
+        // 🔍 Debug: รอ LIFF SDK โหลด (ป้องกัน race condition ใน LINE WebView)
+        loadingText.textContent = 'กำลังโหลด LIFF SDK...';
+        const liffLoaded = await waitForLiff(10000);
+        const isLineUA   = /Line\//i.test(navigator.userAgent);
+        console.log(`[DEBUG] LIFF SDK loaded: ${liffLoaded} (after wait)`);
+        console.log(`[DEBUG] Is LINE UA: ${isLineUA}`);
+        console.log(`[DEBUG] User-Agent: ${navigator.userAgent}`);
+        loadingText.textContent = 'กำลังเชื่อมต่อ LINE...';
+
+        if (CONFIG.IS_DEV_MODE) {
+            // 🧪 Dev mode: Mock user, Mock data
+            console.log('[DEV] Skipping LIFF.init()');
+            await delay(500);
+            state.user = { uid: MOCK_USER.uid, displayName: MOCK_USER.displayName };
+
+        } else if (!liffLoaded) {
+            // 🌐 Browser mode: LIFF SDK โหลดไม่สำเร็จภายในเวลาที่กำหนด
+            console.warn(`[BROWSER] LIFF SDK unavailable after wait. UA: ${navigator.userAgent}`);
+            throw new Error('LINE SDK is unavailable. Please reopen this page from LINE.');
+
+        } else {
+            // 📱 LINE mode: LIFF จริง
+            loadingText.textContent = 'กำลัง Init LIFF...';
+            await liff.init({ liffId: CONFIG.LIFF_ID });
+            console.log(`[LIFF] isInClient: ${liff.isInClient()}, isLoggedIn: ${liff.isLoggedIn()}`);
+            if (!liff.isLoggedIn()) {
+                loadingText.textContent = 'กำลัง Login LINE...';
+                liff.login();
+                return;
+            }
+            const profile = await liff.getProfile();
+            state.idToken = liff.getIDToken() || '';
+            if (!state.idToken) throw new Error('LINE session is unavailable. Please reopen this page from LINE.');
+            state.user = { uid: profile.userId, displayName: profile.displayName };
+        }
+
+        // 2️⃣ ดึงข้อมูลสาขา (เรียก webhook จริงเสมอ ยกเว้น Dev mode)
+        loadingText.textContent = 'กำลังดึงข้อมูลสาขา...';
+        const userData = normalizeProfile(await apiGetProfile());
+
+        // 3️⃣ Set state
+        if (userData.displayName) state.user.displayName = userData.displayName;
+        state.addresses = userData.addresses;
+        console.log('[PROFILE] normalized addresses:', state.addresses);
+
+        loadingText.textContent = 'กำลังดึงรายการสินค้า...';
+        try {
+            state.products = await apiGetProducts();
+            if (state.products.length === 0) throw new Error('Products response is empty');
+        } catch (productErr) {
+            console.error('[Products] unable to load authorized catalog:', productErr);
+            state.products = [];
+            throw productErr;
+        }
+
+        // 4️⃣ อัปเดต greeting
+        document.getElementById('user-greeting').textContent =
+            `สวัสดีครับ, ${state.user.displayName}! 👋`;
+
+        // 5️⃣ Render และเปิดหน้าเลือกที่อยู่
+        renderAddressList();
+        goTo('screen-address');
+
+    } catch (err) {
+        console.error('[LIFF Error]', err);
+        loadingText.textContent = `เกิดข้อผิดพลาด: ${err.message}`;
+        loadingText.style.color = 'var(--red)';
+    }
+}
+
+/** แสดง banner แจ้งว่ากำลังทดสอบจาก browser หรือ LIFF SDK โหลดไม่สำเร็จ */
+function showBrowserTestBanner(uid, isLineUA = false) {
+    const banner = document.createElement('div');
+    banner.style.cssText = [
+        'position:fixed', 'top:0', 'left:0', 'right:0', 'z-index:9999',
+        'background:#f59e0b', 'color:#1a1a1a', 'font-size:10px',
+        'font-weight:600', 'text-align:center', 'padding:4px 8px',
+        'letter-spacing:0.3px', 'line-height:1.4',
+    ].join(';');
+    const context = isLineUA ? '📱 LINE Browser (SDK fail)' : '🌐 External Browser';
+    banner.textContent = `BROWSER TEST MODE | ${context} | UID: ${uid}`;
+    document.body.prepend(banner);
+}
+
+// =====================================================
+// 🎮 EVENT LISTENERS
+// =====================================================
+
+document.addEventListener('DOMContentLoaded', () => {
+
+    // ─────────────────────────────────────────────
+    // SCREEN 1: ADDRESS
+    // ─────────────────────────────────────────────
+
+    /** ปุ่ม "เพิ่มที่อยู่ใหม่" */
+    document.getElementById('btn-add-address').addEventListener('click', () => {
+        const form = document.getElementById('new-address-form');
+        const isHidden = form.classList.toggle('hidden');
+        if (!isHidden) document.getElementById('input-branch-name').focus();
+    });
+
+    /** ปุ่ม "บันทึกที่อยู่นี้" */
+    document.getElementById('btn-confirm-new-address').addEventListener('click', () => {
+        const label = document.getElementById('input-branch-name').value.trim();
+        const contactName = document.getElementById('input-contact-name').value.trim();
+        const tel   = document.getElementById('input-contact-tel').value.trim();
+        const text  = document.getElementById('input-address').value.trim();
+
+        if (!label || !contactName || !tel || !text) {
+            alert('กรุณากรอกชื่อสาขา ชื่อผู้ติดต่อ เบอร์ติดต่อ และที่อยู่ให้ครบก่อนบันทึก');
+            return;
+        }
+
+        const newAddr = { id: `new-${Date.now()}`, label, contactName, tel, text, isNew: true };
+        state.addresses.push(newAddr);
+        renderAddressList();
+        selectAddress(newAddr.id);
+        document.getElementById('new-address-form').classList.add('hidden');
+
+        // Clear inputs
+        document.getElementById('input-branch-name').value = '';
+        document.getElementById('input-contact-name').value = '';
+        document.getElementById('input-contact-tel').value = '';
+        document.getElementById('input-address').value     = '';
+    });
+
+    /** ปุ่ม "ถัดไป — เลือกสินค้า" */
+    document.getElementById('btn-next-to-products').addEventListener('click', () => {
+        renderProducts();
+        syncCartUI();
+        goTo('screen-products');
+    });
+
+    // ─────────────────────────────────────────────
+    // SCREEN 2: PRODUCTS
+    // ─────────────────────────────────────────────
+
+    /** ย้อนกลับไปหน้าที่อยู่ */
+    document.getElementById('btn-back-to-address').addEventListener('click', () => {
+        goTo('screen-address');
+    });
+
+    /** ไปหน้าสรุปคำสั่งซื้อ */
+    document.getElementById('btn-next-to-summary').addEventListener('click', () => {
+        if (countItems() === 0) {
+            alert('กรุณาเลือกสินค้าอย่างน้อย 1 รายการ');
+            return;
+        }
+        renderSummary();
+        goTo('screen-summary');
+    });
+
+    // เปิดหน้าสรุปคำสั่งซื้อด้วยขั้นตอนเดียวกับปุ่ม 'ดูสรุป'
+    document.getElementById('btn-view-cart').addEventListener('click', () => {
+        document.getElementById('btn-next-to-summary').click();
+    });
+
+    // ─────────────────────────────────────────────
+    // SCREEN 3: SUMMARY
+    // ─────────────────────────────────────────────
+
+    /** ย้อนกลับไปหน้าสินค้า */
+    document.getElementById('btn-back-to-products').addEventListener('click', () => {
+        goTo('screen-products');
+    });
+
+    /** แก้ไขที่อยู่ (จากหน้าสรุป) */
+    document.getElementById('btn-edit-address').addEventListener('click', () => {
+        goTo('screen-address');
+    });
+
+    /** แก้ไขรายการสินค้า (จากหน้าสรุป) */
+    document.getElementById('btn-edit-products').addEventListener('click', () => {
+        goTo('screen-products');
+    });
+
+    /** ปุ่ม "ยืนยันคำสั่งซื้อ" — Submit */
+    document.getElementById('btn-submit-order').addEventListener('click', async () => {
+        if (!state.selectedAddress) { alert('กรุณาเลือกที่อยู่จัดส่ง'); return; }
+        if (countItems() === 0)     { alert('กรุณาเลือกสินค้าอย่างน้อย 1 รายการ'); return; }
+
+        const btn     = document.getElementById('btn-submit-order');
+        const btnText = document.getElementById('submit-btn-text');
+        const spinner = document.getElementById('submit-spinner');
+
+        // Loading state
+        btn.disabled = true;
+        btnText.classList.add('hidden');
+        spinner.classList.remove('hidden');
+
+        try {
+            const note = document.getElementById('input-note').value.trim();
+
+            // Build order items
+            const orderItems = Object.entries(state.cart)
+                .filter(([,q]) => q > 0)
+                .map(([id, qty]) => {
+                    const p = state.products.find(x => x.id === id);
+                    return {
+                        productId:    p.id,
+                        productName:  p.name,
+                        unit:         p.unit,
+                        pricePerUnit: p.price,
+                        quantity:     qty,
+                        lineTotal:    p.price * qty,
+                    };
+                });
+
+            // Build payload ตาม spec ของ n8n webhook POST /webhook/submit-order
+            const payload = {                displayName:     state.user.displayName,
+                deliveryAddress: {
+                    id:    state.selectedAddress.id,
+                    label: state.selectedAddress.label,
+                    contactName: state.selectedAddress.contactName || '',
+                    tel:   state.selectedAddress.tel || '',
+                    text:  state.selectedAddress.text,
+                },
+                isNewAddress: Boolean(state.selectedAddress.isNew),
+                orderItems,
+                subtotal:  calcSubtotal(),
+                note:      note || '',
+                timestamp: new Date().toISOString(),
+            };
+
+            const result = await apiSubmitOrder(payload);
+
+            // Success
+            state.orderId = result.orderId;
+            document.getElementById('success-order-id').textContent = state.orderId;
+            goTo('screen-success');
+
+        } catch (err) {
+            console.error('[Submit Error]', err);
+            alert(`ส่งคำสั่งซื้อไม่สำเร็จ\n${err.message}\n\nกรุณาลองใหม่อีกครั้ง`);
+
+            // Reset button
+            btn.disabled = false;
+            btnText.classList.remove('hidden');
+            spinner.classList.add('hidden');
+        }
+    });
+
+    // ─────────────────────────────────────────────
+    // SCREEN 4: SUCCESS
+    // ─────────────────────────────────────────────
+
+    /** ปิดหน้าต่าง LIFF */
+    document.getElementById('btn-close-liff').addEventListener('click', () => {
+        if (CONFIG.IS_DEV_MODE) {
+            // Dev: reload แทน close
+            window.location.reload();
+            return;
+        }
+        try {
+            liff.closeWindow();
+        } catch {
+            window.close();
+        }
+    });
+
+    // ─────────────────────────────────────────────
+    // START
+    // ─────────────────────────────────────────────
+    if (!requestedScreen) initApp();
+});
